@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+
+# Knowledge Base (auto-generated, project-specific)
+knowledge-base/
+
+# VS Code extension packages
+*.vsix
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Session outputs (auto-generated)
+spec-kit-sessions/
+
+# Environment & secrets
+.env
+.env.*
+
+# Logs
+*.log
+npm-debug.log*
+
+# TypeScript incremental build
+*.tsbuildinfo

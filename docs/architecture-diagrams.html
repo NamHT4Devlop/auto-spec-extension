@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Auto Spec Kit v1.5.3 — Architecture Diagrams</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f8fafc;
+    color: #1e293b;
+    padding: 24px;
+    min-height: 100vh;
+  }
+  header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+  header h1 {
+    font-size: 24px;
+    font-weight: 800;
+    color: #1e293b;
+    margin-bottom: 6px;
+  }
+  header p {
+    font-size: 13px;
+    color: #64748b;
+  }
+  .badge {
+    display: inline-block;
+    background: #3b82f6;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 10px;
+    border-radius: 20px;
+    margin: 0 4px;
+  }
+  .tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .tab {
+    padding: 8px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    border: 2px solid #e2e8f0;
+    background: #fff;
+    color: #64748b;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .tab.active { background: #1e293b; color: #fff; border-color: #1e293b; }
+  .tab:hover:not(.active) { border-color: #3b82f6; color: #3b82f6; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .diagram-card {
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    padding: 24px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  }
+  .diagram-card h2 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: #1e293b;
+  }
+  .diagram-card p {
+    font-size: 12px;
+    color: #64748b;
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+  svg { width: 100%; height: auto; display: block; }
+  svg text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+  .legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid #f1f5f9;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: #475569;
+  }
+  .legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🚀 Auto Spec Kit — Architecture Diagrams</h1>
+  <p>
+    <span class="badge">v1.5.3</span>
+    VS Code Extension · GitHub Copilot · vscode.lm API
+  </p>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="show('hld', this)">🏗 High-Level Design</div>
+  <div class="tab" onclick="show('workflow', this)">🔄 Run Task Pipeline</div>
+  <div class="tab" onclick="show('components', this)">🧩 Component Detail</div>
+  <div class="tab" onclick="show('kb', this)">📚 Knowledge Base Flow</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     PANEL 1 — HIGH-LEVEL DESIGN
+════════════════════════════════════════════════════════════ -->
+<div class="panel active" id="hld">
+<div class="diagram-card">
+  <h2>High-Level Architecture</h2>
+  <p>
+    Shows the major layers of Auto Spec Kit: the command surface, orchestration core, workflow modules,
+    utility helpers, and storage. All AI calls are routed through <code>callCopilot()</code> to the
+    <code>vscode.lm</code> API — no external API keys required.
+  </p>
+
+  <svg viewBox="0 0 880 580" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#94a3b8"/></marker>
+      <marker id="arr-b" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#3b82f6"/></marker>
+      <marker id="arr-p" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#7c3aed"/></marker>
+    </defs>
+
+    <!-- Outer frame -->
+    <rect x="8" y="8" width="864" height="564" rx="14" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5"/>
+    <text x="28" y="30" font-size="10" fill="#94a3b8" font-weight="700" letter-spacing="1">VS CODE EXTENSION BOUNDARY</text>
+
+    <!-- Developer -->
+    <rect x="28" y="44" width="108" height="68" rx="10" fill="#1e293b"/>
+    <text x="82" y="72" text-anchor="middle" font-size="26">👩‍💻</text>
+    <text x="82" y="100" text-anchor="middle" font-size="11" fill="#fff" font-weight="600">Developer</text>
+
+    <!-- Commands -->
+    <rect x="172" y="40" width="172" height="76" rx="10" fill="#3b82f6"/>
+    <text x="258" y="62" text-anchor="middle" font-size="11" fill="#fff" font-weight="700">7 Commands</text>
+    <text x="258" y="78" text-anchor="middle" font-size="9" fill="#bfdbfe">Run Task · Generate KB</text>
+    <text x="258" y="91" text-anchor="middle" font-size="9" fill="#bfdbfe">Review File · User Stories</text>
+    <text x="258" y="104" text-anchor="middle" font-size="9" fill="#bfdbfe">Ask · Update KB · Select Model</text>
+    <line x1="136" y1="78" x2="170" y2="78" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+
+    <!-- Extension Core -->
+    <rect x="390" y="36" width="200" height="84" rx="10" fill="#7c3aed"/>
+    <text x="490" y="59" text-anchor="middle" font-size="11" fill="#fff" font-weight="700">Extension Core</text>
+    <text x="490" y="74" text-anchor="middle" font-size="9" fill="#ddd6fe">extension.ts · activate()</text>
+    <text x="490" y="88" text-anchor="middle" font-size="9" fill="#ddd6fe">model-selector · logger</text>
+    <text x="490" y="102" text-anchor="middle" font-size="9" fill="#ddd6fe">project-scanner · file-utils</text>
+    <line x1="344" y1="78" x2="388" y2="78" stroke="#3b82f6" stroke-width="2" marker-end="url(#arr-b)"/>
+
+    <!-- GitHub Copilot -->
+    <rect x="650" y="36" width="196" height="84" rx="10" fill="#0f172a"/>
+    <text x="748" y="66" text-anchor="middle" font-size="26">🤖</text>
+    <text x="748" y="88" text-anchor="middle" font-size="11" fill="#fff" font-weight="700">GitHub Copilot</text>
+    <text x="748" y="103" text-anchor="middle" font-size="9" fill="#475569">vscode.lm API — no API key</text>
+    <line x1="590" y1="78" x2="648" y2="78" stroke="#7c3aed" stroke-width="2" marker-end="url(#arr-p)"/>
+    <text x="619" y="71" text-anchor="middle" font-size="8.5" fill="#a78bfa">callCopilot()</text>
+
+    <!-- WORKFLOW LAYER -->
+    <rect x="18" y="152" width="844" height="144" rx="10" fill="#f0fdf4" stroke="#bbf7d0" stroke-width="1.5"/>
+    <text x="36" y="171" font-size="9.5" fill="#16a34a" font-weight="700" letter-spacing="0.8">WORKFLOW LAYER — 6 modules</text>
+
+    <rect x="32" y="180" width="152" height="104" rx="8" fill="#fff" stroke="#86efac" stroke-width="1.5"/>
+    <text x="108" y="200" text-anchor="middle" font-size="10" fill="#166534" font-weight="700">run-task.ts</text>
+    <text x="108" y="216" text-anchor="middle" font-size="8.5" fill="#64748b">13-step pipeline</text>
+    <text x="108" y="229" text-anchor="middle" font-size="8.5" fill="#64748b">Plan → Code → Review</text>
+    <text x="108" y="242" text-anchor="middle" font-size="8.5" fill="#64748b">→ Test → Evidence</text>
+    <text x="108" y="255" text-anchor="middle" font-size="8.5" fill="#64748b">→ Update KB</text>
+    <text x="108" y="271" text-anchor="middle" font-size="7.5" fill="#86efac" font-weight="700">Ctrl+Shift+K</text>
+
+    <rect x="196" y="180" width="152" height="104" rx="8" fill="#fff" stroke="#86efac" stroke-width="1.5"/>
+    <text x="272" y="200" text-anchor="middle" font-size="10" fill="#166534" font-weight="700">generate-kb.ts</text>
+    <text x="272" y="216" text-anchor="middle" font-size="8.5" fill="#64748b">Scan → 15 AI steps</text>
+    <text x="272" y="229" text-anchor="middle" font-size="8.5" fill="#64748b">→ 16 KB .md files</text>
+    <text x="272" y="242" text-anchor="middle" font-size="8.5" fill="#64748b">Section 14 merge</text>
+    <text x="272" y="255" text-anchor="middle" font-size="8.5" fill="#64748b">with universal template</text>
+    <text x="272" y="271" text-anchor="middle" font-size="7.5" fill="#86efac" font-weight="700">Ctrl+Shift+B</text>
+
+    <rect x="360" y="180" width="152" height="104" rx="8" fill="#fff" stroke="#86efac" stroke-width="1.5"/>
+    <text x="436" y="200" text-anchor="middle" font-size="10" fill="#166534" font-weight="700">review-file.ts</text>
+    <text x="436" y="216" text-anchor="middle" font-size="8.5" fill="#64748b">Phase 1: quality</text>
+    <text x="436" y="229" text-anchor="middle" font-size="8.5" fill="#64748b">(review-skills.md)</text>
+    <text x="436" y="242" text-anchor="middle" font-size="8.5" fill="#64748b">Phase 2: biz rules</text>
+    <text x="436" y="255" text-anchor="middle" font-size="8.5" fill="#64748b">+ git diff context</text>
+    <text x="436" y="271" text-anchor="middle" font-size="7.5" fill="#86efac" font-weight="700">Right-click → Review</text>
+
+    <rect x="524" y="180" width="152" height="104" rx="8" fill="#fff" stroke="#86efac" stroke-width="1.5"/>
+    <text x="600" y="200" text-anchor="middle" font-size="10" fill="#166534" font-weight="700">generate-user-stories.ts</text>
+    <text x="600" y="216" text-anchor="middle" font-size="8.5" fill="#64748b">Epic → features</text>
+    <text x="600" y="229" text-anchor="middle" font-size="8.5" fill="#64748b">→ stories + ACs</text>
+    <text x="600" y="242" text-anchor="middle" font-size="8.5" fill="#64748b">JSON + HTML sprint</text>
+    <text x="600" y="255" text-anchor="middle" font-size="8.5" fill="#64748b">board output</text>
+    <text x="600" y="271" text-anchor="middle" font-size="7.5" fill="#86efac" font-weight="700">Ctrl+Shift+U</text>
+
+    <rect x="688" y="180" width="160" height="104" rx="8" fill="#fff" stroke="#86efac" stroke-width="1.5"/>
+    <text x="768" y="200" text-anchor="middle" font-size="10" fill="#166534" font-weight="700">ask-kb.ts</text>
+    <text x="768" y="214" text-anchor="middle" font-size="10" fill="#166534" font-weight="700">update-kb.ts</text>
+    <text x="768" y="230" text-anchor="middle" font-size="8.5" fill="#64748b">Q&amp;A grounded in KB</text>
+    <text x="768" y="243" text-anchor="middle" font-size="8.5" fill="#64748b">delta merge after</text>
+    <text x="768" y="256" text-anchor="middle" font-size="8.5" fill="#64748b">each task session</text>
+    <text x="768" y="271" text-anchor="middle" font-size="7.5" fill="#86efac" font-weight="700">Command Palette</text>
+
+    <!-- Core → Workflows arrow -->
+    <line x1="490" y1="120" x2="490" y2="150" stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-p)"/>
+
+    <!-- UTILS LAYER -->
+    <rect x="18" y="316" width="844" height="110" rx="10" fill="#fff7ed" stroke="#fed7aa" stroke-width="1.5"/>
+    <text x="36" y="334" font-size="9.5" fill="#c2410c" font-weight="700" letter-spacing="0.8">UTILS LAYER — 8 helpers</text>
+
+    <rect x="32" y="342" width="118" height="72" rx="7" fill="#fff" stroke="#fdba74" stroke-width="1.5"/>
+    <text x="91" y="362" text-anchor="middle" font-size="9" fill="#9a3412" font-weight="700">copilot.ts</text>
+    <text x="91" y="376" text-anchor="middle" font-size="8" fill="#78350f">callCopilot()</text>
+    <text x="91" y="389" text-anchor="middle" font-size="8" fill="#78350f">stream → string</text>
+    <text x="91" y="402" text-anchor="middle" font-size="7.5" fill="#fdba74">⭐ core utility</text>
+
+    <rect x="162" y="342" width="118" height="72" rx="7" fill="#fff" stroke="#fdba74" stroke-width="1.5"/>
+    <text x="221" y="362" text-anchor="middle" font-size="9" fill="#9a3412" font-weight="700">git-utils.ts</text>
+    <text x="221" y="376" text-anchor="middle" font-size="8" fill="#78350f">loadGitContext()</text>
+    <text x="221" y="389" text-anchor="middle" font-size="8" fill="#78350f">diff vs branch</text>
+    <text x="221" y="402" text-anchor="middle" font-size="8" fill="#78350f">working tree diff</text>
+
+    <rect x="292" y="342" width="118" height="72" rx="7" fill="#fff" stroke="#fdba74" stroke-width="1.5"/>
+    <text x="351" y="362" text-anchor="middle" font-size="9" fill="#9a3412" font-weight="700">file-utils.ts</text>
+    <text x="351" y="376" text-anchor="middle" font-size="8" fill="#78350f">loadKnowledgeBase()</text>
+    <text x="351" y="389" text-anchor="middle" font-size="8" fill="#78350f">writeSessionFile()</text>
+    <text x="351" y="402" text-anchor="middle" font-size="8" fill="#78350f">loadReviewSkills()</text>
+
+    <rect x="422" y="342" width="118" height="72" rx="7" fill="#fff" stroke="#fdba74" stroke-width="1.5"/>
+    <text x="481" y="362" text-anchor="middle" font-size="9" fill="#9a3412" font-weight="700">model-selector.ts</text>
+    <text x="481" y="376" text-anchor="middle" font-size="8" fill="#78350f">MODEL_PRIORITY</text>
+    <text x="481" y="389" text-anchor="middle" font-size="8" fill="#78350f">getOrPickModel()</text>
+    <text x="481" y="402" text-anchor="middle" font-size="8" fill="#78350f">showModelPicker()</text>
+
+    <rect x="552" y="342" width="118" height="72" rx="7" fill="#fff" stroke="#fdba74" stroke-width="1.5"/>
+    <text x="611" y="362" text-anchor="middle" font-size="9" fill="#9a3412" font-weight="700">project-scanner.ts</text>
+    <text x="611" y="376" text-anchor="middle" font-size="8" fill="#78350f">scanProject(root)</text>
+    <text x="611" y="389" text-anchor="middle" font-size="8" fill="#78350f">file tree walk</text>
+    <text x="611" y="402" text-anchor="middle" font-size="8" fill="#78350f">content sampling</text>
+
+    <rect x="682" y="342" width="118" height="72" rx="7" fill="#fff" stroke="#fdba74" stroke-width="1.5"/>
+    <text x="741" y="362" text-anchor="middle" font-size="9" fill="#9a3412" font-weight="700">html-builder.ts</text>
+    <text x="741" y="376" text-anchor="middle" font-size="8" fill="#78350f">buildUserStoriesHtml()</text>
+    <text x="741" y="389" text-anchor="middle" font-size="8" fill="#78350f">Sprint board</text>
+    <text x="741" y="402" text-anchor="middle" font-size="8" fill="#78350f">filter + print</text>
+
+    <!-- Workflows → Utils -->
+    <line x1="490" y1="296" x2="490" y2="314" stroke="#c2410c" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr)"/>
+
+    <!-- STORAGE LAYER -->
+    <rect x="18" y="446" width="844" height="110" rx="10" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.5"/>
+    <text x="36" y="464" font-size="9.5" fill="#1d4ed8" font-weight="700" letter-spacing="0.8">STORAGE / OUTPUT LAYER</text>
+
+    <rect x="32" y="472" width="238" height="72" rx="7" fill="#fff" stroke="#93c5fd" stroke-width="1.5"/>
+    <text x="151" y="492" text-anchor="middle" font-size="9.5" fill="#1e40af" font-weight="700">📚 Knowledge Base</text>
+    <text x="151" y="507" text-anchor="middle" font-size="8" fill="#64748b">knowledge-base/ · 16 .md files</text>
+    <text x="151" y="520" text-anchor="middle" font-size="8" fill="#64748b">13-business-rules.md · review-skills.md</text>
+    <text x="151" y="533" text-anchor="middle" font-size="8" fill="#64748b">Gets smarter with every task</text>
+
+    <rect x="282" y="472" width="238" height="72" rx="7" fill="#fff" stroke="#93c5fd" stroke-width="1.5"/>
+    <text x="401" y="492" text-anchor="middle" font-size="9.5" fill="#1e40af" font-weight="700">📁 Session Outputs</text>
+    <text x="401" y="507" text-anchor="middle" font-size="8" fill="#64748b">spec-kit-sessions/&lt;timestamp&gt;/</text>
+    <text x="401" y="520" text-anchor="middle" font-size="8" fill="#64748b">01-analysis.md … 12-evidence.md</text>
+    <text x="401" y="533" text-anchor="middle" font-size="8" fill="#64748b">epic-*.json · epic-*.html</text>
+
+    <rect x="532" y="472" width="195" height="72" rx="7" fill="#fff" stroke="#93c5fd" stroke-width="1.5"/>
+    <text x="629" y="492" text-anchor="middle" font-size="9.5" fill="#1e40af" font-weight="700">⚙️ VS Code Settings</text>
+    <text x="629" y="507" text-anchor="middle" font-size="8" fill="#64748b">autoSpecKit.model</text>
+    <text x="629" y="520" text-anchor="middle" font-size="8" fill="#64748b">testCommand · language</text>
+    <text x="629" y="533" text-anchor="middle" font-size="8" fill="#64748b">knowledgeBasePath · sessionsDir</text>
+
+    <rect x="739" y="472" width="105" height="72" rx="7" fill="#fff" stroke="#93c5fd" stroke-width="1.5"/>
+    <text x="791" y="492" text-anchor="middle" font-size="9.5" fill="#1e40af" font-weight="700">📦 Resources</text>
+    <text x="791" y="507" text-anchor="middle" font-size="8" fill="#64748b">review-skills-</text>
+    <text x="791" y="520" text-anchor="middle" font-size="8" fill="#64748b">universal.md</text>
+    <text x="791" y="533" text-anchor="middle" font-size="8" fill="#64748b">Section 1–13</text>
+
+    <!-- Utils → Storage -->
+    <line x1="490" y1="426" x2="490" y2="444" stroke="#1d4ed8" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr)"/>
+  </svg>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#1e293b"></div>User / Entry point</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#3b82f6"></div>Commands (7 total)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#7c3aed"></div>Extension Core</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#16a34a"></div>Workflow modules</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ea580c"></div>Utils layer</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#1d4ed8"></div>Storage / Outputs</div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     PANEL 2 — RUN TASK PIPELINE
+════════════════════════════════════════════════════════════ -->
+<div class="panel" id="workflow">
+<div class="diagram-card">
+  <h2>Run Task — 13-Step Pipeline</h2>
+  <p>
+    The core command (<strong>Ctrl+Shift+K</strong>). Takes one task description and runs a 4-phase AI pipeline:
+    Understand & Plan → Build & Review → Test → Close. Each step calls <code>callCopilot()</code> with
+    the Knowledge Base injected as context. All outputs are saved to a timestamped session folder.
+  </p>
+
+  <svg viewBox="0 0 880 660" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="wa" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#64748b"/></marker>
+      <marker id="wb" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#3b82f6"/></marker>
+      <marker id="wg" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#22c55e"/></marker>
+      <marker id="wo" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#f59e0b"/></marker>
+    </defs>
+
+    <!-- Title + Input -->
+    <text x="440" y="24" text-anchor="middle" font-size="15" fill="#1e293b" font-weight="800">Run Task — 13-Step Pipeline</text>
+    <rect x="320" y="36" width="220" height="48" rx="9" fill="#1e293b"/>
+    <text x="430" y="56" text-anchor="middle" font-size="11" fill="#fff" font-weight="700">👩‍💻 Developer — Ctrl+Shift+K</text>
+    <text x="430" y="72" text-anchor="middle" font-size="9" fill="#94a3b8">Types task description · selects model</text>
+    <line x1="430" y1="84" x2="430" y2="102" stroke="#64748b" stroke-width="1.5" marker-end="url(#wa)"/>
+
+    <!-- PHASE A -->
+    <rect x="12" y="102" width="856" height="100" rx="10" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.5"/>
+    <text x="28" y="120" font-size="9.5" fill="#1d4ed8" font-weight="700" letter-spacing="0.8">PHASE A — UNDERSTAND &amp; PLAN</text>
+
+    <rect x="24" y="128" width="262" height="62" rx="8" fill="#3b82f6"/>
+    <text x="155" y="147" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">01 · Analysis</text>
+    <text x="155" y="162" text-anchor="middle" font-size="8.5" fill="#bfdbfe">Parse requirement · check KB</text>
+    <text x="155" y="175" text-anchor="middle" font-size="8.5" fill="#bfdbfe">Identify affected files / domain</text>
+
+    <rect x="306" y="128" width="262" height="62" rx="8" fill="#3b82f6"/>
+    <text x="437" y="147" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">02 · Task Plan</text>
+    <text x="437" y="162" text-anchor="middle" font-size="8.5" fill="#bfdbfe">Detailed implementation plan</text>
+    <text x="437" y="175" text-anchor="middle" font-size="8.5" fill="#bfdbfe">File list · approach · dependencies</text>
+
+    <rect x="588" y="128" width="262" height="62" rx="8" fill="#3b82f6"/>
+    <text x="719" y="147" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">03 · Plan Review</text>
+    <text x="719" y="162" text-anchor="middle" font-size="8.5" fill="#bfdbfe">Validate plan vs KB &amp; biz rules</text>
+    <text x="719" y="175" text-anchor="middle" font-size="8.5" fill="#bfdbfe">Catch gaps / risks before coding</text>
+
+    <line x1="286" y1="159" x2="304" y2="159" stroke="#93c5fd" stroke-width="1.5" marker-end="url(#wb)"/>
+    <line x1="568" y1="159" x2="586" y2="159" stroke="#93c5fd" stroke-width="1.5" marker-end="url(#wb)"/>
+    <line x1="430" y1="202" x2="430" y2="220" stroke="#64748b" stroke-width="1.5" marker-end="url(#wa)"/>
+
+    <!-- PHASE B -->
+    <rect x="12" y="220" width="856" height="158" rx="10" fill="#f0fdf4" stroke="#bbf7d0" stroke-width="1.5"/>
+    <text x="28" y="238" font-size="9.5" fill="#16a34a" font-weight="700" letter-spacing="0.8">PHASE B — BUILD &amp; REVIEW</text>
+
+    <rect x="24" y="246" width="200" height="120" rx="8" fill="#16a34a"/>
+    <text x="124" y="266" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">04 · Code Generation</text>
+    <text x="124" y="282" text-anchor="middle" font-size="8.5" fill="#bbf7d0">AI writes code guided by KB</text>
+    <text x="124" y="295" text-anchor="middle" font-size="8.5" fill="#bbf7d0">plan + review-skills.md</text>
+    <rect x="36" y="308" width="176" height="48" rx="6" fill="#fff" fill-opacity="0.12" stroke="#86efac" stroke-width="1"/>
+    <text x="124" y="324" text-anchor="middle" font-size="8.5" fill="#fff" font-weight="600">Apply to project?</text>
+    <text x="124" y="338" text-anchor="middle" font-size="8" fill="#dcfce7">✅ Yes → write files now</text>
+    <text x="124" y="350" text-anchor="middle" font-size="8" fill="#dcfce7">📁 No → session folder only</text>
+
+    <rect x="238" y="246" width="200" height="120" rx="8" fill="#0d9488"/>
+    <text x="338" y="266" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">05 · Code Review</text>
+    <text x="338" y="282" text-anchor="middle" font-size="8.5" fill="#99f6e4">Phase 1: every review-skills</text>
+    <text x="338" y="295" text-anchor="middle" font-size="8.5" fill="#99f6e4">section as checklist</text>
+    <text x="338" y="308" text-anchor="middle" font-size="8.5" fill="#99f6e4">Phase 2: biz consistency</text>
+    <text x="338" y="321" text-anchor="middle" font-size="8.5" fill="#99f6e4">+ git diff context</text>
+    <text x="338" y="334" text-anchor="middle" font-size="8.5" fill="#99f6e4">[CRITICAL/MAJOR/MINOR]</text>
+    <text x="338" y="347" text-anchor="middle" font-size="8.5" fill="#99f6e4">❌ Bad → ✅ Fixed per issue</text>
+
+    <rect x="452" y="246" width="200" height="120" rx="8" fill="#0d9488"/>
+    <text x="552" y="266" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">06 · Fix Issues</text>
+    <text x="552" y="282" text-anchor="middle" font-size="8.5" fill="#99f6e4">Apply all fixes from review</text>
+    <text x="552" y="295" text-anchor="middle" font-size="8.5" fill="#99f6e4">CRITICAL first, then MAJOR</text>
+    <text x="552" y="308" text-anchor="middle" font-size="8.5" fill="#99f6e4">Output: clean, reviewed code</text>
+
+    <line x1="224" y1="306" x2="236" y2="306" stroke="#86efac" stroke-width="1.5" marker-end="url(#wg)"/>
+    <line x1="438" y1="306" x2="450" y2="306" stroke="#86efac" stroke-width="1.5" marker-end="url(#wg)"/>
+    <line x1="430" y1="378" x2="430" y2="396" stroke="#64748b" stroke-width="1.5" marker-end="url(#wa)"/>
+
+    <!-- PHASE C -->
+    <rect x="12" y="396" width="856" height="140" rx="10" fill="#fdf4ff" stroke="#e9d5ff" stroke-width="1.5"/>
+    <text x="28" y="414" font-size="9.5" fill="#7e22ce" font-weight="700" letter-spacing="0.8">PHASE C — TEST</text>
+
+    <rect x="24" y="422" width="196" height="102" rx="8" fill="#7c3aed"/>
+    <text x="122" y="442" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">07 · Write Tests</text>
+    <text x="122" y="458" text-anchor="middle" font-size="8.5" fill="#ddd6fe">Unit + integration tests</text>
+    <text x="122" y="471" text-anchor="middle" font-size="8.5" fill="#ddd6fe">Given/When/Then style</text>
+    <text x="122" y="484" text-anchor="middle" font-size="8.5" fill="#ddd6fe">Mirrors Step 06 code</text>
+    <rect x="36" y="496" width="176" height="20" rx="4" fill="#fff" fill-opacity="0.12"/>
+    <text x="122" y="510" text-anchor="middle" font-size="8" fill="#c4b5fd">→ 08 · Review Tests</text>
+
+    <rect x="234" y="422" width="206" height="102" rx="8" fill="#6d28d9"/>
+    <text x="337" y="442" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">09 · Fix Tests</text>
+    <text x="337" y="458" text-anchor="middle" font-size="8.5" fill="#ddd6fe">Apply test improvements</text>
+    <text x="337" y="471" text-anchor="middle" font-size="8.5" fill="#ddd6fe">from Step 08 review</text>
+
+    <rect x="454" y="422" width="206" height="102" rx="8" fill="#6d28d9"/>
+    <text x="557" y="442" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">10 · Run Tests</text>
+    <text x="557" y="458" text-anchor="middle" font-size="8.5" fill="#ddd6fe">Execute testCommand</text>
+    <text x="557" y="471" text-anchor="middle" font-size="8.5" fill="#ddd6fe">Capture stdout/stderr</text>
+    <text x="557" y="484" text-anchor="middle" font-size="8.5" fill="#ddd6fe">→ 11 · Fix Failures</text>
+
+    <line x1="220" y1="473" x2="232" y2="473" stroke="#c4b5fd" stroke-width="1.5" marker-end="url(#wa)"/>
+    <line x1="440" y1="473" x2="452" y2="473" stroke="#c4b5fd" stroke-width="1.5" marker-end="url(#wa)"/>
+    <line x1="430" y1="536" x2="430" y2="554" stroke="#64748b" stroke-width="1.5" marker-end="url(#wa)"/>
+
+    <!-- PHASE D -->
+    <rect x="12" y="554" width="856" height="90" rx="10" fill="#fff7ed" stroke="#fed7aa" stroke-width="1.5"/>
+    <text x="28" y="572" font-size="9.5" fill="#c2410c" font-weight="700" letter-spacing="0.8">PHASE D — CLOSE &amp; LEARN</text>
+
+    <rect x="24" y="580" width="388" height="56" rx="8" fill="#ea580c"/>
+    <text x="218" y="600" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">12 · Evidence Document</text>
+    <text x="218" y="614" text-anchor="middle" font-size="8.5" fill="#fed7aa">Requirement + Plan + Code + Review + Tests + Results → single .md file</text>
+    <text x="218" y="627" text-anchor="middle" font-size="8.5" fill="#fed7aa">Complete audit trail saved to session folder</text>
+
+    <rect x="426" y="580" width="428" height="56" rx="8" fill="#b45309"/>
+    <text x="640" y="600" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">13 · Update Knowledge Base</text>
+    <text x="640" y="614" text-anchor="middle" font-size="8.5" fill="#fde68a">Detect new domain concepts · merge delta into affected KB files</text>
+    <text x="640" y="627" text-anchor="middle" font-size="8.5" fill="#fde68a">⭐ Yes — update KB  |  ⏭ No — skip (not recommended)</text>
+
+    <line x1="412" y1="608" x2="424" y2="608" stroke="#fed7aa" stroke-width="1.5" marker-end="url(#wa)"/>
+
+    <!-- KB feedback loop -->
+    <path d="M 854 608 Q 870 608 870 80 Q 870 24 790 24 Q 710 24 660 36" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#wo)"/>
+    <text x="862" y="310" text-anchor="middle" font-size="8" fill="#b45309" transform="rotate(90,862,310)">KB grows smarter every task</text>
+  </svg>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#3b82f6"></div>Phase A — Understand &amp; Plan</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#16a34a"></div>Phase B — Build (04 Code Gen)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#0d9488"></div>Phase B — Review (05–06)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#7c3aed"></div>Phase C — Test</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ea580c"></div>Phase D — Close</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#b45309"></div>Phase D — Update KB (loop)</div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     PANEL 3 — COMPONENT DETAIL
+════════════════════════════════════════════════════════════ -->
+<div class="panel" id="components">
+<div class="diagram-card">
+  <h2>Component Detail — All TypeScript Modules</h2>
+  <p>
+    Shows every <code>.ts</code> file in the extension, which layer it belongs to, what it exports,
+    and how modules depend on each other. Arrows represent import / call relationships.
+  </p>
+
+  <svg viewBox="0 0 880 600" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="ca" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#94a3b8"/></marker>
+    </defs>
+
+    <text x="440" y="22" text-anchor="middle" font-size="14" fill="#1e293b" font-weight="800">Component Detail — All Modules</text>
+
+    <!-- ENTRY POINT -->
+    <rect x="310" y="34" width="260" height="60" rx="9" fill="#1e293b"/>
+    <text x="440" y="56" text-anchor="middle" font-size="11" fill="#fff" font-weight="700">extension.ts  (Entry Point)</text>
+    <text x="440" y="72" text-anchor="middle" font-size="9" fill="#94a3b8">activate() · registerCommand() · getOrPickModel()</text>
+    <text x="440" y="84" text-anchor="middle" font-size="9" fill="#64748b">Registers all 7 commands on activation</text>
+
+    <!-- CONSTANTS LAYER -->
+    <rect x="12" y="120" width="860" height="88" rx="9" fill="#fef9c3" stroke="#fde047" stroke-width="1.5"/>
+    <text x="28" y="138" font-size="9.5" fill="#854d0e" font-weight="700" letter-spacing="0.8">CONSTANTS</text>
+    <rect x="24" y="146" width="828" height="52" rx="7" fill="#fff" stroke="#fde047" stroke-width="1"/>
+    <text x="438" y="167" text-anchor="middle" font-size="10" fill="#78350f" font-weight="700">kb-steps.ts</text>
+    <text x="438" y="182" text-anchor="middle" font-size="9" fill="#92400e">KB_STEPS[15]: Array of {label, file, prompt} — 15 structured prompts for codebase analysis</text>
+    <text x="438" y="195" text-anchor="middle" font-size="8.5" fill="#a16207">Each prompt targets one knowledge domain: overview · tech stack · domain model · API · auth · DB · integrations · config · flows · errors · testing · biz-rules · perf · debt · review-skills</text>
+    <line x1="440" y1="94" x2="440" y2="118" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3,2" marker-end="url(#ca)"/>
+
+    <!-- UTILS LAYER -->
+    <rect x="12" y="224" width="860" height="170" rx="9" fill="#fff7ed" stroke="#fed7aa" stroke-width="1.5"/>
+    <text x="28" y="242" font-size="9.5" fill="#c2410c" font-weight="700" letter-spacing="0.8">UTILS — 8 helper modules</text>
+
+    <!-- copilot.ts -->
+    <rect x="24" y="250" width="148" height="132" rx="7" fill="#fff" stroke="#fb923c" stroke-width="2"/>
+    <text x="98" y="270" text-anchor="middle" font-size="9.5" fill="#9a3412" font-weight="700">copilot.ts ⭐</text>
+    <text x="98" y="286" text-anchor="middle" font-size="8" fill="#7c2d12">callCopilot(</text>
+    <text x="98" y="298" text-anchor="middle" font-size="8" fill="#7c2d12">  model, system,</text>
+    <text x="98" y="310" text-anchor="middle" font-size="8" fill="#7c2d12">  prompt, token,</text>
+    <text x="98" y="322" text-anchor="middle" font-size="8" fill="#7c2d12">  label</text>
+    <text x="98" y="334" text-anchor="middle" font-size="8" fill="#7c2d12">): Promise&lt;string&gt;</text>
+    <text x="98" y="348" text-anchor="middle" font-size="7.5" fill="#94a3b8">Streams LM response</text>
+    <text x="98" y="360" text-anchor="middle" font-size="7.5" fill="#94a3b8">→ full string output</text>
+    <text x="98" y="373" text-anchor="middle" font-size="7.5" fill="#fb923c" font-weight="600">Used by ALL workflows</text>
+
+    <!-- git-utils.ts -->
+    <rect x="182" y="250" width="148" height="132" rx="7" fill="#fff" stroke="#fdba74" stroke-width="1.5"/>
+    <text x="256" y="270" text-anchor="middle" font-size="9.5" fill="#9a3412" font-weight="700">git-utils.ts</text>
+    <text x="256" y="286" text-anchor="middle" font-size="8" fill="#7c2d12">loadGitContext(root, files)</text>
+    <text x="256" y="300" text-anchor="middle" font-size="8" fill="#78350f">→ defaultBranch diff</text>
+    <text x="256" y="313" text-anchor="middle" font-size="8" fill="#78350f">→ workingTree diff</text>
+    <text x="256" y="326" text-anchor="middle" font-size="8" fill="#78350f">→ recent commits</text>
+    <text x="256" y="341" text-anchor="middle" font-size="7.5" fill="#94a3b8">formatGitContextForPrompt()</text>
+    <text x="256" y="354" text-anchor="middle" font-size="7.5" fill="#94a3b8">→ markdown block</text>
+    <text x="256" y="369" text-anchor="middle" font-size="7.5" fill="#fdba74" font-weight="600">run-task + review-file</text>
+
+    <!-- file-utils.ts -->
+    <rect x="340" y="250" width="148" height="132" rx="7" fill="#fff" stroke="#fdba74" stroke-width="1.5"/>
+    <text x="414" y="270" text-anchor="middle" font-size="9.5" fill="#9a3412" font-weight="700">file-utils.ts</text>
+    <text x="414" y="286" text-anchor="middle" font-size="8" fill="#78350f">loadKnowledgeBase(root, path)</text>
+    <text x="414" y="300" text-anchor="middle" font-size="8" fill="#78350f">→ concat all KB .md</text>
+    <text x="414" y="314" text-anchor="middle" font-size="8" fill="#78350f">loadReviewSkills(root, ext)</text>
+    <text x="414" y="328" text-anchor="middle" font-size="8" fill="#78350f">→ KB first, fallback</text>
+    <text x="414" y="342" text-anchor="middle" font-size="8" fill="#78350f">writeSessionFile()</text>
+    <text x="414" y="356" text-anchor="middle" font-size="7.5" fill="#94a3b8">applyFilesToProject()</text>
+    <text x="414" y="369" text-anchor="middle" font-size="7.5" fill="#fdba74" font-weight="600">ALL workflows</text>
+
+    <!-- model-selector.ts -->
+    <rect x="498" y="250" width="148" height="132" rx="7" fill="#fff" stroke="#fdba74" stroke-width="1.5"/>
+    <text x="572" y="270" text-anchor="middle" font-size="9.5" fill="#9a3412" font-weight="700">model-selector.ts</text>
+    <text x="572" y="286" text-anchor="middle" font-size="8" fill="#78350f">MODEL_PRIORITY: Map</text>
+    <text x="572" y="300" text-anchor="middle" font-size="8" fill="#78350f">gpt-5.5 → 1 (best)</text>
+    <text x="572" y="314" text-anchor="middle" font-size="8" fill="#78350f">getOrPickModel(token)</text>
+    <text x="572" y="328" text-anchor="middle" font-size="8" fill="#78350f">→ best available</text>
+    <text x="572" y="342" text-anchor="middle" font-size="8" fill="#78350f">showModelPicker()</text>
+    <text x="572" y="356" text-anchor="middle" font-size="8" fill="#78350f">→ QuickPick UI</text>
+    <text x="572" y="370" text-anchor="middle" font-size="7.5" fill="#fdba74" font-weight="600">extension.ts</text>
+
+    <!-- project-scanner + html-builder + checkpoint + logger -->
+    <rect x="656" y="250" width="200" height="132" rx="7" fill="#fff" stroke="#fdba74" stroke-width="1.5"/>
+    <text x="756" y="268" text-anchor="middle" font-size="9" fill="#9a3412" font-weight="700">project-scanner.ts</text>
+    <text x="756" y="281" text-anchor="middle" font-size="7.5" fill="#78350f">scanProject() · file tree walk</text>
+    <line x1="660" y1="290" x2="852" y2="290" stroke="#fed7aa" stroke-width="0.5"/>
+    <text x="756" y="305" text-anchor="middle" font-size="9" fill="#9a3412" font-weight="700">html-builder.ts</text>
+    <text x="756" y="318" text-anchor="middle" font-size="7.5" fill="#78350f">buildUserStoriesHtml() · sprint board</text>
+    <line x1="660" y1="327" x2="852" y2="327" stroke="#fed7aa" stroke-width="0.5"/>
+    <text x="756" y="342" text-anchor="middle" font-size="9" fill="#9a3412" font-weight="700">checkpoint.ts</text>
+    <text x="756" y="355" text-anchor="middle" font-size="7.5" fill="#78350f">showCheckpoint() · QuickPick pause</text>
+    <line x1="660" y1="364" x2="852" y2="364" stroke="#fed7aa" stroke-width="0.5"/>
+    <text x="756" y="378" text-anchor="middle" font-size="9" fill="#9a3412" font-weight="700">logger.ts</text>
+    <text x="756" y="390" text-anchor="middle" font-size="7.5" fill="#78350f">getChannel() · log() · stepHeader()</text>
+
+    <!-- Arrow entry → utils -->
+    <line x1="440" y1="208" x2="440" y2="222" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3,2" marker-end="url(#ca)"/>
+
+    <!-- WORKFLOW LAYER -->
+    <rect x="12" y="412" width="860" height="170" rx="9" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5"/>
+    <text x="28" y="430" font-size="9.5" fill="#16a34a" font-weight="700" letter-spacing="0.8">WORKFLOW LAYER — 6 modules (each uses copilot.ts + file-utils.ts)</text>
+
+    <rect x="24" y="438" width="158" height="132" rx="7" fill="#fff" stroke="#4ade80" stroke-width="1.5"/>
+    <text x="103" y="457" text-anchor="middle" font-size="9.5" fill="#166534" font-weight="700">run-task.ts</text>
+    <text x="103" y="471" text-anchor="middle" font-size="8" fill="#14532d">runTask(workspaceRoot,</text>
+    <text x="103" y="484" text-anchor="middle" font-size="8" fill="#14532d">model, token, progress)</text>
+    <text x="103" y="498" text-anchor="middle" font-size="7.5" fill="#64748b">copilot · git-utils</text>
+    <text x="103" y="511" text-anchor="middle" font-size="7.5" fill="#64748b">file-utils · kb-steps</text>
+    <text x="103" y="524" text-anchor="middle" font-size="7.5" fill="#64748b">checkpoint · logger</text>
+    <text x="103" y="537" text-anchor="middle" font-size="7.5" fill="#64748b">review-skills load</text>
+    <text x="103" y="553" text-anchor="middle" font-size="8" fill="#4ade80" font-weight="700">Ctrl+Shift+K</text>
+
+    <rect x="194" y="438" width="158" height="132" rx="7" fill="#fff" stroke="#4ade80" stroke-width="1.5"/>
+    <text x="273" y="457" text-anchor="middle" font-size="9.5" fill="#166534" font-weight="700">generate-kb.ts</text>
+    <text x="273" y="471" text-anchor="middle" font-size="8" fill="#14532d">generateKB(root, model,</text>
+    <text x="273" y="484" text-anchor="middle" font-size="8" fill="#14532d">token, progress, extPath)</text>
+    <text x="273" y="498" text-anchor="middle" font-size="7.5" fill="#64748b">KB_STEPS[15]</text>
+    <text x="273" y="511" text-anchor="middle" font-size="7.5" fill="#64748b">project-scanner</text>
+    <text x="273" y="524" text-anchor="middle" font-size="7.5" fill="#64748b">universal template</text>
+    <text x="273" y="537" text-anchor="middle" font-size="7.5" fill="#64748b">Section 14 merge</text>
+    <text x="273" y="553" text-anchor="middle" font-size="8" fill="#4ade80" font-weight="700">Ctrl+Shift+B</text>
+
+    <rect x="364" y="438" width="158" height="132" rx="7" fill="#fff" stroke="#4ade80" stroke-width="1.5"/>
+    <text x="443" y="457" text-anchor="middle" font-size="9.5" fill="#166534" font-weight="700">review-file.ts</text>
+    <text x="443" y="471" text-anchor="middle" font-size="8" fill="#14532d">reviewCurrentFile(doc,</text>
+    <text x="443" y="484" text-anchor="middle" font-size="8" fill="#14532d">root, model, token, ext)</text>
+    <text x="443" y="498" text-anchor="middle" font-size="7.5" fill="#64748b">loadKnowledgeBase()</text>
+    <text x="443" y="511" text-anchor="middle" font-size="7.5" fill="#64748b">loadReviewSkills()</text>
+    <text x="443" y="524" text-anchor="middle" font-size="7.5" fill="#64748b">git-utils context</text>
+    <text x="443" y="537" text-anchor="middle" font-size="7.5" fill="#64748b">CRITICAL → score</text>
+    <text x="443" y="553" text-anchor="middle" font-size="8" fill="#4ade80" font-weight="700">Right-click menu</text>
+
+    <rect x="534" y="438" width="158" height="132" rx="7" fill="#fff" stroke="#4ade80" stroke-width="1.5"/>
+    <text x="613" y="457" text-anchor="middle" font-size="9.5" fill="#166534" font-weight="700">generate-user-stories.ts</text>
+    <text x="613" y="471" text-anchor="middle" font-size="8" fill="#14532d">generateUserStories(root,</text>
+    <text x="613" y="484" text-anchor="middle" font-size="8" fill="#14532d">model, token, extPath)</text>
+    <text x="613" y="498" text-anchor="middle" font-size="7.5" fill="#64748b">4 AI prompts</text>
+    <text x="613" y="511" text-anchor="middle" font-size="7.5" fill="#64748b">investigate → stories</text>
+    <text x="613" y="524" text-anchor="middle" font-size="7.5" fill="#64748b">→ ACs → sprint</text>
+    <text x="613" y="537" text-anchor="middle" font-size="7.5" fill="#64748b">html-builder output</text>
+    <text x="613" y="553" text-anchor="middle" font-size="8" fill="#4ade80" font-weight="700">Ctrl+Shift+U</text>
+
+    <rect x="704" y="438" width="158" height="132" rx="7" fill="#fff" stroke="#4ade80" stroke-width="1.5"/>
+    <text x="783" y="457" text-anchor="middle" font-size="9.5" fill="#166534" font-weight="700">ask-kb.ts</text>
+    <text x="783" y="471" text-anchor="middle" font-size="9.5" fill="#166534" font-weight="700">update-kb.ts</text>
+    <text x="783" y="487" text-anchor="middle" font-size="8" fill="#14532d">askKnowledgeBase()</text>
+    <text x="783" y="500" text-anchor="middle" font-size="8" fill="#14532d">updateKnowledgeBase()</text>
+    <text x="783" y="514" text-anchor="middle" font-size="7.5" fill="#64748b">loadKB → Q&amp;A via AI</text>
+    <text x="783" y="527" text-anchor="middle" font-size="7.5" fill="#64748b">delta prompt → merge</text>
+    <text x="783" y="540" text-anchor="middle" font-size="7.5" fill="#64748b">into affected .md files</text>
+    <text x="783" y="553" text-anchor="middle" font-size="8" fill="#4ade80" font-weight="700">Command Palette</text>
+
+    <!-- Arrow utils → workflows -->
+    <line x1="440" y1="394" x2="440" y2="410" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3,2" marker-end="url(#ca)"/>
+  </svg>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#1e293b"></div>Entry point</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#eab308"></div>Constants (KB_STEPS)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ea580c"></div>Utils helpers</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#fb923c; border: 2px solid #ea580c"></div>copilot.ts (⭐ core — used by all)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#16a34a"></div>Workflow modules</div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     PANEL 4 — KNOWLEDGE BASE FLOW
+════════════════════════════════════════════════════════════ -->
+<div class="panel" id="kb">
+<div class="diagram-card">
+  <h2>Knowledge Base — Generation &amp; Usage Flow</h2>
+  <p>
+    The Knowledge Base is the memory of Auto Spec Kit. This diagram shows how it is built from a project scan,
+    how it is injected into every command, and how it grows over time with each completed task.
+  </p>
+
+  <svg viewBox="0 0 880 560" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="ka" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#64748b"/></marker>
+      <marker id="kb2" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#2563eb"/></marker>
+      <marker id="kg" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#16a34a"/></marker>
+      <marker id="ko" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#d97706"/></marker>
+    </defs>
+
+    <text x="440" y="24" text-anchor="middle" font-size="15" fill="#1e293b" font-weight="800">Knowledge Base — Generation &amp; Usage</text>
+
+    <!-- GENERATION (LEFT) -->
+    <text x="220" y="50" text-anchor="middle" font-size="11" fill="#1d4ed8" font-weight="700">① GENERATION (Ctrl+Shift+B)</text>
+
+    <rect x="60" y="62" width="320" height="44" rx="8" fill="#1e293b"/>
+    <text x="220" y="82" text-anchor="middle" font-size="10" fill="#fff" font-weight="600">Your Project (any language)</text>
+    <text x="220" y="96" text-anchor="middle" font-size="8.5" fill="#94a3b8">source files · tests · migrations · config · docs</text>
+    <line x1="220" y1="106" x2="220" y2="122" stroke="#64748b" stroke-width="1.5" marker-end="url(#ka)"/>
+
+    <rect x="80" y="122" width="280" height="44" rx="8" fill="#7c3aed"/>
+    <text x="220" y="142" text-anchor="middle" font-size="10" fill="#fff" font-weight="600">scanProject()</text>
+    <text x="220" y="156" text-anchor="middle" font-size="8.5" fill="#ddd6fe">Walks file tree · samples content · builds context string</text>
+    <line x1="220" y1="166" x2="220" y2="182" stroke="#64748b" stroke-width="1.5" marker-end="url(#ka)"/>
+
+    <rect x="44" y="182" width="352" height="56" rx="8" fill="#2563eb"/>
+    <text x="220" y="202" text-anchor="middle" font-size="10" fill="#fff" font-weight="600">15 AI Analysis Steps (KB_STEPS)</text>
+    <text x="220" y="216" text-anchor="middle" font-size="8.5" fill="#bfdbfe">Each step = 1 Copilot call with codebase context</text>
+    <text x="220" y="229" text-anchor="middle" font-size="8.5" fill="#bfdbfe">overview → tech-stack → domain → API → auth → DB → integrations → config → flows → errors → testing → biz-rules → perf → debt</text>
+    <line x1="220" y1="238" x2="220" y2="254" stroke="#64748b" stroke-width="1.5" marker-end="url(#ka)"/>
+
+    <!-- KB Files grid -->
+    <rect x="24" y="254" width="392" height="208" rx="9" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+    <text x="220" y="272" text-anchor="middle" font-size="10" fill="#1e40af" font-weight="700">📚 knowledge-base/  (16 files)</text>
+
+    <rect x="32" y="278" width="180" height="174" rx="7" fill="#fff" stroke="#bfdbfe" stroke-width="1"/>
+    <text x="122" y="296" text-anchor="middle" font-size="8.5" fill="#1e40af" font-weight="600">01 project-overview</text>
+    <text x="122" y="310" text-anchor="middle" font-size="8.5" fill="#1e40af" font-weight="600">02 tech-stack</text>
+    <text x="122" y="324" text-anchor="middle" font-size="8.5" fill="#1e40af" font-weight="600">03 project-structure</text>
+    <text x="122" y="338" text-anchor="middle" font-size="8.5" fill="#1e40af" font-weight="600">04 domain-model</text>
+    <text x="122" y="352" text-anchor="middle" font-size="8.5" fill="#1e40af" font-weight="600">05 api-contracts</text>
+    <text x="122" y="366" text-anchor="middle" font-size="8.5" fill="#1e40af" font-weight="600">06 auth-security</text>
+    <text x="122" y="380" text-anchor="middle" font-size="8.5" fill="#1e40af" font-weight="600">07 data-layer</text>
+    <text x="122" y="394" text-anchor="middle" font-size="8.5" fill="#1e40af" font-weight="600">08 integrations</text>
+    <text x="122" y="432" text-anchor="middle" font-size="7.5" fill="#93c5fd">+ _project-scan.md</text>
+
+    <rect x="222" y="278" width="184" height="174" rx="7" fill="#fff" stroke="#bfdbfe" stroke-width="1"/>
+    <text x="314" y="296" text-anchor="middle" font-size="8.5" fill="#1e40af" font-weight="600">09 config-envvars</text>
+    <text x="314" y="310" text-anchor="middle" font-size="8.5" fill="#1e40af" font-weight="600">10 core-flows</text>
+    <text x="314" y="324" text-anchor="middle" font-size="8.5" fill="#1e40af" font-weight="600">11 error-handling</text>
+    <text x="314" y="338" text-anchor="middle" font-size="8.5" fill="#1e40af" font-weight="600">12 testing-strategy</text>
+    <rect x="226" y="344" width="176" height="16" rx="3" fill="#fef3c7"/>
+    <text x="314" y="356" text-anchor="middle" font-size="8.5" fill="#92400e" font-weight="700">13 business-rules ★</text>
+    <text x="314" y="370" text-anchor="middle" font-size="8.5" fill="#1e40af" font-weight="600">14 performance</text>
+    <text x="314" y="384" text-anchor="middle" font-size="8.5" fill="#1e40af" font-weight="600">15 tech-debt</text>
+    <rect x="226" y="390" width="176" height="28" rx="3" fill="#f0fdf4" stroke="#86efac" stroke-width="1"/>
+    <text x="314" y="403" text-anchor="middle" font-size="8.5" fill="#166534" font-weight="700">review-skills.md ★</text>
+    <text x="314" y="416" text-anchor="middle" font-size="7.5" fill="#64748b">universal (1–13) + Section 14</text>
+    <text x="314" y="432" text-anchor="middle" font-size="7.5" fill="#86efac">(project-specific rules)</text>
+
+    <!-- USAGE (RIGHT) -->
+    <text x="660" y="50" text-anchor="middle" font-size="11" fill="#16a34a" font-weight="700">② USAGE — Injected into every command</text>
+
+    <!-- Run Task box -->
+    <rect x="466" y="62" width="380" height="50" rx="8" fill="#16a34a"/>
+    <text x="656" y="82" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">🚀 Run Task</text>
+    <text x="656" y="97" text-anchor="middle" font-size="8.5" fill="#bbf7d0">KB injected as SYSTEM context in all 13 steps</text>
+    <text x="656" y="108" text-anchor="middle" font-size="7.5" fill="#86efac">+ review-skills.md in Step 05 (code review)</text>
+
+    <!-- Review File box -->
+    <rect x="466" y="126" width="380" height="50" rx="8" fill="#0d9488"/>
+    <text x="656" y="146" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">🔍 Review File</text>
+    <text x="656" y="161" text-anchor="middle" font-size="8.5" fill="#99f6e4">KB + review-skills.md + git diff → two-phase review</text>
+    <text x="656" y="172" text-anchor="middle" font-size="7.5" fill="#5eead4">Phase 1: quality checklist  |  Phase 2: biz consistency</text>
+
+    <!-- Ask KB box -->
+    <rect x="466" y="190" width="380" height="44" rx="8" fill="#7c3aed"/>
+    <text x="656" y="210" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">💬 Ask About Codebase</text>
+    <text x="656" y="224" text-anchor="middle" font-size="8.5" fill="#ddd6fe">All KB files as context → cite file paths + function names</text>
+
+    <!-- User Stories box -->
+    <rect x="466" y="248" width="380" height="44" rx="8" fill="#ea580c"/>
+    <text x="656" y="268" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">📋 Generate User Stories</text>
+    <text x="656" y="282" text-anchor="middle" font-size="8.5" fill="#fed7aa">KB business rules + domain model inform story generation</text>
+
+    <!-- Review Skills load order -->
+    <rect x="466" y="310" width="380" height="96" rx="8" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5"/>
+    <text x="656" y="330" text-anchor="middle" font-size="10" fill="#166534" font-weight="700">review-skills.md Load Order</text>
+    <rect x="476" y="338" width="360" height="18" rx="4" fill="#16a34a"/>
+    <text x="656" y="351" text-anchor="middle" font-size="8.5" fill="#fff" font-weight="600">1️⃣ knowledge-base/review-skills.md (preferred)</text>
+    <text x="656" y="370" text-anchor="middle" font-size="8.5" fill="#64748b">universal 1–13 + project Section 14</text>
+    <rect x="476" y="378" width="360" height="18" rx="4" fill="#0d9488" fill-opacity="0.7"/>
+    <text x="656" y="391" text-anchor="middle" font-size="8.5" fill="#fff" font-weight="600">2️⃣ resources/review-skills-universal.md (fallback)</text>
+
+    <!-- LEARNING LOOP -->
+    <rect x="466" y="422" width="380" height="98" rx="8" fill="#fff7ed" stroke="#fed7aa" stroke-width="1.5"/>
+    <text x="656" y="442" text-anchor="middle" font-size="10" fill="#c2410c" font-weight="700">③ LEARNING LOOP — KB stays current</text>
+    <text x="656" y="460" text-anchor="middle" font-size="8.5" fill="#78350f">After each Run Task (Step 13):</text>
+    <text x="656" y="476" text-anchor="middle" font-size="8.5" fill="#78350f">Copilot detects changed domain concepts</text>
+    <text x="656" y="492" text-anchor="middle" font-size="8.5" fill="#78350f">→ generates delta → merges into affected .md files</text>
+    <text x="656" y="508" text-anchor="middle" font-size="8.5" fill="#78350f">Also via: Update KB command (manual session merge)</text>
+    <path d="M 656 520 Q 656 545 440 545 Q 220 545 220 462" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#ko)"/>
+
+    <!-- Arrow KB → commands -->
+    <line x1="416" y1="320" x2="464" y2="220" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#kb2)"/>
+    <text x="447" y="262" text-anchor="middle" font-size="8" fill="#2563eb" transform="rotate(-40,440,268)">loadKnowledgeBase()</text>
+  </svg>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#7c3aed"></div>Scan → AI generation</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#2563eb"></div>16 KB .md files</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#fef3c7; border:1px solid #eab308"></div>13-business-rules.md ★ most important</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#f0fdf4; border:1px solid #4ade80"></div>review-skills.md ★ injected into every review</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div>Learning loop — KB grows with each task</div>
+  </div>
+</div>
+</div>
+
+<script>
+function show(id, el) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  el.classList.add('active');
+}
+</script>
+</body>
+</html>

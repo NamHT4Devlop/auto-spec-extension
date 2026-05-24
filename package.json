@@ -1,0 +1,168 @@
+{
+  "name": "auto-spec-kit",
+  "displayName": "Auto Spec Kit",
+  "description": "Automate the full development workflow: Requirement → Plan → Code → Review → Test → Evidence, powered by GitHub Copilot",
+  "version": "1.5.3",
+  "publisher": "auto-spec-kit",
+  "author": {
+    "name": "nam.hotrung190920",
+    "email": "trungnam5513@gmail.com",
+    "url": "https://github.com/NamHT4Devlop"
+  },
+  "homepage": "https://github.com/NamHT4Devlop/auto-spec-extension#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NamHT4Devlop/auto-spec-extension.git"
+  },
+  "bugs": {
+    "url": "https://github.com/NamHT4Devlop/auto-spec-extension/issues",
+    "email": "trungnam5513@gmail.com"
+  },
+  "keywords": [
+    "copilot",
+    "ai",
+    "spec",
+    "code-review",
+    "knowledge-base",
+    "workflow",
+    "user-stories",
+    "tdd",
+    "developer-tools"
+  ],
+  "engines": { "vscode": "^1.90.0" },
+  "categories": ["Other", "Machine Learning", "Programming Languages"],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "autoSpecKit.run",
+        "title": "🚀 Auto Spec Kit: Run Task",
+        "category": "Auto Spec Kit"
+      },
+      {
+        "command": "autoSpecKit.generateKB",
+        "title": "📚 Auto Spec Kit: Generate Knowledge Base",
+        "category": "Auto Spec Kit"
+      },
+      {
+        "command": "autoSpecKit.reviewFile",
+        "title": "🔍 Auto Spec Kit: Review Current File",
+        "category": "Auto Spec Kit"
+      },
+      {
+        "command": "autoSpecKit.updateKB",
+        "title": "📚 Auto Spec Kit: Update Knowledge Base",
+        "category": "Auto Spec Kit"
+      },
+      {
+        "command": "autoSpecKit.ask",
+        "title": "💬 Auto Spec Kit: Ask About Codebase",
+        "category": "Auto Spec Kit"
+      },
+      {
+        "command": "autoSpecKit.selectModel",
+        "title": "🤖 Auto Spec Kit: Select Model",
+        "category": "Auto Spec Kit"
+      },
+      {
+        "command": "autoSpecKit.generateUserStories",
+        "title": "📋 Auto Spec Kit: Generate User Stories (PO/BA)",
+        "category": "Auto Spec Kit"
+      }
+    ],
+    "configuration": {
+      "title": "Auto Spec Kit",
+      "properties": {
+        "autoSpecKit.testCommand": {
+          "type": "string",
+          "default": "",
+          "description": "Command to run tests. Example: npx jest --coverage --coverageReporters=text 2>&1"
+        },
+        "autoSpecKit.language": {
+          "type": "string",
+          "default": "typescript",
+          "enum": ["typescript", "javascript", "python", "java", "go"],
+          "description": "Primary programming language of the project"
+        },
+        "autoSpecKit.knowledgeBasePath": {
+          "type": "string",
+          "default": "knowledge-base",
+          "description": "Relative path to the knowledge base folder (containing .md files)"
+        },
+        "autoSpecKit.autoApplyCode": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically apply generated code to the project without asking"
+        },
+        "autoSpecKit.sessionsDir": {
+          "type": "string",
+          "default": "spec-kit-sessions",
+          "description": "Folder where session outputs are saved"
+        },
+        "autoSpecKit.model": {
+          "type": "string",
+          "default": "",
+          "description": "Preferred model ID for GitHub Copilot. Leave blank to auto-select the best available model. Examples: gpt-5.5, gpt-5.4, claude-opus-4-7, claude-sonnet-4-6, gemini-2.5-pro. Run 'Auto Spec Kit: Select Model' to browse and choose."
+        },
+        "autoSpecKit.askModelOnStart": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show model Quick Pick on every command run instead of using the saved model from autoSpecKit.model"
+        }
+      }
+    },
+    "keybindings": [
+      {
+        "command": "autoSpecKit.run",
+        "key": "ctrl+shift+k",
+        "mac": "cmd+shift+k"
+      },
+      {
+        "command": "autoSpecKit.generateKB",
+        "key": "ctrl+shift+b",
+        "mac": "cmd+shift+b"
+      },
+      {
+        "command": "autoSpecKit.generateUserStories",
+        "key": "ctrl+shift+u",
+        "mac": "cmd+shift+u"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        { "command": "autoSpecKit.run" },
+        { "command": "autoSpecKit.generateKB" },
+        { "command": "autoSpecKit.reviewFile" },
+        { "command": "autoSpecKit.updateKB" },
+        { "command": "autoSpecKit.ask" },
+        { "command": "autoSpecKit.selectModel" },
+        { "command": "autoSpecKit.generateUserStories" }
+      ],
+      "editor/context": [
+        {
+          "command": "autoSpecKit.reviewFile",
+          "group": "autoSpecKit@1",
+          "when": "editorIsOpen"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "autoSpecKit.ask",
+          "group": "autoSpecKit@1"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "npm run compile && npx @vscode/vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.90.0",
+    "typescript": "^5.4.0",
+    "@vscode/vsce": "^3.0.0"
+  }
+}
