@@ -2,7 +2,7 @@
   "name": "auto-spec-kit",
   "displayName": "Auto Spec Kit",
   "description": "Automate the full development workflow: Requirement → Plan → Code → Review → Test → Evidence, powered by GitHub Copilot",
-  "version": "1.5.3",
+  "version": "1.6.0",
   "publisher": "auto-spec-kit",
   "author": {
     "name": "nam.hotrung190920",
@@ -68,6 +68,11 @@
       {
         "command": "autoSpecKit.generateUserStories",
         "title": "📋 Auto Spec Kit: Generate User Stories (PO/BA)",
+        "category": "Auto Spec Kit"
+      },
+      {
+        "command": "autoSpecKit.visualize",
+        "title": "🔭 Auto Spec Kit: Visualize Knowledge Graph",
         "category": "Auto Spec Kit"
       }
     ],
@@ -137,7 +142,8 @@
         { "command": "autoSpecKit.updateKB" },
         { "command": "autoSpecKit.ask" },
         { "command": "autoSpecKit.selectModel" },
-        { "command": "autoSpecKit.generateUserStories" }
+        { "command": "autoSpecKit.generateUserStories" },
+        { "command": "autoSpecKit.visualize" }
       ],
       "editor/context": [
         {

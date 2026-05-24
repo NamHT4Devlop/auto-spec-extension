@@ -13,6 +13,7 @@ import { reviewCurrentFile } from './workflow/review-file';
 import { updateKBStandalone } from './workflow/update-kb';
 import { askAboutCodebase } from './workflow/ask-kb';
 import { generateUserStories } from './workflow/generate-user-stories';
+import { visualizeKnowledgeBase } from './workflow/visualize-kb';
 
 export function activate(context: vscode.ExtensionContext): void {
   const ch = initChannel('Auto Spec Kit');
@@ -192,6 +193,24 @@ export function activate(context: vscode.ExtensionContext): void {
           }
         }
       });
+    })
+  );
+
+  // ── Command: Visualize Knowledge Base ───────────────────────────────────
+  context.subscriptions.push(
+    vscode.commands.registerCommand('autoSpecKit.visualize', async () => {
+      const root = getRoot(); if (!root) { return; }
+      ch.show(true);
+      log(`\n╔═══════════════════════════════════════════════════════════════╗`);
+      log(`║         🔭  AUTO SPEC KIT — KNOWLEDGE GRAPH                   ║`);
+      log(`╚═══════════════════════════════════════════════════════════════╝`);
+      log(`\nWorkspace: ${root}\n`);
+      try {
+        await visualizeKnowledgeBase(root, context);
+      } catch (err: any) {
+        log(`\n❌ ERROR: ${err?.message ?? err}`);
+        vscode.window.showErrorMessage(`Auto Spec Kit Visualize: ${err?.message ?? err}`);
+      }
     })
   );
 

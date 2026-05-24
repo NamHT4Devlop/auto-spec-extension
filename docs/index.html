@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Auto Spec Kit v1.5.3 — Architecture Diagrams</title>
+<title>Auto Spec Kit v1.6.0 — Architecture &amp; Knowledge Graph</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -107,9 +107,9 @@
 <body>
 
 <header>
-  <h1>🚀 Auto Spec Kit — Architecture Diagrams</h1>
+  <h1>🚀 Auto Spec Kit — Architecture &amp; Knowledge Graph</h1>
   <p>
-    <span class="badge">v1.5.3</span>
+    <span class="badge">v1.6.0</span>
     VS Code Extension · GitHub Copilot · vscode.lm API
   </p>
 </header>
@@ -119,6 +119,7 @@
   <div class="tab" onclick="show('workflow', this)">🔄 Run Task Pipeline</div>
   <div class="tab" onclick="show('components', this)">🧩 Component Detail</div>
   <div class="tab" onclick="show('kb', this)">📚 Knowledge Base Flow</div>
+  <div class="tab" onclick="show('visualize', this)">🔭 Visualize Knowledge Graph</div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════
@@ -737,6 +738,180 @@
     <div class="legend-item"><div class="legend-dot" style="background:#fef3c7; border:1px solid #eab308"></div>13-business-rules.md ★ most important</div>
     <div class="legend-item"><div class="legend-dot" style="background:#f0fdf4; border:1px solid #4ade80"></div>review-skills.md ★ injected into every review</div>
     <div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div>Learning loop — KB grows with each task</div>
+  </div>
+</div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     PANEL 5 — VISUALIZE KNOWLEDGE GRAPH (v1.6.0)
+════════════════════════════════════════════════════════════ -->
+<div class="panel" id="visualize">
+<div class="diagram-card">
+  <h2>🔭 Visualize Knowledge Graph — v1.6.0</h2>
+  <p>
+    New in v1.6.0: <strong>Auto Spec Kit: Visualize Knowledge Graph</strong> command opens a D3.js force-directed
+    interactive graph of your project — directly in VS Code as a Webview Panel, and saves a standalone HTML file.
+    Combines KB markdown analysis with live TypeScript import parsing to build nodes and edges automatically.
+  </p>
+
+  <svg viewBox="0 0 880 580" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="va" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#64748b"/></marker>
+      <marker id="vb" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#4f8ef7"/></marker>
+      <marker id="vc" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#34c78a"/></marker>
+    </defs>
+
+    <text x="440" y="26" text-anchor="middle" font-size="15" fill="#1e293b" font-weight="800">Knowledge Graph Visualization — Data Flow &amp; Output</text>
+
+    <!-- ── INPUTS (left column) ── -->
+    <text x="150" y="60" text-anchor="middle" font-size="11" fill="#1d4ed8" font-weight="700">① INPUTS</text>
+
+    <!-- KB files box -->
+    <rect x="30" y="72" width="240" height="56" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="150" y="94" text-anchor="middle" font-size="12" fill="#1e40af" font-weight="700">knowledge-base/ (15 files)</text>
+    <text x="150" y="110" text-anchor="middle" font-size="10" fill="#3b82f6">domain model · arch · flows · modules</text>
+    <text x="150" y="122" text-anchor="middle" font-size="10" fill="#3b82f6">business-overview · conventions …</text>
+
+    <!-- src/ files box -->
+    <rect x="30" y="148" width="240" height="56" rx="8" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
+    <text x="150" y="170" text-anchor="middle" font-size="12" fill="#15803d" font-weight="700">src/ TypeScript (19 files)</text>
+    <text x="150" y="186" text-anchor="middle" font-size="10" fill="#16a34a">import/export dependency parsing</text>
+    <text x="150" y="198" text-anchor="middle" font-size="10" fill="#16a34a">extension · workflow · utils · types</text>
+
+    <!-- ── GRAPH BUILDER (center) ── -->
+    <text x="440" y="60" text-anchor="middle" font-size="11" fill="#7c3aed" font-weight="700">② GRAPH BUILDER</text>
+
+    <rect x="320" y="72" width="240" height="96" rx="8" fill="#faf5ff" stroke="#7c3aed" stroke-width="1.5"/>
+    <text x="440" y="96" text-anchor="middle" font-size="12" fill="#6d28d9" font-weight="700">graph-builder.ts</text>
+    <text x="440" y="114" text-anchor="middle" font-size="10" fill="#7c3aed">buildArchGraph()  →  arch nodes/edges</text>
+    <text x="440" y="128" text-anchor="middle" font-size="10" fill="#7c3aed">buildFileGraph()  →  file import edges</text>
+    <text x="440" y="142" text-anchor="middle" font-size="10" fill="#7c3aed">buildKBGraph()   →  domain nodes/edges</text>
+    <text x="440" y="156" text-anchor="middle" font-size="10" fill="#7c3aed">→ GraphData JSON  (nodes[ ] + edges[ ])</text>
+
+    <!-- arrows: inputs → builder -->
+    <line x1="270" y1="100" x2="318" y2="110" stroke="#3b82f6" stroke-width="1.5" marker-end="url(#vb)"/>
+    <line x1="270" y1="176" x2="318" y2="140" stroke="#16a34a" stroke-width="1.5" marker-end="url(#vc)"/>
+
+    <!-- ── HTML BUILDER (center-right) ── -->
+    <rect x="320" y="200" width="240" height="56" rx="8" fill="#fff7ed" stroke="#f97316" stroke-width="1.5"/>
+    <text x="440" y="222" text-anchor="middle" font-size="12" fill="#c2410c" font-weight="700">html-builder.ts</text>
+    <text x="440" y="238" text-anchor="middle" font-size="10" fill="#f97316">buildKnowledgeGraphHtml(graphData)</text>
+    <text x="440" y="250" text-anchor="middle" font-size="10" fill="#f97316">Inlines D3.js · self-contained HTML</text>
+
+    <!-- arrow: builder → html -->
+    <line x1="440" y1="168" x2="440" y2="198" stroke="#7c3aed" stroke-width="1.5" marker-end="url(#va)"/>
+
+    <!-- ── OUTPUTS (right column) ── -->
+    <text x="730" y="60" text-anchor="middle" font-size="11" fill="#b45309" font-weight="700">③ OUTPUTS</text>
+
+    <!-- Webview Panel -->
+    <rect x="610" y="72" width="240" height="56" rx="8" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.5"/>
+    <text x="730" y="94" text-anchor="middle" font-size="12" fill="#92400e" font-weight="700">VS Code Webview Panel</text>
+    <text x="730" y="110" text-anchor="middle" font-size="10" fill="#b45309">Opens inside editor — Tab 1 of VS Code</text>
+    <text x="730" y="122" text-anchor="middle" font-size="10" fill="#b45309">postMessage ↔ node click → open file</text>
+
+    <!-- HTML file -->
+    <rect x="610" y="148" width="240" height="56" rx="8" fill="#fce7f3" stroke="#db2777" stroke-width="1.5"/>
+    <text x="730" y="170" text-anchor="middle" font-size="12" fill="#9d174d" font-weight="700">knowledge-graph-YYYY-MM-DD.html</text>
+    <text x="730" y="186" text-anchor="middle" font-size="10" fill="#db2777">Saved to spec-kit-sessions/</text>
+    <text x="730" y="198" text-anchor="middle" font-size="10" fill="#db2777">Shareable · no server needed</text>
+
+    <!-- arrows: html → outputs -->
+    <line x1="560" y1="228" x2="608" y2="100" stroke="#f97316" stroke-width="1.5" marker-end="url(#va)"/>
+    <line x1="560" y1="236" x2="608" y2="176" stroke="#f97316" stroke-width="1.5" marker-end="url(#va)"/>
+
+    <!-- ── D3 GRAPH FEATURES (bottom) ── -->
+    <text x="440" y="310" text-anchor="middle" font-size="11" fill="#0f172a" font-weight="700">④ D3.js INTERACTIVE GRAPH FEATURES</text>
+
+    <!-- Tab bar mockup -->
+    <rect x="30" y="322" width="820" height="34" rx="6" fill="#0d1117" stroke="#30363d" stroke-width="1"/>
+    <rect x="38" y="328" width="42" height="22" rx="4" fill="#58a6ff22" stroke="#58a6ff" stroke-width="1"/>
+    <text x="59" y="343" text-anchor="middle" font-size="9" fill="#58a6ff" font-weight="700">All</text>
+    <rect x="86" y="328" width="82" height="22" rx="4" fill="none" stroke="#30363d" stroke-width="1"/>
+    <text x="127" y="343" text-anchor="middle" font-size="9" fill="#8b949e">Architecture</text>
+    <rect x="174" y="328" width="64" height="22" rx="4" fill="none" stroke="#30363d" stroke-width="1"/>
+    <text x="206" y="343" text-anchor="middle" font-size="9" fill="#8b949e">Workflow</text>
+    <rect x="244" y="328" width="72" height="22" rx="4" fill="none" stroke="#30363d" stroke-width="1"/>
+    <text x="280" y="343" text-anchor="middle" font-size="9" fill="#8b949e">Domain/KB</text>
+    <rect x="322" y="328" width="78" height="22" rx="4" fill="none" stroke="#30363d" stroke-width="1"/>
+    <text x="361" y="343" text-anchor="middle" font-size="9" fill="#8b949e">Source Files</text>
+    <!-- search box mockup -->
+    <rect x="580" y="328" width="120" height="22" rx="4" fill="#21262d" stroke="#30363d" stroke-width="1"/>
+    <text x="640" y="343" text-anchor="middle" font-size="9" fill="#8b949e">🔍  Search nodes…</text>
+
+    <!-- Graph canvas mockup (dark) -->
+    <rect x="30" y="362" width="560" height="190" rx="6" fill="#0d1117" stroke="#30363d" stroke-width="1"/>
+
+    <!-- Simulated force graph nodes -->
+    <circle cx="200" cy="440" r="18" fill="#4f8ef7" opacity="0.9"/>
+    <text x="200" y="444" text-anchor="middle" font-size="8" fill="#fff">extension.ts</text>
+    <circle cx="120" cy="400" r="14" fill="#34c78a" opacity="0.9"/>
+    <text x="120" y="404" text-anchor="middle" font-size="7" fill="#fff">run-task</text>
+    <circle cx="280" cy="400" r="14" fill="#34c78a" opacity="0.9"/>
+    <text x="280" y="404" text-anchor="middle" font-size="7" fill="#fff">generate-kb</text>
+    <circle cx="120" cy="490" r="14" fill="#34c78a" opacity="0.9"/>
+    <text x="120" y="494" text-anchor="middle" font-size="7" fill="#fff">review-file</text>
+    <circle cx="340" cy="480" r="12" fill="#f7a34f" opacity="0.9"/>
+    <text x="340" y="484" text-anchor="middle" font-size="7" fill="#fff">copilot.ts</text>
+    <circle cx="80" cy="450" r="10" fill="#f7a34f" opacity="0.9"/>
+    <text x="80" y="454" text-anchor="middle" font-size="7" fill="#fff">git-utils</text>
+    <circle cx="380" cy="410" r="10" fill="#9b59b6" opacity="0.9"/>
+    <text x="380" y="414" text-anchor="middle" font-size="7" fill="#fff">kb-steps</text>
+    <circle cx="200" cy="510" r="12" fill="#9b59b6" opacity="0.9"/>
+    <text x="200" y="514" text-anchor="middle" font-size="7" fill="#fff">knowledge-base/</text>
+    <circle cx="300" cy="520" r="10" fill="#e74c3c" opacity="0.9"/>
+    <text x="300" y="524" text-anchor="middle" font-size="7" fill="#fff">domain</text>
+    <!-- edges -->
+    <line x1="200" y1="422" x2="128" y2="414" stroke="#58a6ff44" stroke-width="1.2"/>
+    <line x1="200" y1="422" x2="272" y2="414" stroke="#58a6ff44" stroke-width="1.2"/>
+    <line x1="200" y1="458" x2="128" y2="476" stroke="#58a6ff44" stroke-width="1.2"/>
+    <line x1="120" y1="414" x2="340" y2="466" stroke="#3fb95044" stroke-width="1" stroke-dasharray="3 2"/>
+    <line x1="280" y1="414" x2="340" y2="466" stroke="#3fb95044" stroke-width="1" stroke-dasharray="3 2"/>
+    <line x1="120" y1="476" x2="88" y2="460" stroke="#3fb95044" stroke-width="1"/>
+    <line x1="200" y1="458" x2="200" y2="498" stroke="#9b59b644" stroke-width="1" stroke-dasharray="3 2"/>
+    <line x1="280" y1="414" x2="388" y2="416" stroke="#f7a34f44" stroke-width="1"/>
+
+    <!-- Detail panel mockup (right side of canvas) -->
+    <rect x="596" y="362" width="254" height="190" rx="6" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <text x="723" y="382" text-anchor="middle" font-size="10" fill="#e6edf3" font-weight="700">extension.ts</text>
+    <rect x="606" y="387" width="60" height="14" rx="7" fill="#4f8ef7"/>
+    <text x="636" y="398" text-anchor="middle" font-size="8" fill="#fff">commands</text>
+    <text x="610" y="416" font-size="9" fill="#8b949e">activate() — registers all 8</text>
+    <text x="610" y="428" font-size="9" fill="#8b949e">commands and wires deps.</text>
+    <text x="610" y="446" font-size="8" fill="#8b949e" font-weight="700">OUTGOING (8)</text>
+    <text x="610" y="458" font-size="8" fill="#8b949e">→ run-task  (calls)</text>
+    <text x="610" y="469" font-size="8" fill="#8b949e">→ generate-kb  (calls)</text>
+    <text x="610" y="480" font-size="8" fill="#8b949e">→ visualize-kb  (calls)</text>
+    <text x="610" y="491" font-size="8" fill="#8b949e">→ review-file  (calls)</text>
+    <rect x="606" y="503" width="70" height="16" rx="4" fill="#58a6ff"/>
+    <text x="641" y="515" text-anchor="middle" font-size="8" fill="#fff">📂 Open File</text>
+
+    <!-- Layer legend -->
+    <rect x="600" y="362" width="1" height="190" fill="#30363d"/>
+
+    <!-- Bottom legend row -->
+    <rect x="30" y="558" width="820" height="24" rx="4" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <circle cx="60" cy="570" r="5" fill="#4f8ef7"/>
+    <text x="70" y="574" font-size="8" fill="#8b949e">Commands</text>
+    <circle cx="140" cy="570" r="5" fill="#34c78a"/>
+    <text x="150" y="574" font-size="8" fill="#8b949e">Workflow</text>
+    <circle cx="210" cy="570" r="5" fill="#f7a34f"/>
+    <text x="220" y="574" font-size="8" fill="#8b949e">Utils</text>
+    <circle cx="265" cy="570" r="5" fill="#9b59b6"/>
+    <text x="275" y="574" font-size="8" fill="#8b949e">Storage</text>
+    <circle cx="330" cy="570" r="5" fill="#e74c3c"/>
+    <text x="340" y="574" font-size="8" fill="#8b949e">Domain / KB</text>
+    <text x="500" y="574" font-size="8" fill="#8b949e">Click node → detail panel · Drag · Zoom (+ / −) · Search · 5 view tabs</text>
+  </svg>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#4f8ef7"></div>Commands layer</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#34c78a"></div>Workflow layer</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#f7a34f"></div>Utils layer</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#9b59b6"></div>Storage layer</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#e74c3c"></div>Domain / KB layer</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#95a5a6"></div>External (VS Code API, Copilot)</div>
   </div>
 </div>
 </div>

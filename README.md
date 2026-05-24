@@ -1,4 +1,4 @@
-# 🚀 Auto Spec Kit — v1.5.3
+# 🚀 Auto Spec Kit — v1.6.0
 
 > **Automate the full development workflow: Requirement → Plan → Code → Review → Test → Evidence**  
 > Powered by **GitHub Copilot** (`vscode.lm` API) — no external API keys required.
@@ -21,7 +21,8 @@ Auto Spec Kit is a VS Code extension that turns a one-line task description into
   - [Update Knowledge Base](#4-update-knowledge-base)
   - [Ask About Codebase](#5-ask-about-codebase)
   - [Generate User Stories (PO/BA)](#6-generate-user-stories-poba)
-  - [Select Model](#7-select-model)
+  - [Visualize Knowledge Graph](#7-visualize-knowledge-graph)
+  - [Select Model](#8-select-model)
 - [Keyboard Shortcuts](#-keyboard-shortcuts)
 - [Configuration Reference](#-configuration-reference)
 - [Knowledge Base](#-knowledge-base)
@@ -64,7 +65,7 @@ Traditional AI coding assistants answer one question at a time. Auto Spec Kit ru
 
 ### From VSIX (recommended)
 
-1. Download `auto-spec-kit-1.5.3.vsix`
+1. Download `auto-spec-kit-1.6.0.vsix`
 2. Open VS Code → Extensions panel (`Ctrl+Shift+X`)
 3. Click **⋯ → Install from VSIX…**
 4. Select the downloaded file
@@ -106,6 +107,7 @@ npx @vscode/vsce package --no-dependencies --allow-missing-repository
 | 📚 **Update Knowledge Base** | *(command palette)* | Merge changes from a completed task into KB |
 | 💬 **Ask About Codebase** | *(command palette / explorer right-click)* | Natural language Q&A against KB |
 | 📋 **Generate User Stories** | `Ctrl+Shift+U` | PO/BA workflow: Epic → Features → User Stories → HTML |
+| 🔭 **Visualize Knowledge Graph** | *(command palette)* | D3.js force graph: architecture, modules, domain, files |
 | 🤖 **Select Model** | *(command palette)* | Browse and choose GitHub Copilot model |
 
 All commands are accessible via the **Command Palette** (`Ctrl+Shift+P` → type `Auto Spec Kit`).
@@ -306,7 +308,33 @@ Both files are saved to `spec-kit-sessions/<timestamp>/` and opened automaticall
 
 ---
 
-### 7. Select Model
+
+### 7. Visualize Knowledge Graph
+
+**Access:** Command Palette → `Auto Spec Kit: Visualize Knowledge Graph`
+
+Generates an interactive D3.js force-directed knowledge graph of your project and opens it as a **VS Code Webview Panel** — while also saving a standalone HTML file to `spec-kit-sessions/`.
+
+The graph is built from two sources automatically:
+- **KB files** in `knowledge-base/` — domain model, architecture, business flows, module relationships
+- **TypeScript source** in `src/` — actual import/export dependency graph
+
+**Graph features:**
+
+| Feature | Details |
+|---|---|
+| 5 View tabs | All · Architecture · Workflow · Domain / KB · Source Files |
+| Force-directed layout | D3.js simulation with drag, zoom, pan |
+| Color-coded layers | Commands (blue) · Workflow (green) · Utils (orange) · Storage (purple) · Domain (red) |
+| Node click | Detail panel slides in: description, connections, "Open File" button |
+| Real-time search | Fuzzy match by name or description |
+| Arrow edge types | `imports` · `calls` · `depends` · `flows-to` · `defines` |
+| HTML export | Self-contained file saved to `spec-kit-sessions/knowledge-graph-YYYY-MM-DD.html` |
+
+**Does not require a KB to be generated first** — the graph can be run on any project at any time and will use whatever KB files exist alongside live source analysis.
+
+---
+### 8. Select Model
 
 **Access:** Command Palette → `Auto Spec Kit: Select Model`
 
@@ -588,7 +616,16 @@ Configure `autoSpecKit.language` to tune code generation:
 
 ## 📝 Changelog
 
-### v1.5.3 (current)
+### v1.6.0 (current)
+- ✅ Added **Visualize Knowledge Graph** command — D3.js force-directed interactive graph
+- ✅ 5 view tabs: All, Architecture, Workflow, Domain/KB, Source Files
+- ✅ Auto-parses `knowledge-base/` markdown + `src/` TypeScript imports to build nodes/edges
+- ✅ VS Code Webview Panel (in-editor) + saves self-contained HTML file for sharing
+- ✅ Node click → detail panel with description, connections, and "Open File" shortcut
+- ✅ Real-time search, zoom controls, color-coded layers, arrow edge types
+- ✅ Author metadata (name, email, GitHub, repository, bugs URL) added to extension manifest
+
+### v1.5.3
 - ✅ Added **Generate User Stories (PO/BA)** command (`Ctrl+Shift+U`)
 - ✅ Interactive HTML sprint board with priority/role/sprint filters
 - ✅ Structured JSON output (`EpicOutput` schema) for integration with PM tools

@@ -49,6 +49,7 @@ const review_file_1 = require("./workflow/review-file");
 const update_kb_1 = require("./workflow/update-kb");
 const ask_kb_1 = require("./workflow/ask-kb");
 const generate_user_stories_1 = require("./workflow/generate-user-stories");
+const visualize_kb_1 = require("./workflow/visualize-kb");
 function activate(context) {
     const ch = (0, logger_1.initChannel)('Auto Spec Kit');
     // ── Helper: get workspace root ──────────────────────────────────
@@ -242,6 +243,25 @@ function activate(context) {
                 }
             }
         });
+    }));
+    // ── Command: Visualize Knowledge Base ───────────────────────────────────
+    context.subscriptions.push(vscode.commands.registerCommand('autoSpecKit.visualize', async () => {
+        const root = getRoot();
+        if (!root) {
+            return;
+        }
+        ch.show(true);
+        (0, logger_1.log)(`\n╔═══════════════════════════════════════════════════════════════╗`);
+        (0, logger_1.log)(`║         🔭  AUTO SPEC KIT — KNOWLEDGE GRAPH                   ║`);
+        (0, logger_1.log)(`╚═══════════════════════════════════════════════════════════════╝`);
+        (0, logger_1.log)(`\nWorkspace: ${root}\n`);
+        try {
+            await (0, visualize_kb_1.visualizeKnowledgeBase)(root, context);
+        }
+        catch (err) {
+            (0, logger_1.log)(`\n❌ ERROR: ${err?.message ?? err}`);
+            vscode.window.showErrorMessage(`Auto Spec Kit Visualize: ${err?.message ?? err}`);
+        }
     }));
     context.subscriptions.push(ch);
 }
