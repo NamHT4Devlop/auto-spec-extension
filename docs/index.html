@@ -79,7 +79,7 @@
     margin-bottom: 16px;
     line-height: 1.5;
   }
-  svg { width: 100%; height: auto; display: block; }
+  svg { width: 100%; height: auto; display: block; overflow: hidden; }
   svg text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
   .legend {
     display: flex;
@@ -422,13 +422,13 @@
 
     <rect x="24" y="580" width="388" height="56" rx="8" fill="#ea580c"/>
     <text x="218" y="600" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">12 · Evidence Document</text>
-    <text x="218" y="614" text-anchor="middle" font-size="8.5" fill="#fed7aa">Requirement + Plan + Code + Review + Tests + Results → single .md file</text>
-    <text x="218" y="627" text-anchor="middle" font-size="8.5" fill="#fed7aa">Complete audit trail saved to session folder</text>
+    <text x="218" y="611" text-anchor="middle" font-size="8.5" fill="#fed7aa">Req · Plan · Code · Review · Tests → .md</text>
+    <text x="218" y="624" text-anchor="middle" font-size="8.5" fill="#fed7aa">Audit trail saved to session folder</text>
 
     <rect x="426" y="580" width="428" height="56" rx="8" fill="#b45309"/>
     <text x="640" y="600" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">13 · Update Knowledge Base</text>
-    <text x="640" y="614" text-anchor="middle" font-size="8.5" fill="#fde68a">Detect new domain concepts · merge delta into affected KB files</text>
-    <text x="640" y="627" text-anchor="middle" font-size="8.5" fill="#fde68a">⭐ Yes — update KB  |  ⏭ No — skip (not recommended)</text>
+    <text x="640" y="611" text-anchor="middle" font-size="8.5" fill="#fde68a">Detect new concepts · merge delta into KB</text>
+    <text x="640" y="624" text-anchor="middle" font-size="8.5" fill="#fde68a">⭐ Yes — update KB  |  ⏭ No — skip</text>
 
     <line x1="412" y1="608" x2="424" y2="608" stroke="#fed7aa" stroke-width="1.5" marker-end="url(#wa)"/>
 
@@ -469,16 +469,18 @@
     <!-- ENTRY POINT -->
     <rect x="310" y="34" width="260" height="60" rx="9" fill="#1e293b"/>
     <text x="440" y="56" text-anchor="middle" font-size="11" fill="#fff" font-weight="700">extension.ts  (Entry Point)</text>
-    <text x="440" y="72" text-anchor="middle" font-size="9" fill="#94a3b8">activate() · registerCommand() · getOrPickModel()</text>
-    <text x="440" y="84" text-anchor="middle" font-size="9" fill="#64748b">Registers all 7 commands on activation</text>
+    <text x="440" y="72" text-anchor="middle" font-size="9" fill="#94a3b8">activate() · registerCommand() · resolveModel()</text>
+    <text x="440" y="84" text-anchor="middle" font-size="9" fill="#64748b">Registers all 8 commands on activation</text>
 
     <!-- CONSTANTS LAYER -->
     <rect x="12" y="120" width="860" height="88" rx="9" fill="#fef9c3" stroke="#fde047" stroke-width="1.5"/>
     <text x="28" y="138" font-size="9.5" fill="#854d0e" font-weight="700" letter-spacing="0.8">CONSTANTS</text>
     <rect x="24" y="146" width="828" height="52" rx="7" fill="#fff" stroke="#fde047" stroke-width="1"/>
     <text x="438" y="167" text-anchor="middle" font-size="10" fill="#78350f" font-weight="700">kb-steps.ts</text>
-    <text x="438" y="182" text-anchor="middle" font-size="9" fill="#92400e">KB_STEPS[15]: Array of {label, file, prompt} — 15 structured prompts for codebase analysis</text>
-    <text x="438" y="195" text-anchor="middle" font-size="8.5" fill="#a16207">Each prompt targets one knowledge domain: overview · tech stack · domain model · API · auth · DB · integrations · config · flows · errors · testing · biz-rules · perf · debt · review-skills</text>
+    <text x="438" y="179" text-anchor="middle" font-size="9" fill="#92400e">KB_STEPS[15] — 15 structured Copilot prompts</text>
+    <text x="438" y="191" text-anchor="middle" font-size="8.5" fill="#92400e">Array of &#123; label, file, prompt &#125; for codebase analysis</text>
+    <text x="438" y="204" text-anchor="middle" font-size="8" fill="#a16207">Domains: overview · tech-stack · domain-model · API · auth · DB</text>
+    <text x="438" y="215" text-anchor="middle" font-size="8" fill="#a16207">config · flows · errors · testing · biz-rules · perf · debt · review-skills</text>
     <line x1="440" y1="94" x2="440" y2="118" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3,2" marker-end="url(#ca)"/>
 
     <!-- UTILS LAYER -->
@@ -500,20 +502,20 @@
     <!-- git-utils.ts -->
     <rect x="182" y="250" width="148" height="132" rx="7" fill="#fff" stroke="#fdba74" stroke-width="1.5"/>
     <text x="256" y="270" text-anchor="middle" font-size="9.5" fill="#9a3412" font-weight="700">git-utils.ts</text>
-    <text x="256" y="286" text-anchor="middle" font-size="8" fill="#7c2d12">loadGitContext(root, files)</text>
+    <text x="256" y="286" text-anchor="middle" font-size="8" fill="#7c2d12">loadGitContext()</text>
     <text x="256" y="300" text-anchor="middle" font-size="8" fill="#78350f">→ defaultBranch diff</text>
     <text x="256" y="313" text-anchor="middle" font-size="8" fill="#78350f">→ workingTree diff</text>
     <text x="256" y="326" text-anchor="middle" font-size="8" fill="#78350f">→ recent commits</text>
-    <text x="256" y="341" text-anchor="middle" font-size="7.5" fill="#94a3b8">formatGitContextForPrompt()</text>
+    <text x="256" y="341" text-anchor="middle" font-size="7.5" fill="#94a3b8">formatGitContext()</text>
     <text x="256" y="354" text-anchor="middle" font-size="7.5" fill="#94a3b8">→ markdown block</text>
     <text x="256" y="369" text-anchor="middle" font-size="7.5" fill="#fdba74" font-weight="600">run-task + review-file</text>
 
     <!-- file-utils.ts -->
     <rect x="340" y="250" width="148" height="132" rx="7" fill="#fff" stroke="#fdba74" stroke-width="1.5"/>
     <text x="414" y="270" text-anchor="middle" font-size="9.5" fill="#9a3412" font-weight="700">file-utils.ts</text>
-    <text x="414" y="286" text-anchor="middle" font-size="8" fill="#78350f">loadKnowledgeBase(root, path)</text>
+    <text x="414" y="286" text-anchor="middle" font-size="8" fill="#78350f">loadKnowledgeBase()</text>
     <text x="414" y="300" text-anchor="middle" font-size="8" fill="#78350f">→ concat all KB .md</text>
-    <text x="414" y="314" text-anchor="middle" font-size="8" fill="#78350f">loadReviewSkills(root, ext)</text>
+    <text x="414" y="314" text-anchor="middle" font-size="8" fill="#78350f">loadReviewSkills()</text>
     <text x="414" y="328" text-anchor="middle" font-size="8" fill="#78350f">→ KB first, fallback</text>
     <text x="414" y="342" text-anchor="middle" font-size="8" fill="#78350f">writeSessionFile()</text>
     <text x="414" y="356" text-anchor="middle" font-size="7.5" fill="#94a3b8">applyFilesToProject()</text>
@@ -533,23 +535,23 @@
     <!-- project-scanner + html-builder + checkpoint + logger -->
     <rect x="656" y="250" width="200" height="132" rx="7" fill="#fff" stroke="#fdba74" stroke-width="1.5"/>
     <text x="756" y="268" text-anchor="middle" font-size="9" fill="#9a3412" font-weight="700">project-scanner.ts</text>
-    <text x="756" y="281" text-anchor="middle" font-size="7.5" fill="#78350f">scanProject() · file tree walk</text>
+    <text x="756" y="281" text-anchor="middle" font-size="7.5" fill="#78350f">scanProject() · file tree</text>
     <line x1="660" y1="290" x2="852" y2="290" stroke="#fed7aa" stroke-width="0.5"/>
     <text x="756" y="305" text-anchor="middle" font-size="9" fill="#9a3412" font-weight="700">html-builder.ts</text>
-    <text x="756" y="318" text-anchor="middle" font-size="7.5" fill="#78350f">buildUserStoriesHtml() · sprint board</text>
+    <text x="756" y="318" text-anchor="middle" font-size="7.5" fill="#78350f">buildUserStoriesHtml()</text>
     <line x1="660" y1="327" x2="852" y2="327" stroke="#fed7aa" stroke-width="0.5"/>
     <text x="756" y="342" text-anchor="middle" font-size="9" fill="#9a3412" font-weight="700">checkpoint.ts</text>
-    <text x="756" y="355" text-anchor="middle" font-size="7.5" fill="#78350f">showCheckpoint() · QuickPick pause</text>
+    <text x="756" y="355" text-anchor="middle" font-size="7.5" fill="#78350f">showCheckpoint()</text>
     <line x1="660" y1="364" x2="852" y2="364" stroke="#fed7aa" stroke-width="0.5"/>
     <text x="756" y="378" text-anchor="middle" font-size="9" fill="#9a3412" font-weight="700">logger.ts</text>
-    <text x="756" y="390" text-anchor="middle" font-size="7.5" fill="#78350f">getChannel() · log() · stepHeader()</text>
+    <text x="756" y="390" text-anchor="middle" font-size="7.5" fill="#78350f">log() · stepHeader()</text>
 
     <!-- Arrow entry → utils -->
     <line x1="440" y1="208" x2="440" y2="222" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3,2" marker-end="url(#ca)"/>
 
     <!-- WORKFLOW LAYER -->
     <rect x="12" y="412" width="860" height="170" rx="9" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5"/>
-    <text x="28" y="430" font-size="9.5" fill="#16a34a" font-weight="700" letter-spacing="0.8">WORKFLOW LAYER — 6 modules (each uses copilot.ts + file-utils.ts)</text>
+    <text x="28" y="430" font-size="9.5" fill="#16a34a" font-weight="700" letter-spacing="0.8">WORKFLOW LAYER — 7 modules (all use copilot.ts + file-utils.ts)</text>
 
     <rect x="24" y="438" width="158" height="132" rx="7" fill="#fff" stroke="#4ade80" stroke-width="1.5"/>
     <text x="103" y="457" text-anchor="middle" font-size="9.5" fill="#166534" font-weight="700">run-task.ts</text>
@@ -808,8 +810,8 @@
     <!-- Webview Panel -->
     <rect x="610" y="72" width="240" height="56" rx="8" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.5"/>
     <text x="730" y="94" text-anchor="middle" font-size="12" fill="#92400e" font-weight="700">VS Code Webview Panel</text>
-    <text x="730" y="110" text-anchor="middle" font-size="10" fill="#b45309">Opens inside editor — Tab 1 of VS Code</text>
-    <text x="730" y="122" text-anchor="middle" font-size="10" fill="#b45309">postMessage ↔ node click → open file</text>
+    <text x="730" y="110" text-anchor="middle" font-size="10" fill="#b45309">Opens inside VS Code editor</text>
+    <text x="730" y="122" text-anchor="middle" font-size="10" fill="#b45309">Click node → open source file</text>
 
     <!-- HTML file -->
     <rect x="610" y="148" width="240" height="56" rx="8" fill="#fce7f3" stroke="#db2777" stroke-width="1.5"/>
@@ -902,7 +904,7 @@
     <text x="275" y="574" font-size="8" fill="#8b949e">Storage</text>
     <circle cx="330" cy="570" r="5" fill="#e74c3c"/>
     <text x="340" y="574" font-size="8" fill="#8b949e">Domain / KB</text>
-    <text x="500" y="574" font-size="8" fill="#8b949e">Click node → detail panel · Drag · Zoom (+ / −) · Search · 5 view tabs</text>
+    <text x="480" y="574" font-size="8" fill="#8b949e">Click node → details · Drag · Zoom · Search · 5 tabs</text>
   </svg>
 
   <div class="legend">
