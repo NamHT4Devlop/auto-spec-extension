@@ -312,6 +312,45 @@
     transition: all 0.15s;
   }
   .header-author-link:hover { color: #e2e8f0; background: rgba(255,255,255,0.08); }
+  /* ── Role badges ── */
+  .role-bar {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border-left: 4px solid #e2e8f0;
+    background: #f8fafc;
+    font-size: 12px;
+    color: #475569;
+  }
+  .role-bar strong { color: #1e293b; font-size: 12px; }
+  .role-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+  .role-dev   { background: #dbeafe; color: #1d4ed8; border: 1px solid #93c5fd; }
+  .role-po    { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
+  .role-sm    { background: #f3e8ff; color: #6b21a8; border: 1px solid #d8b4fe; }
+  .role-all   { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+  .tab-roles  { display: inline-flex; gap: 3px; margin-left: 4px; vertical-align: middle; }
+  .tab-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .td-dev { background: #3b82f6; }
+  .td-po  { background: #f59e0b; }
+  .td-sm  { background: #7c3aed; }
+  .td-all { background: #22c55e; }
 </style>
 </head>
 <body>
@@ -344,12 +383,19 @@
 </header>
 
 <div class="tabs">
-  <div class="tab active" onclick="show('hld', this)">🏗 High-Level Design</div>
-  <div class="tab" onclick="show('workflow', this)">🔄 Run Task Pipeline</div>
-  <div class="tab" onclick="show('components', this)">🧩 Component Detail</div>
-  <div class="tab" onclick="show('kb', this)">📚 Knowledge Base Flow</div>
-  <div class="tab" onclick="show('visualize', this)">🔭 Visualize Knowledge Graph</div>
+  <div class="tab active" onclick="show('hld', this)">🏗 High-Level Design <span class="tab-roles"><span class="tab-dot td-all" title="All roles"></span></span></div>
+  <div class="tab" onclick="show('workflow', this)">🔄 Run Task Pipeline <span class="tab-roles"><span class="tab-dot td-dev" title="Developer"></span></span></div>
+  <div class="tab" onclick="show('components', this)">🧩 Component Detail <span class="tab-roles"><span class="tab-dot td-dev" title="Developer"></span></span></div>
+  <div class="tab" onclick="show('kb', this)">📚 Knowledge Base Flow <span class="tab-roles"><span class="tab-dot td-dev" title="Developer"></span><span class="tab-dot td-po" title="PO/BA"></span></span></div>
+  <div class="tab" onclick="show('visualize', this)">🔭 Knowledge Graph <span class="tab-roles"><span class="tab-dot td-dev" title="Developer"></span><span class="tab-dot td-sm" title="SM"></span></span></div>
   <div class="tab" onclick="show('setup', this)">⚙️ Setup &amp; Author</div>
+</div>
+<div style="text-align:center;margin-bottom:16px;font-size:11px;color:#94a3b8;display:flex;gap:14px;justify-content:center;align-items:center;flex-wrap:wrap">
+  <span style="font-weight:600;color:#64748b">Audience:</span>
+  <span><span class="tab-dot td-dev" style="display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px"></span><span style="color:#1d4ed8;font-weight:600">Developer</span></span>
+  <span><span class="tab-dot td-po" style="display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px"></span><span style="color:#92400e;font-weight:600">PO / BA</span></span>
+  <span><span class="tab-dot td-sm" style="display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px"></span><span style="color:#6b21a8;font-weight:600">Scrum Master / PM</span></span>
+  <span><span class="tab-dot td-all" style="display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px"></span><span style="color:#166534;font-weight:600">All roles</span></span>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════
@@ -358,6 +404,7 @@
 <div class="panel active" id="hld">
 <div class="diagram-card">
   <h2>High-Level Architecture</h2>
+  <div class="role-bar"><strong>Audience:</strong> <span class="role-chip role-all">👥 All roles</span> — Tổng quan kiến trúc hệ thống cho mọi người</div>
   <p>
     Shows the major layers of Auto Spec Kit: the command surface, orchestration core, workflow modules,
     utility helpers, and storage. All AI calls are routed through <code>callCopilot()</code> to the
@@ -543,6 +590,7 @@
 <div class="panel" id="workflow">
 <div class="diagram-card">
   <h2>Run Task — 13-Step Pipeline</h2>
+  <div class="role-bar"><strong>Audience:</strong> <span class="role-chip role-dev">💻 Developer</span> — Quy trình tự động hóa từ Requirement → Code → Test → Evidence</div>
   <p>
     The core command (<strong>Ctrl+Shift+K</strong>). Takes one task description and runs a 4-phase AI pipeline:
     Understand & Plan → Build & Review → Test → Close. Each step calls <code>callCopilot()</code> with
@@ -684,6 +732,7 @@
 <div class="panel" id="components">
 <div class="diagram-card">
   <h2>Component Detail — All TypeScript Modules</h2>
+  <div class="role-bar"><strong>Audience:</strong> <span class="role-chip role-dev">💻 Developer</span> — Cấu trúc module TypeScript, dependency graph, các layer trong extension</div>
   <p>
     Shows every <code>.ts</code> file in the extension, which layer it belongs to, what it exports,
     and how modules depend on each other. Arrows represent import / call relationships.
@@ -853,6 +902,7 @@
 <div class="panel" id="kb">
 <div class="diagram-card">
   <h2>Knowledge Base — Generation &amp; Usage Flow</h2>
+  <div class="role-bar"><strong>Audience:</strong> <span class="role-chip role-dev">💻 Developer</span> <span class="role-chip role-po">📋 PO / BA</span> — Cách KB được tạo ra, lưu trữ và inject vào mọi lệnh AI</div>
   <p>
     The Knowledge Base is the memory of Auto Spec Kit. This diagram shows how it is built from a project scan,
     how it is injected into every command, and how it grows over time with each completed task.
@@ -982,6 +1032,7 @@
 <div class="panel" id="visualize">
 <div class="diagram-card">
   <h2>🔭 Visualize Knowledge Graph — v1.6.0</h2>
+  <div class="role-bar"><strong>Audience:</strong> <span class="role-chip role-dev">💻 Developer</span> <span class="role-chip role-sm">📊 Scrum Master / PM</span> — Trực quan hóa kiến trúc dự án, module dependencies và KB domain</div>
   <p>
     New in v1.6.0: <strong>Auto Spec Kit: Visualize Knowledge Graph</strong> command opens a D3.js force-directed
     interactive graph of your project — directly in VS Code as a Webview Panel, and saves a standalone HTML file.
@@ -1156,16 +1207,16 @@
 <div class="panel" id="setup">
 <div class="setup-panel">
 
-  <!-- Author Card -->
+  <!-- ── Author Card ─────────────────────────────────────── -->
   <div class="author-card">
     <div class="author-avatar">👨‍💻</div>
     <div class="author-info">
       <h2>Nam Hoang Trung</h2>
-      <div class="role">Software Engineer &amp; Builder of Auto Spec Kit</div>
+      <div class="role">Software Engineer · Builder of Auto Spec Kit</div>
       <div class="author-links">
         <a class="author-link" href="https://github.com/NamHT4Devlop" target="_blank">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.2 11.38.6.1.82-.26.82-.57v-2c-3.34.72-4.04-1.6-4.04-1.6-.54-1.38-1.33-1.75-1.33-1.75-1.08-.74.08-.72.08-.72 1.2.08 1.83 1.23 1.83 1.23 1.06 1.82 2.78 1.3 3.46.99.1-.77.41-1.3.75-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.23-3.22-.12-.3-.53-1.52.12-3.18 0 0 1-.32 3.3 1.23a11.5 11.5 0 0 1 3-.4c1.02 0 2.04.13 3 .4 2.28-1.55 3.28-1.23 3.28-1.23.65 1.66.24 2.88.12 3.18.77.84 1.23 1.91 1.23 3.22 0 4.61-2.81 5.63-5.48 5.92.43.37.81 1.1.81 2.22v3.29c0 .32.22.68.82.57C20.56 21.8 24 17.3 24 12c0-6.63-5.37-12-12-12z"/></svg>
-          GitHub
+          @NamHT4Devlop
         </a>
         <a class="author-link" href="mailto:trungnam5513@gmail.com">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 7 10-7"/></svg>
@@ -1173,155 +1224,465 @@
         </a>
         <a class="author-link" href="https://github.com/NamHT4Devlop/auto-spec-extension" target="_blank">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
-          Repository
+          Source Code
+        </a>
+        <a class="author-link" href="https://github.com/NamHT4Devlop/auto-spec-extension/releases" target="_blank">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Releases
         </a>
         <a class="author-link" href="https://github.com/NamHT4Devlop/auto-spec-extension/issues" target="_blank">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          Issues
+          Bug Reports
         </a>
       </div>
     </div>
   </div>
 
-  <!-- About -->
-  <div class="setup-section">
-    <h3>🚀 About Auto Spec Kit</h3>
-    <p>
-      <strong>Auto Spec Kit</strong> is a VS Code extension that turns a one-line task description into a complete,
-      production-ready deliverable in a single command. It orchestrates <strong>GitHub Copilot</strong> through
-      a structured <strong>13-step pipeline</strong> — from planning to code generation, code review, test writing,
-      and evidence collection — while keeping a growing Knowledge Base that makes every subsequent task smarter.
-    </p>
-    <p>Uses the <code>vscode.lm</code> API to call GitHub Copilot directly — <strong>no external API keys required</strong>.</p>
-  </div>
-
-  <!-- Requirements -->
-  <div class="setup-section">
-    <h3>📦 Requirements</h3>
-    <ul class="req-list">
-      <li><span class="req-check">✓</span> <strong>VS Code</strong> <code>^1.90.0</code></li>
-      <li><span class="req-check">✓</span> <strong>GitHub Copilot</strong> subscription (Individual or Business)</li>
-      <li><span class="req-check">✓</span> <strong>GitHub Copilot Chat</strong> extension installed and active</li>
-      <li><span class="req-check">✓</span> Node.js (only needed if building from source)</li>
-    </ul>
-  </div>
-
-  <!-- Installation -->
-  <div class="setup-section">
-    <h3>🔧 Installation</h3>
-    <p><strong>From VSIX (recommended)</strong></p>
-    <ol class="steps-list">
-      <li>Download <code>auto-spec-kit-1.6.0.vsix</code> from the <a href="https://github.com/NamHT4Devlop/auto-spec-extension/releases" target="_blank" style="color:#3b82f6">Releases page</a></li>
-      <li>Open VS Code → Extensions panel <code>Ctrl+Shift+X</code></li>
-      <li>Click <strong>⋯ → Install from VSIX…</strong></li>
-      <li>Select the downloaded <code>.vsix</code> file</li>
-      <li>Reload VS Code when prompted</li>
-    </ol>
-    <p style="margin-top:14px"><strong>From Source</strong></p>
-    <div class="config-block">
-      <span class="comment"># Clone and build</span><br>
-      git clone https://github.com/NamHT4Devlop/auto-spec-extension.git<br>
-      cd auto-spec-extension<br>
-      npm install &amp;&amp; npm run compile<br>
-      npx @vscode/vsce package --no-dependencies<br>
-      <span class="comment"># Then install the generated .vsix from Extensions panel</span>
+  <!-- ── TOC ─────────────────────────────────────────────── -->
+  <div class="setup-section" style="padding:16px 24px">
+    <div style="display:flex;gap:24px;flex-wrap:wrap;font-size:12px">
+      <a href="#s-why" style="color:#3b82f6;text-decoration:none">💡 Why Auto Spec Kit</a>
+      <a href="#s-req" style="color:#3b82f6;text-decoration:none">📦 Requirements</a>
+      <a href="#s-install" style="color:#3b82f6;text-decoration:none">🔧 Installation</a>
+      <a href="#s-quickstart" style="color:#3b82f6;text-decoration:none">⚡ Quick Start</a>
+      <a href="#s-commands" style="color:#3b82f6;text-decoration:none">🎯 Commands</a>
+      <a href="#s-workflows" style="color:#3b82f6;text-decoration:none">📖 Workflows</a>
+      <a href="#s-shortcuts" style="color:#3b82f6;text-decoration:none">⌨️ Shortcuts</a>
+      <a href="#s-config" style="color:#3b82f6;text-decoration:none">⚙️ Configuration</a>
+      <a href="#s-kb" style="color:#3b82f6;text-decoration:none">🧠 Knowledge Base</a>
+      <a href="#s-outputs" style="color:#3b82f6;text-decoration:none">📁 Session Outputs</a>
+      <a href="#s-review" style="color:#3b82f6;text-decoration:none">🛡️ Review Skills</a>
+      <a href="#s-model" style="color:#3b82f6;text-decoration:none">🤖 Model Selection</a>
+      <a href="#s-tips" style="color:#3b82f6;text-decoration:none">💡 Tips</a>
+      <a href="#s-changelog" style="color:#3b82f6;text-decoration:none">📝 Changelog</a>
     </div>
   </div>
 
-  <!-- Quick Start -->
-  <div class="setup-section">
-    <h3>⚡ Quick Start</h3>
-    <ol class="steps-list">
-      <li>Install the extension (see above)</li>
-      <li>Open any project folder in VS Code</li>
-      <li>Press <strong>Cmd+Shift+B</strong> (Mac) / <strong>Ctrl+Shift+B</strong> (Win/Linux) → <strong>Generate Knowledge Base</strong> — scans your project and builds 16 analysis files in <code>knowledge-base/</code></li>
-      <li>Press <strong>Cmd+Shift+K</strong> / <strong>Ctrl+Shift+K</strong> → <strong>Run Task</strong> — describe what you want to build, e.g. <em>"Add email verification to user registration"</em></li>
-      <li>Watch the 13-step pipeline run in the Output panel, then review generated files in <code>spec-kit-sessions/</code></li>
-    </ol>
-  </div>
-
-  <!-- Commands -->
-  <div class="setup-section">
-    <h3>🎯 Commands Overview</h3>
-    <table class="cmd-table">
-      <thead>
-        <tr><th>Command</th><th>Shortcut</th><th>Description</th></tr>
-      </thead>
+  <!-- ── Why Auto Spec Kit ──────────────────────────────── -->
+  <div class="setup-section" id="s-why">
+    <h3>💡 Why Auto Spec Kit?</h3>
+    <p>Traditional AI coding assistants answer one question at a time. Auto Spec Kit runs a <strong>complete, multi-step workflow</strong> for each task — from requirement to production-ready deliverable in a single command.</p>
+    <table class="cmd-table" style="margin-top:10px">
+      <thead><tr><th>Without Auto Spec Kit</th><th>With Auto Spec Kit</th></tr></thead>
       <tbody>
-        <tr><td>🚀 Run Task</td><td><code>Ctrl+Shift+K</code></td><td>Full 13-step dev workflow for any requirement</td></tr>
-        <tr><td>📚 Generate Knowledge Base</td><td><code>Ctrl+Shift+B</code></td><td>Analyze codebase → build 16-file KB</td></tr>
-        <tr><td>🔍 Review Current File</td><td><em>Right-click menu</em></td><td>Two-phase code review with fix suggestions</td></tr>
-        <tr><td>📚 Update Knowledge Base</td><td><em>Command Palette</em></td><td>Merge task learnings back into KB</td></tr>
-        <tr><td>💬 Ask About Codebase</td><td><em>Command Palette</em></td><td>Natural language Q&amp;A against the Knowledge Base</td></tr>
-        <tr><td>📋 Generate User Stories</td><td><code>Ctrl+Shift+U</code></td><td>PO/BA workflow: Epic → Features → Stories → HTML</td></tr>
-        <tr><td>🔭 Visualize Knowledge Graph</td><td><em>Command Palette</em></td><td>D3.js force graph: architecture, modules, domain, files</td></tr>
-        <tr><td>🤖 Select Model</td><td><em>Command Palette</em></td><td>Browse and choose your GitHub Copilot model</td></tr>
+        <tr><td>Manually prompt Copilot for a plan</td><td>13-step pipeline runs automatically</td></tr>
+        <tr><td>No code review</td><td>Two-phase review: quality + business consistency</td></tr>
+        <tr><td>No tests written</td><td>Test scaffolding generated for every task</td></tr>
+        <tr><td>No documentation</td><td>Evidence files saved with every session</td></tr>
+        <tr><td>AI has no project context</td><td>Knowledge Base grows with every task</td></tr>
+        <tr><td>PO has to write stories manually</td><td>Epic → Sprint Board HTML generated in minutes</td></tr>
       </tbody>
     </table>
-    <p style="margin-top:10px;font-size:12px;color:#64748b">All commands: <strong>Ctrl+Shift+P</strong> → type <code>Auto Spec Kit</code></p>
   </div>
 
-  <!-- Keyboard Shortcuts -->
-  <div class="setup-section">
+  <!-- ── Requirements ──────────────────────────────────── -->
+  <div class="setup-section" id="s-req">
+    <h3>📦 Requirements</h3>
+    <ul class="req-list">
+      <li><span class="req-check">✓</span> <strong>VS Code</strong> <code>^1.90.0</code> — any edition (stable, insiders)</li>
+      <li><span class="req-check">✓</span> <strong>GitHub Copilot</strong> subscription — Individual or Business/Enterprise</li>
+      <li><span class="req-check">✓</span> <strong>GitHub Copilot Chat</strong> extension — installed and signed in</li>
+      <li><span class="req-check">✓</span> <strong>Node.js</strong> — only if building from source (not needed for VSIX install)</li>
+    </ul>
+    <p style="margin-top:10px;font-size:12px;color:#64748b">Uses the <code>vscode.lm</code> API to call Copilot directly inside VS Code — <strong>no Anthropic, OpenAI, or other API keys required</strong>.</p>
+  </div>
+
+  <!-- ── Installation ──────────────────────────────────── -->
+  <div class="setup-section" id="s-install">
+    <h3>🔧 Installation</h3>
+    <p><strong>Option A — From VSIX (recommended for most users)</strong></p>
+    <ol class="steps-list">
+      <li>Go to <a href="https://github.com/NamHT4Devlop/auto-spec-extension/releases" target="_blank" style="color:#3b82f6">Releases page</a> and download <code>auto-spec-kit-1.6.0.vsix</code></li>
+      <li>Open VS Code → Extensions panel (<code>Ctrl+Shift+X</code> / <code>Cmd+Shift+X</code>)</li>
+      <li>Click the <strong>⋯ (three dots)</strong> button at the top right of the Extensions panel</li>
+      <li>Select <strong>"Install from VSIX…"</strong></li>
+      <li>Browse to and select the downloaded <code>.vsix</code> file</li>
+      <li>Reload VS Code when prompted — the extension is now active</li>
+    </ol>
+    <p style="margin-top:16px"><strong>Option B — From Source (for contributors)</strong></p>
+    <div class="config-block">
+      <span class="comment"># 1. Clone the repository</span><br>
+      git clone https://github.com/NamHT4Devlop/auto-spec-extension.git<br>
+      cd auto-spec-extension<br><br>
+      <span class="comment"># 2. Install dependencies and compile TypeScript</span><br>
+      npm install<br>
+      npm run compile<br><br>
+      <span class="comment"># 3. Package into a .vsix file</span><br>
+      npx @vscode/vsce package --no-dependencies<br><br>
+      <span class="comment"># 4. Install the generated .vsix from the Extensions panel (Option A step 3–6)</span>
+    </div>
+  </div>
+
+  <!-- ── Quick Start ──────────────────────────────────── -->
+  <div class="setup-section" id="s-quickstart">
+    <h3>⚡ Quick Start</h3>
+    <ol class="steps-list">
+      <li><strong>Install</strong> the extension using Option A or B above</li>
+      <li><strong>Open a project</strong> in VS Code — any language or framework</li>
+      <li>Press <code>Ctrl+Shift+B</code> / <code>Cmd+Shift+B</code> → <strong>"Generate Knowledge Base"</strong><br>
+          Auto Spec Kit scans your entire project and creates <code>knowledge-base/</code> with 16 analysis files. Takes ~3–10 minutes depending on project size.</li>
+      <li>Press <code>Ctrl+Shift+K</code> / <code>Cmd+Shift+K</code> → <strong>"Run Task"</strong><br>
+          Type your requirement, e.g. <em>"Add reset password with email OTP, expires after 10 minutes"</em></li>
+      <li>Watch the <strong>13-step pipeline</strong> run in the Output panel. When finished, review results in <code>spec-kit-sessions/&lt;timestamp&gt;/</code></li>
+    </ol>
+    <p style="margin-top:10px;font-size:12px;background:#f0fdf4;border:1px solid #86efac;border-radius:6px;padding:8px 12px;color:#166534">
+      💡 <strong>Tip:</strong> Generate the Knowledge Base first — the pipeline is significantly more accurate when it knows your actual codebase architecture, patterns and business rules.
+    </p>
+  </div>
+
+  <!-- ── Commands Overview ─────────────────────────────── -->
+  <div class="setup-section" id="s-commands">
+    <h3>🎯 Commands Overview</h3>
+    <table class="cmd-table">
+      <thead><tr><th>Command</th><th>Shortcut</th><th>Audience</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>🚀 <strong>Run Task</strong></td>
+          <td><code>Ctrl+Shift+K</code></td>
+          <td><span class="role-chip role-dev" style="font-size:10px;padding:2px 7px">💻 Dev</span></td>
+          <td>Full 13-step dev workflow: Requirement → Plan → Code → Review → Test → Evidence</td>
+        </tr>
+        <tr>
+          <td>📚 <strong>Generate Knowledge Base</strong></td>
+          <td><code>Ctrl+Shift+B</code></td>
+          <td><span class="role-chip role-dev" style="font-size:10px;padding:2px 7px">💻 Dev</span></td>
+          <td>Scan entire codebase → build 16-file KB at business depth</td>
+        </tr>
+        <tr>
+          <td>🔍 <strong>Review Current File</strong></td>
+          <td><em>Right-click editor</em></td>
+          <td><span class="role-chip role-dev" style="font-size:10px;padding:2px 7px">💻 Dev</span></td>
+          <td>Two-phase code review: quality checklist + business consistency, with fix suggestions</td>
+        </tr>
+        <tr>
+          <td>📚 <strong>Update Knowledge Base</strong></td>
+          <td><em>Command Palette</em></td>
+          <td><span class="role-chip role-dev" style="font-size:10px;padding:2px 7px">💻 Dev</span></td>
+          <td>Merge changes from a completed task back into the KB</td>
+        </tr>
+        <tr>
+          <td>💬 <strong>Ask About Codebase</strong></td>
+          <td><em>Command Palette / Explorer</em></td>
+          <td><span class="role-chip role-dev" style="font-size:10px;padding:2px 7px">💻 Dev</span> <span class="role-chip role-po" style="font-size:10px;padding:2px 7px">📋 PO</span></td>
+          <td>Natural language Q&amp;A grounded in the Knowledge Base — cites file paths &amp; functions</td>
+        </tr>
+        <tr>
+          <td>📋 <strong>Generate User Stories</strong></td>
+          <td><code>Ctrl+Shift+U</code></td>
+          <td><span class="role-chip role-po" style="font-size:10px;padding:2px 7px">📋 PO/BA</span></td>
+          <td>Epic → Features → User Stories → Acceptance Criteria → Sprint Board HTML</td>
+        </tr>
+        <tr>
+          <td>🔭 <strong>Visualize Knowledge Graph</strong></td>
+          <td><em>Command Palette</em></td>
+          <td><span class="role-chip role-dev" style="font-size:10px;padding:2px 7px">💻 Dev</span> <span class="role-chip role-sm" style="font-size:10px;padding:2px 7px">📊 SM</span></td>
+          <td>D3.js interactive graph: architecture, modules, domain, source files</td>
+        </tr>
+        <tr>
+          <td>🤖 <strong>Select Model</strong></td>
+          <td><em>Command Palette</em></td>
+          <td><span class="role-chip role-all" style="font-size:10px;padding:2px 7px">👥 All</span></td>
+          <td>Browse all GitHub Copilot models and choose your preferred one</td>
+        </tr>
+      </tbody>
+    </table>
+    <p style="margin-top:10px;font-size:12px;color:#64748b">Access all commands: <code>Ctrl+Shift+P</code> → type <strong>Auto Spec Kit</strong></p>
+  </div>
+
+  <!-- ── Detailed Workflows ────────────────────────────── -->
+  <div class="setup-section" id="s-workflows">
+    <h3>📖 Detailed Workflows</h3>
+
+    <!-- Run Task -->
+    <p style="margin-bottom:8px"><strong>1. 🚀 Run Task — 13-Step Pipeline</strong> <span class="role-chip role-dev" style="font-size:10px;padding:2px 7px">💻 Developer</span></p>
+    <p>The core command. Give it one task description and it runs 13 sequential AI steps:</p>
+    <table class="cmd-table" style="margin-bottom:14px">
+      <thead><tr><th>#</th><th>Step</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td>01</td><td><strong>Analysis</strong></td><td>Understands the requirement; checks if KB/files exist</td></tr>
+        <tr><td>02</td><td><strong>Task Plan</strong></td><td>Writes a detailed implementation plan</td></tr>
+        <tr><td>03</td><td><strong>Plan Review</strong></td><td>Reviews the plan for correctness and completeness</td></tr>
+        <tr><td>04</td><td><strong>Code Generation</strong></td><td>Generates all code changes / new files</td></tr>
+        <tr><td>05</td><td><strong>Code Review</strong></td><td>Two-phase: quality checklist + business consistency</td></tr>
+        <tr><td>06</td><td><strong>Fix Issues</strong></td><td>Applies fixes found in the code review</td></tr>
+        <tr><td>07</td><td><strong>Tests</strong></td><td>Writes unit tests and integration tests</td></tr>
+        <tr><td>08</td><td><strong>Test Review</strong></td><td>Reviews test quality and coverage</td></tr>
+        <tr><td>09</td><td><strong>Fix Tests</strong></td><td>Applies test improvements</td></tr>
+        <tr><td>10</td><td><strong>Run Tests</strong></td><td>Executes <code>autoSpecKit.testCommand</code> and captures output</td></tr>
+        <tr><td>11</td><td><strong>Fix Failing Tests</strong></td><td>Diagnoses and fixes any test failures</td></tr>
+        <tr><td>12</td><td><strong>Evidence</strong></td><td>Builds final evidence document (plan + code + tests + results)</td></tr>
+        <tr><td>13</td><td><strong>Update KB</strong></td><td>Merges new learnings back into the Knowledge Base</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:12px;color:#475569">After Step 04 (Code Generation) you will be asked: <strong>Apply to project now</strong> (files written to workspace) or <strong>Save in session folder only</strong>.</p>
+
+    <!-- Generate KB -->
+    <p style="margin-top:18px;margin-bottom:8px"><strong>2. 📚 Generate Knowledge Base</strong> <span class="role-chip role-dev" style="font-size:10px;padding:2px 7px">💻 Developer</span></p>
+    <p>Scans your entire project and generates 16 Markdown files covering every aspect of the codebase at <strong>business depth</strong>:</p>
+    <table class="cmd-table" style="margin-bottom:4px">
+      <thead><tr><th>File</th><th>Content</th></tr></thead>
+      <tbody>
+        <tr><td><code>01-project-overview.md</code></td><td>Architecture, tech stack, project purpose</td></tr>
+        <tr><td><code>02-tech-stack.md</code></td><td>Libraries, frameworks, why each was chosen</td></tr>
+        <tr><td><code>03-project-structure.md</code></td><td>Folder layout, module boundaries, layer rules</td></tr>
+        <tr><td><code>04-domain-model.md</code></td><td>Core entities, relationships, domain concepts</td></tr>
+        <tr><td><code>05-api-contracts.md</code></td><td>REST/GraphQL endpoints, request/response shapes</td></tr>
+        <tr><td><code>06-auth-security.md</code></td><td>Auth flows, guards, permission model</td></tr>
+        <tr><td><code>07-data-layer.md</code></td><td>DB schema, migrations, ORM patterns</td></tr>
+        <tr><td><code>08-integrations.md</code></td><td>External services, queues, webhooks</td></tr>
+        <tr><td><code>09-config-envvars.md</code></td><td>Environment variables, feature flags, constants</td></tr>
+        <tr><td><code>10-core-flows.md</code></td><td>Key business workflows end-to-end</td></tr>
+        <tr><td><code>11-error-handling.md</code></td><td>Error types, HTTP codes, error propagation</td></tr>
+        <tr><td><code>12-testing-strategy.md</code></td><td>Test coverage, patterns, test data setup</td></tr>
+        <tr><td><code>13-business-rules.md</code> ★</td><td>Business invariants, validations, constraints</td></tr>
+        <tr><td><code>14-performance-scalability.md</code></td><td>Bottlenecks, caching, scaling patterns</td></tr>
+        <tr><td><code>15-tech-debt.md</code></td><td>Known issues, TODOs, areas needing attention</td></tr>
+        <tr><td><code>review-skills.md</code> ★</td><td>Project-specific rules merged with universal template</td></tr>
+      </tbody>
+    </table>
+
+    <!-- Review Current File -->
+    <p style="margin-top:18px;margin-bottom:8px"><strong>3. 🔍 Review Current File</strong> <span class="role-chip role-dev" style="font-size:10px;padding:2px 7px">💻 Developer</span></p>
+    <p>Right-click any open file → <strong>Auto Spec Kit: Review Current File</strong>. Runs a two-phase deep review:</p>
+    <p><strong>Phase 1 — Code Quality:</strong> Security · Architecture · Performance · Error Handling · Code Quality · Type Safety · Testability · API Design · Project-specific rules</p>
+    <p><strong>Phase 2 — Business Consistency:</strong> Checks against <code>13-business-rules.md</code> — are business invariants intact? Any logic silently deleted? State transitions valid?</p>
+    <p>Output includes: section coverage table, issues with before/after code, strengths list, verdict (APPROVED / NEEDS_REVISION), quality score /10.</p>
+
+    <!-- Generate User Stories -->
+    <p style="margin-top:18px;margin-bottom:8px"><strong>4. 📋 Generate User Stories (PO/BA)</strong> <span class="role-chip role-po" style="font-size:10px;padding:2px 7px">📋 PO / BA</span></p>
+    <p>Press <code>Ctrl+Shift+U</code>. A 4-step pipeline for Product Owners and Business Analysts:</p>
+    <table class="cmd-table" style="margin-bottom:8px">
+      <thead><tr><th>Step</th><th>Output</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Investigation</strong></td><td>Domain analysis: actors, business rules, edge cases, technical constraints</td></tr>
+        <tr><td><strong>User Stories</strong></td><td>Full story list with roles, actions, benefits, story points, priorities</td></tr>
+        <tr><td><strong>Acceptance Criteria</strong></td><td>Given/When/Then ACs + Definition of Done for each story</td></tr>
+        <tr><td><strong>Sprint Planning</strong></td><td>Stories grouped by sprint, sequenced by dependency and risk</td></tr>
+      </tbody>
+    </table>
+    <p>Saves a <strong>JSON file</strong> and an <strong>interactive HTML sprint board</strong> to <code>spec-kit-sessions/</code> — with priority filters, role filters, expandable story cards, and PDF export.</p>
+
+    <!-- Visualize -->
+    <p style="margin-top:18px;margin-bottom:8px"><strong>5. 🔭 Visualize Knowledge Graph</strong> <span class="role-chip role-dev" style="font-size:10px;padding:2px 7px">💻 Dev</span> <span class="role-chip role-sm" style="font-size:10px;padding:2px 7px">📊 SM</span></p>
+    <p>Command Palette → <em>Auto Spec Kit: Visualize Knowledge Graph</em>. Opens a D3.js interactive graph inside VS Code and saves a standalone HTML file.</p>
+    <table class="cmd-table">
+      <thead><tr><th>Feature</th><th>Details</th></tr></thead>
+      <tbody>
+        <tr><td>5 View tabs</td><td>All · Architecture · Workflow · Domain/KB · Source Files</td></tr>
+        <tr><td>Layout</td><td>D3.js force-directed simulation with drag, zoom, pan</td></tr>
+        <tr><td>Color layers</td><td>Commands (blue) · Workflow (green) · Utils (orange) · Storage (purple) · Domain (red)</td></tr>
+        <tr><td>Node click</td><td>Detail panel: description, connections, "Open File" button</td></tr>
+        <tr><td>Search</td><td>Real-time fuzzy match by name or description</td></tr>
+        <tr><td>Export</td><td>Self-contained HTML saved to <code>spec-kit-sessions/knowledge-graph-YYYY-MM-DD.html</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── Keyboard Shortcuts ────────────────────────────── -->
+  <div class="setup-section" id="s-shortcuts">
     <h3>⌨️ Keyboard Shortcuts</h3>
     <div class="shortcut-grid">
       <div class="shortcut-item">
         <div class="action">🚀 Run Task</div>
-        <div class="keys">
-          <span class="kbd">Ctrl+Shift+K</span>
-          <span style="font-size:11px;color:#94a3b8">/ Cmd+Shift+K</span>
-        </div>
+        <div class="keys"><span class="kbd">Ctrl+Shift+K</span></div>
+        <div style="font-size:10px;color:#94a3b8;margin-top:4px">Mac: Cmd+Shift+K</div>
       </div>
       <div class="shortcut-item">
-        <div class="action">📚 Generate KB</div>
-        <div class="keys">
-          <span class="kbd">Ctrl+Shift+B</span>
-          <span style="font-size:11px;color:#94a3b8">/ Cmd+Shift+B</span>
-        </div>
+        <div class="action">📚 Generate Knowledge Base</div>
+        <div class="keys"><span class="kbd">Ctrl+Shift+B</span></div>
+        <div style="font-size:10px;color:#94a3b8;margin-top:4px">Mac: Cmd+Shift+B</div>
       </div>
       <div class="shortcut-item">
-        <div class="action">📋 User Stories</div>
-        <div class="keys">
-          <span class="kbd">Ctrl+Shift+U</span>
-          <span style="font-size:11px;color:#94a3b8">/ Cmd+Shift+U</span>
-        </div>
+        <div class="action">📋 Generate User Stories</div>
+        <div class="keys"><span class="kbd">Ctrl+Shift+U</span></div>
+        <div style="font-size:10px;color:#94a3b8;margin-top:4px">Mac: Cmd+Shift+U</div>
       </div>
     </div>
+    <p style="margin-top:12px;font-size:12px;color:#64748b">All other commands: <code>Ctrl+Shift+P</code> → type <strong>Auto Spec Kit</strong></p>
   </div>
 
-  <!-- Configuration -->
-  <div class="setup-section">
+  <!-- ── Configuration ─────────────────────────────────── -->
+  <div class="setup-section" id="s-config">
     <h3>⚙️ Configuration Reference</h3>
-    <p>Open VS Code Settings (<code>Ctrl+,</code>) and search <strong>"Auto Spec Kit"</strong>, or add to <code>settings.json</code>:</p>
+    <p>Open <code>Ctrl+,</code> → search <strong>"Auto Spec Kit"</strong>, or edit <code>settings.json</code> directly:</p>
     <div class="config-block">
       {<br>
-      &nbsp;&nbsp;<span class="comment">// Test command — output captured and analyzed by Copilot in Step 10</span><br>
-      &nbsp;&nbsp;<span class="key">"autoSpecKit.testCommand"</span>: <span class="val">"npx jest --coverage --coverageReporters=text 2&amp;&gt;&amp;1"</span>,<br>
-      <br>
-      &nbsp;&nbsp;<span class="comment">// Primary language: typescript | javascript | python | java | go</span><br>
+      &nbsp;&nbsp;<span class="comment">// Command to run your test suite.</span><br>
+      &nbsp;&nbsp;<span class="comment">// Output is captured and analyzed by Copilot in Step 10 (Run Tests).</span><br>
+      &nbsp;&nbsp;<span class="comment">// Leave blank to skip the test-run step.</span><br>
+      &nbsp;&nbsp;<span class="comment">// Examples: "npx jest --coverage 2&gt;&amp;1" · "npm test 2&gt;&amp;1" · "python -m pytest 2&gt;&amp;1"</span><br>
+      &nbsp;&nbsp;<span class="key">"autoSpecKit.testCommand"</span>: <span class="val">""</span>,<br><br>
+      &nbsp;&nbsp;<span class="comment">// Primary programming language — guides code style and test framework hints.</span><br>
+      &nbsp;&nbsp;<span class="comment">// Options: "typescript" | "javascript" | "python" | "java" | "go"</span><br>
+      &nbsp;&nbsp;<span class="key">"autoSpecKit.language"</span>: <span class="val">"typescript"</span>,<br><br>
+      &nbsp;&nbsp;<span class="comment">// Relative path to the Knowledge Base folder (from workspace root).</span><br>
+      &nbsp;&nbsp;<span class="key">"autoSpecKit.knowledgeBasePath"</span>: <span class="val">"knowledge-base"</span>,<br><br>
+      &nbsp;&nbsp;<span class="comment">// When true, generated code is written to the project without the apply/skip prompt.</span><br>
+      &nbsp;&nbsp;<span class="key">"autoSpecKit.autoApplyCode"</span>: <span class="val">false</span>,<br><br>
+      &nbsp;&nbsp;<span class="comment">// Folder where session outputs are saved (relative to workspace root).</span><br>
+      &nbsp;&nbsp;<span class="key">"autoSpecKit.sessionsDir"</span>: <span class="val">"spec-kit-sessions"</span>,<br><br>
+      &nbsp;&nbsp;<span class="comment">// Preferred Copilot model ID. Leave blank for auto-selection (best available).</span><br>
+      &nbsp;&nbsp;<span class="comment">// Run "Auto Spec Kit: Select Model" to browse all options.</span><br>
+      &nbsp;&nbsp;<span class="comment">// Examples: "gpt-5.5" · "gpt-5.4" · "claude-opus-4-7" · "gemini-2.5-pro" · "o3"</span><br>
+      &nbsp;&nbsp;<span class="key">"autoSpecKit.model"</span>: <span class="val">""</span>,<br><br>
+      &nbsp;&nbsp;<span class="comment">// When true, shows model Quick Pick at the start of every command run.</span><br>
+      &nbsp;&nbsp;<span class="key">"autoSpecKit.askModelOnStart"</span>: <span class="val">false</span><br>
+      }
+    </div>
+    <p style="margin-top:12px"><strong>Recommended setup for most projects:</strong></p>
+    <div class="config-block">
+      {<br>
       &nbsp;&nbsp;<span class="key">"autoSpecKit.language"</span>: <span class="val">"typescript"</span>,<br>
-      <br>
-      &nbsp;&nbsp;<span class="comment">// Preferred Copilot model (blank = auto-select best available)</span><br>
+      &nbsp;&nbsp;<span class="key">"autoSpecKit.testCommand"</span>: <span class="val">"npx jest --coverage --coverageReporters=text 2&gt;&amp;1"</span>,<br>
       &nbsp;&nbsp;<span class="key">"autoSpecKit.model"</span>: <span class="val">"gpt-5.5"</span>,<br>
-      <br>
-      &nbsp;&nbsp;<span class="comment">// Auto-apply generated code without prompting</span><br>
-      &nbsp;&nbsp;<span class="key">"autoSpecKit.autoApplyCode"</span>: <span class="val">false</span>,<br>
-      <br>
-      &nbsp;&nbsp;<span class="comment">// Folder for session outputs (relative to workspace root)</span><br>
-      &nbsp;&nbsp;<span class="key">"autoSpecKit.sessionsDir"</span>: <span class="val">"spec-kit-sessions"</span><br>
+      &nbsp;&nbsp;<span class="key">"autoSpecKit.autoApplyCode"</span>: <span class="val">false</span><br>
       }
     </div>
   </div>
 
-  <!-- Changelog -->
-  <div class="setup-section">
+  <!-- ── Knowledge Base ────────────────────────────────── -->
+  <div class="setup-section" id="s-kb">
+    <h3>🧠 Knowledge Base</h3>
+    <p>The Knowledge Base is the foundation of Auto Spec Kit — a folder of Markdown files (<code>knowledge-base/</code>) that:</p>
+    <ul class="req-list">
+      <li><span class="req-check">①</span> <strong>Powers code generation</strong> — Copilot knows the exact architecture, patterns, and business rules before writing new code</li>
+      <li><span class="req-check">②</span> <strong>Powers code review</strong> — every review cross-references business rules and domain constraints</li>
+      <li><span class="req-check">③</span> <strong>Powers Q&amp;A</strong> — the Ask command answers questions grounded in actual codebase evidence</li>
+      <li><span class="req-check">④</span> <strong>Powers planning</strong> — task plans reference existing flows and avoid duplicate implementations</li>
+      <li><span class="req-check">⑤</span> <strong>Gets smarter over time</strong> — every completed task updates the KB automatically at Step 13</li>
+    </ul>
+    <p style="margin-top:12px"><strong>Directory structure after generation:</strong></p>
+    <div class="config-block">
+      knowledge-base/<br>
+      ├── 01-project-overview.md<br>
+      ├── 02-tech-stack.md<br>
+      ├── 03-project-structure.md<br>
+      ├── 04-domain-model.md<br>
+      ├── 05-api-contracts.md<br>
+      ├── 06-auth-security.md<br>
+      ├── 07-data-layer.md<br>
+      ├── 08-integrations.md<br>
+      ├── 09-config-envvars.md<br>
+      ├── 10-core-flows.md<br>
+      ├── 11-error-handling.md<br>
+      ├── 12-testing-strategy.md<br>
+      ├── <span class="val">13-business-rules.md</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">← most important for review</span><br>
+      ├── 14-performance-scalability.md<br>
+      ├── 15-tech-debt.md<br>
+      ├── <span class="val">review-skills.md</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">← injected into every review</span><br>
+      └── _project-scan.md
+    </div>
+    <p style="margin-top:10px;font-size:12px;color:#64748b">💡 Commit <code>review-skills.md</code> to share your project review standards with the entire team. Add the rest of <code>knowledge-base/</code> to <code>.gitignore</code> if you prefer not to commit auto-generated files.</p>
+  </div>
+
+  <!-- ── Session Outputs ──────────────────────────────── -->
+  <div class="setup-section" id="s-outputs">
+    <h3>📁 Session Outputs</h3>
+    <p>Every command run produces a timestamped folder under <code>spec-kit-sessions/</code>:</p>
+    <div class="config-block">
+      spec-kit-sessions/<br>
+      └── 2026-05-25T14-30-00/<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;├── 01-analysis.md<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;├── 02-task-plan.md<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;├── 03-plan-review.md<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;├── 04-code-gen.md&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">← or actual .ts/.py files if applied</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;├── 05-code-review.md<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;├── 06-fix-issues.md<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;├── 07-tests.md<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;├── 08-test-review.md<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;├── 09-fix-tests.md<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;├── 10-test-results.md<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;├── 11-fix-failing.md<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;├── 12-evidence.md<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;└── 13-kb-delta.md
+    </div>
+    <p style="margin-top:12px">For <strong>User Stories</strong> sessions:</p>
+    <div class="config-block">
+      spec-kit-sessions/<br>
+      └── 2026-05-25T14-45-00/<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;├── epic-user-auth-2026-05-25T14-45-00.json&nbsp;&nbsp;&nbsp;<span class="comment">← structured EpicOutput schema</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;└── epic-user-auth-2026-05-25T14-45-00.html&nbsp;&nbsp;&nbsp;<span class="comment">← interactive sprint board</span>
+    </div>
+  </div>
+
+  <!-- ── Review Skills ─────────────────────────────────── -->
+  <div class="setup-section" id="s-review">
+    <h3>🛡️ Review Skills System</h3>
+    <p>The review skill system has two layers merged into a single <code>review-skills.md</code> file:</p>
+    <p><strong>Universal Template</strong> (<code>resources/review-skills-universal.md</code>) — bundled with the extension, contains 13 sections applicable to any project:</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0 14px">
+      <div style="font-size:12px;color:#334155;padding:4px 8px;background:#f8fafc;border-radius:4px">1. Security</div>
+      <div style="font-size:12px;color:#334155;padding:4px 8px;background:#f8fafc;border-radius:4px">2. Architecture &amp; Design</div>
+      <div style="font-size:12px;color:#334155;padding:4px 8px;background:#f8fafc;border-radius:4px">3. Performance</div>
+      <div style="font-size:12px;color:#334155;padding:4px 8px;background:#f8fafc;border-radius:4px">4. Error Handling</div>
+      <div style="font-size:12px;color:#334155;padding:4px 8px;background:#f8fafc;border-radius:4px">5. Code Quality &amp; Readability</div>
+      <div style="font-size:12px;color:#334155;padding:4px 8px;background:#f8fafc;border-radius:4px">6. Type Safety</div>
+      <div style="font-size:12px;color:#334155;padding:4px 8px;background:#f8fafc;border-radius:4px">7. Testability</div>
+      <div style="font-size:12px;color:#334155;padding:4px 8px;background:#f8fafc;border-radius:4px">8. API Design</div>
+      <div style="font-size:12px;color:#334155;padding:4px 8px;background:#f8fafc;border-radius:4px">9. Database &amp; Data Layer</div>
+      <div style="font-size:12px;color:#334155;padding:4px 8px;background:#f8fafc;border-radius:4px">10. Documentation</div>
+      <div style="font-size:12px;color:#334155;padding:4px 8px;background:#f8fafc;border-radius:4px">11. Observability &amp; Logging</div>
+      <div style="font-size:12px;color:#334155;padding:4px 8px;background:#f8fafc;border-radius:4px">12. DevOps &amp; Deployment</div>
+      <div style="font-size:12px;color:#334155;padding:4px 8px;background:#f8fafc;border-radius:4px">13. Business Logic</div>
+    </div>
+    <p><strong>Section 14 — Project-Specific Rules</strong> — generated by Copilot during Generate KB. Contains: naming conventions, mandatory patterns, banned anti-patterns, business rules to enforce in every feature, project-specific technology usage.</p>
+    <p style="margin-top:8px"><strong>Load order:</strong> <code>knowledge-base/review-skills.md</code> → <code>resources/review-skills-universal.md</code> → generic checklist (fallback)</p>
+  </div>
+
+  <!-- ── Model Selection ──────────────────────────────── -->
+  <div class="setup-section" id="s-model">
+    <h3>🤖 Model Selection &amp; Priority</h3>
+    <p>Auto Spec Kit auto-selects the best available Copilot model. Built-in priority ranking (2026):</p>
+    <table class="cmd-table">
+      <thead><tr><th>Priority</th><th>Model ID</th><th>Best for</th></tr></thead>
+      <tbody>
+        <tr><td>1 (best)</td><td><code>gpt-5.5</code></td><td>Complex tasks, large files, KB generation</td></tr>
+        <tr><td>2</td><td><code>gpt-5.4</code></td><td>Complex tasks</td></tr>
+        <tr><td>3</td><td><code>claude-opus-4-7</code></td><td>Deep reasoning, business analysis</td></tr>
+        <tr><td>4</td><td><code>o3</code></td><td>Multi-step logical reasoning</td></tr>
+        <tr><td>5</td><td><code>claude-sonnet-4-6</code></td><td>Fast + high quality balance</td></tr>
+        <tr><td>6</td><td><code>gemini-2.5-pro</code></td><td>Large context windows</td></tr>
+        <tr><td>7</td><td><code>gpt-5</code></td><td>General tasks</td></tr>
+        <tr><td>8</td><td><code>o4-mini</code></td><td>Fast iterations, quick reviews</td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top:8px;font-size:12px;color:#475569">To override: run <strong>Select Model</strong> from Command Palette, or set <code>"autoSpecKit.model": "gpt-5.5"</code> in settings, or enable <code>"autoSpecKit.askModelOnStart": true</code>.</p>
+  </div>
+
+  <!-- ── Tips ─────────────────────────────────────────── -->
+  <div class="setup-section" id="s-tips">
+    <h3>💡 Tips &amp; Best Practices</h3>
+    <p><strong>Getting the best results from Run Task:</strong></p>
+    <ul class="req-list" style="margin-bottom:12px">
+      <li><span style="color:#3b82f6">→</span> <strong>Be specific.</strong> Instead of <em>"add auth"</em> write <em>"Add JWT email/password auth with refresh tokens, bcrypt hashing, and rate limiting on login."</em></li>
+      <li><span style="color:#3b82f6">→</span> <strong>Generate KB first.</strong> The pipeline is significantly more accurate when it references your actual codebase architecture.</li>
+      <li><span style="color:#3b82f6">→</span> <strong>Set <code>autoSpecKit.testCommand</code></strong> so Step 10 runs your real tests and Step 11 can fix actual failures.</li>
+      <li><span style="color:#3b82f6">→</span> <strong>Read Step 05 output carefully.</strong> The two-phase review often surfaces issues a manual review would miss.</li>
+    </ul>
+    <p><strong>Knowledge Base tips:</strong></p>
+    <ul class="req-list" style="margin-bottom:12px">
+      <li><span style="color:#16a34a">→</span> Re-run <strong>Generate KB</strong> after major refactors or architecture changes.</li>
+      <li><span style="color:#16a34a">→</span> The most valuable KB file is <code>13-business-rules.md</code> — the more accurate it is, the better every review becomes.</li>
+      <li><span style="color:#16a34a">→</span> Commit <code>review-skills.md</code> to share your project's review standards with the entire team.</li>
+    </ul>
+    <p><strong>User Stories tips (PO/BA):</strong></p>
+    <ul class="req-list">
+      <li><span style="color:#f59e0b">→</span> Provide a detailed Epic Description including non-functional requirements and explicit out-of-scope items.</li>
+      <li><span style="color:#f59e0b">→</span> 5–10 features per epic produces the most useful story granularity.</li>
+      <li><span style="color:#f59e0b">→</span> The generated HTML sprint board can be printed as a PDF for stakeholder review sessions.</li>
+    </ul>
+  </div>
+
+  <!-- ── Changelog ─────────────────────────────────────── -->
+  <div class="setup-section" id="s-changelog">
     <h3>📝 Changelog</h3>
     <div class="changelog-entry">
       <div class="ver">v1.6.0 <span>current</span></div>
       <ul>
-        <li>✅ Added <strong>Visualize Knowledge Graph</strong> — D3.js force-directed interactive graph (5 tabs)</li>
-        <li>✅ Auto-parses <code>knowledge-base/</code> markdown + <code>src/</code> TypeScript imports → nodes/edges</li>
-        <li>✅ VS Code Webview Panel + saves self-contained HTML for sharing</li>
+        <li>✅ Added <strong>Visualize Knowledge Graph</strong> command — D3.js force-directed interactive graph</li>
+        <li>✅ 5 view tabs: All · Architecture · Workflow · Domain/KB · Source Files</li>
+        <li>✅ Auto-parses <code>knowledge-base/</code> markdown + <code>src/</code> TypeScript imports to build nodes/edges</li>
+        <li>✅ VS Code Webview Panel (in-editor) + saves self-contained HTML file for sharing</li>
         <li>✅ Node click → detail panel with description, connections, and "Open File" shortcut</li>
         <li>✅ Real-time search, zoom controls, color-coded layers, arrow edge types</li>
         <li>✅ Author metadata added to extension manifest</li>
@@ -1330,7 +1691,10 @@
     <div class="changelog-entry">
       <div class="ver">v1.5.3</div>
       <ul>
-        <li>✅ Added <strong>Generate User Stories (PO/BA)</strong> — Epic → Sprint board HTML</li>
+        <li>✅ Added <strong>Generate User Stories (PO/BA)</strong> command (<code>Ctrl+Shift+U</code>)</li>
+        <li>✅ Interactive HTML sprint board with priority/role/sprint filters</li>
+        <li>✅ Structured JSON output (<code>EpicOutput</code> schema) for integration with PM tools</li>
+        <li>✅ Given/When/Then acceptance criteria · story cards: <em>As [role], I want to [action] so that [benefit]</em></li>
         <li>✅ Git diff context integrated into Run Task Step 05 and Review Current File</li>
         <li>✅ All UI, prompts, and generated output translated to English</li>
       </ul>
@@ -1338,7 +1702,7 @@
     <div class="changelog-entry">
       <div class="ver">v1.5.0</div>
       <ul>
-        <li>✅ Expanded KB to 15 analysis steps with business-depth prompts</li>
+        <li>✅ Expanded KB from 12 to 15 analysis steps with business-depth prompts</li>
         <li>✅ Added <code>13-business-rules.md</code>, <code>14-performance-scalability.md</code>, <code>15-tech-debt.md</code></li>
         <li>✅ Updated model priority list for 2026 GitHub Copilot models</li>
       </ul>
@@ -1363,17 +1727,26 @@
       <ul>
         <li>✅ <strong>Generate Knowledge Base</strong> — 15-file structure</li>
         <li>✅ <strong>Ask About Codebase</strong> command</li>
+        <li>✅ KB referenced in all Run Task steps</li>
+      </ul>
+    </div>
+    <div class="changelog-entry">
+      <div class="ver">v1.1.0</div>
+      <ul>
+        <li>✅ <strong>Run Task</strong> 13-step pipeline</li>
+        <li>✅ Session output folder with all step outputs</li>
+        <li>✅ Apply-to-project vs. save-to-session choice</li>
       </ul>
     </div>
     <div class="changelog-entry">
       <div class="ver">v1.0.0</div>
-      <ul><li>✅ Initial release — 13-step Run Task pipeline</li></ul>
+      <ul><li>✅ Initial release</li></ul>
     </div>
   </div>
 
   <!-- Footer -->
   <div style="text-align:center;padding:20px 0 8px;font-size:12px;color:#94a3b8">
-    Built with ❤️ using the <code>vscode.lm</code> API · MIT License · 
+    MIT License · Built with ❤️ using the <code>vscode.lm</code> API ·
     <a href="https://github.com/NamHT4Devlop/auto-spec-extension" target="_blank" style="color:#3b82f6">github.com/NamHT4Devlop/auto-spec-extension</a>
   </div>
 
