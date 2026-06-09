@@ -14,9 +14,13 @@ import { updateKBStandalone } from './workflow/update-kb';
 import { askAboutCodebase } from './workflow/ask-kb';
 import { generateUserStories } from './workflow/generate-user-stories';
 import { visualizeKnowledgeBase } from './workflow/visualize-kb';
+import { registerChatParticipant } from './chat-participant';
 
 export function activate(context: vscode.ExtensionContext): void {
   const ch = initChannel('Auto Spec Kit');
+
+  // ── Chat Participant: @autospec ──────────────────────────────────
+  registerChatParticipant(context);
 
   const getRoot = (): string | undefined => {
     const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;

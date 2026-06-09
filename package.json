@@ -22,11 +22,29 @@
     "copilot", "ai", "spec", "code-review", "knowledge-base",
     "workflow", "user-stories", "tdd", "developer-tools"
   ],
-  "engines": { "vscode": "^1.90.0" },
+  "engines": { "vscode": "^1.93.0" },
   "categories": ["Other", "Machine Learning", "Programming Languages"],
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
+    "chatParticipants": [
+      {
+        "id": "auto-spec-kit.autospec",
+        "fullName": "Auto Spec Kit",
+        "name": "autospec",
+        "description": "AI-powered development workflow: plan, code, review, test, generate KB & user stories",
+        "isSticky": true,
+        "commands": [
+          { "name": "run", "description": "Run full dev workflow (plan → code → review → test → evidence)" },
+          { "name": "kb", "description": "Generate Knowledge Base from codebase" },
+          { "name": "review", "description": "Review current file for quality, security, performance" },
+          { "name": "ask", "description": "Ask a question about the codebase (uses Knowledge Base)" },
+          { "name": "stories", "description": "Generate User Stories from Epic description (PO/BA flow)" },
+          { "name": "graph", "description": "Visualize Knowledge Graph (static + AI enrichment)" },
+          { "name": "update-kb", "description": "Update existing Knowledge Base with latest changes" }
+        ]
+      }
+    ],
     "commands": [
       { "command": "autoSpecKit.run", "title": "🚀 Auto Spec Kit: Run Task", "category": "Auto Spec Kit" },
       { "command": "autoSpecKit.generateKB", "title": "📚 Auto Spec Kit: Generate Knowledge Base", "category": "Auto Spec Kit" },
