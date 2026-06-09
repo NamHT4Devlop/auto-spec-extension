@@ -1,0 +1,242 @@
+export interface KbStep {
+  label: string;
+  file: string;
+  prompt: string;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// KB STEPS — Deep Business Analysis Edition
+// Each prompt is designed to make Copilot reason about BUSINESS INTENT from code,
+// not just describe technical structure.
+// ═══════════════════════════════════════════════════════════════════════════
+
+export const KB_STEPS: KbStep[] = [
+
+  // 01 — PROJECT STRUCTURE
+  {
+    label: '01 — Project Structure & Ownership Map',
+    file: '01-project-structure.md',
+    prompt: `Analyze the project structure from PROJECT FILES. Answer the following questions — always cite actual paths:
+
+## 1. Project Type & Scale
+- Is this a monolith, monorepo, microservices, or hybrid? Specific evidence?
+- How many independent deployable units (service/app/function) exist? List names + paths
+- What stage is this project at? (startup MVP, scale-up, enterprise legacy?)
+
+## 2. Folder Structure with Business Meaning
+Draw the directory tree (2-3 levels deep), for each folder:
+- Technical function
+- And MORE IMPORTANTLY: what business domain does it represent?
+
+## 3. Dependency Direction
+Which module depends on which? Draw a simple diagram (text-based OK) to show coupling.
+
+## 4. Critical vs Supporting Code
+- Which directories contain CORE BUSINESS LOGIC?
+- Which directories are just infrastructure/utility?
+
+## 5. Technical Debt Indicators
+Find signs of tech debt from structure.`,
+  },
+
+  // 02 — TECH STACK
+  {
+    label: '02 — Tech Stack & Architecture Decisions',
+    file: '02-tech-stack.md',
+    prompt: `Analyze the tech stack from PROJECT FILES.
+
+## 1. Stack Summary Table
+| Layer | Technology | Version | Role |
+
+## 2. Architecture Decision Inferences
+For each important technology choice, explain WHY it was selected.
+
+## 3. Version Risks
+List dependencies using old versions or deprecated packages.
+
+## 4. Testing Stack
+Test framework, coverage tool, mocking library.
+
+## 5. Build & Deploy Pipeline
+Dockerfile, CI/CD config, scripts in package.json.`,
+  },
+
+  // 03 — ENTRY POINTS & RUNTIME BEHAVIOR
+  {
+    label: '03 — Entry Points & Runtime Behavior',
+    file: '03-entry-points.md',
+    prompt: `Find and analyze all entry points in PROJECT FILES.
+
+## 1. Application Startup Sequence
+Trace from the main file to when the app is ready.
+
+## 2. All Entry Points
+List ALL ways external parties can trigger code.
+
+## 3. Environment Configuration
+List ALL env variables.
+
+## 4. Health & Observability
+
+## 5. Local Setup (Step-by-Step)`,
+  },
+
+  // 04 — BUSINESS DOMAIN DEEP ANALYSIS
+  {
+    label: '04 — Business Domain & User Stories',
+    file: '04-business-domain.md',
+    prompt: `Read the ENTIRE codebase and answer as a Business Analyst.
+
+## 1. Product Brief
+## 2. User Roles & Capabilities Matrix
+## 3. Top 10 Core Features (Ranked by Business Importance)
+## 4. User Journey (Main Flow)
+## 5. Business Constraints Evident in Code`,
+  },
+
+  // 05 — DOMAIN MODEL & ENTITIES
+  {
+    label: '05 — Domain Model & Entity Lifecycle',
+    file: '05-domain-model.md',
+    prompt: `Analyze all domain entities/models/schemas in PROJECT FILES.
+
+## 1. Entity Catalog
+## 2. State Machines
+## 3. Entity Relationships
+## 4. Aggregate Boundaries
+## 5. Data Lifecycle`,
+  },
+
+  // 06 — MODULES & FEATURE MAP
+  {
+    label: '06 — Module Map & Feature Boundaries',
+    file: '06-modules.md',
+    prompt: `List and analyze all modules/features in PROJECT FILES.
+
+## 1. Module Overview Table
+## 2. Module Deep-Dive
+## 3. Cross-Module Communication
+## 4. Feature Flags / Toggles
+## 5. Module Maturity Assessment`,
+  },
+
+  // 07 — SYSTEM ARCHITECTURE
+  {
+    label: '07 — System Architecture & Data Flow',
+    file: '07-architecture-diagram.md',
+    prompt: `Draw the System Architecture from PROJECT FILES focusing on DATA FLOW.
+
+## 1. High-Level Architecture Diagram
+## 2. Request Journey (end-to-end)
+## 3. Async / Background Processing
+## 4. External Service Integration
+## 5. Failure Points & Resilience`,
+  },
+
+  // 08 — DATABASE SCHEMA & QUERY PATTERNS
+  {
+    label: '08 — Database Schema & Query Patterns',
+    file: '08-database-schema.md',
+    prompt: `Analyze the database schema from PROJECT FILES.
+
+## 1. Schema Overview
+## 2. Full ERD
+## 3. Critical Business Columns
+## 4. Index Strategy
+## 5. Data Integrity & Constraints
+## 6. Migration History`,
+  },
+
+  // 09 — AUTH, SECURITY & PERMISSION MODEL
+  {
+    label: '09 — Auth, Security & Permission Model',
+    file: '09-auth-security.md',
+    prompt: `Analyze the complete authentication, authorization, and security model.
+
+## 1. Authentication Mechanism
+## 2. Authorization Model
+## 3. Permission Matrix
+## 4. Auth Flow Sequence Diagrams
+## 5. Security Hardening`,
+  },
+
+  // 10 — CORE BUSINESS FLOWS
+  {
+    label: '10 — Core Business Flows (End-to-End)',
+    file: '10-core-flows.md',
+    prompt: `Identify and diagram ALL important core business flows. This is the most important file in the KB.
+
+For each flow, trace through EVERY LAYER.
+Identify all important flows (minimum 3, maximum 7).`,
+  },
+
+  // 11 — API DOCUMENTATION
+  {
+    label: '11 — API Reference',
+    file: '11-api-docs.md',
+    prompt: `List ALL API endpoints from PROJECT FILES.
+
+## API Overview
+## Endpoints by Module
+## Rate Limits & Special Behaviors`,
+  },
+
+  // 12 — CODING CONVENTIONS
+  {
+    label: '12 — Coding Conventions & Patterns',
+    file: '12-conventions.md',
+    prompt: `Analyze coding conventions from PROJECT FILES. Every rule MUST have a real code example.
+
+## 1. Naming Conventions
+## 2. Folder & File Organization
+## 3. Architecture Layers & Rules
+## 4. Error Handling Pattern
+## 5. Async/Await Pattern
+## 6. Testing Conventions
+## 7. Logging Convention
+## 8. "The Rules" — Quick Reference Card`,
+  },
+
+  // 13 — BUSINESS RULES & INVARIANTS
+  {
+    label: '13 — Business Rules & Invariants',
+    file: '13-business-rules.md',
+    prompt: `This is the MOST IMPORTANT step. Find and document ALL business rules implemented in code.
+
+## 1. Validation Rules (Input Constraints)
+## 2. Business State Rules (State Machine Rules)
+## 3. Business Calculation Rules
+## 4. Access Control Business Rules
+## 5. Time-Based Business Rules
+## 6. Business Invariants
+## 7. Under-Enforced Business Rules (Risk)`,
+  },
+
+  // 14 — INTEGRATION MAP
+  {
+    label: '14 — Integration Map & External Dependencies',
+    file: '14-integrations.md',
+    prompt: `Find ALL integrations with external systems in PROJECT FILES.
+
+## 1. Integration Map
+## 2. Integration Details
+## 3. Internal Service Communication
+## 4. Event-Driven Integration
+## 5. Integration Risks & Single Points of Failure`,
+  },
+
+  // 15 — ERROR SCENARIOS & OPERATIONAL GUIDE
+  {
+    label: '15 — Error Scenarios & Operational Runbook',
+    file: '15-error-scenarios.md',
+    prompt: `Analyze error handling and create an operational runbook.
+
+## 1. Error Response Taxonomy
+## 2. Critical Error Scenarios (Business Impact)
+## 3. Data Consistency Risks
+## 4. Graceful Degradation
+## 5. Operational Runbook (Common Issues)
+## 6. Logging & Observability`,
+  },
+
+];

@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Auto Spec Kit v1.7.0 — Documentation</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #1e293b; min-height: 100vh; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+
+  /* Header */
+  header { text-align: center; margin-bottom: 32px; padding-top: 20px; }
+  header h1 { font-size: 28px; font-weight: 800; margin-bottom: 6px; }
+  header .subtitle { font-size: 14px; color: #64748b; margin-bottom: 12px; }
+  .badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 3px 12px; border-radius: 20px; margin: 0 3px; color: #fff; }
+  .badge-blue { background: #3b82f6; }
+  .badge-green { background: #10b981; }
+  .badge-purple { background: #8b5cf6; }
+  .badge-orange { background: #f59e0b; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 6px; margin-bottom: 24px; flex-wrap: wrap; justify-content: center; }
+  .tab { padding: 10px 22px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; border: 2px solid #e2e8f0; background: #fff; color: #64748b; transition: all .15s; user-select: none; }
+  .tab.active { background: #1e293b; color: #fff; border-color: #1e293b; }
+  .tab:hover:not(.active) { border-color: #3b82f6; color: #3b82f6; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* Cards */
+  .card { background: #fff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 28px; margin-bottom: 24px; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+  .card h2 { font-size: 18px; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+  .card h3 { font-size: 15px; font-weight: 700; margin: 20px 0 8px; color: #334155; }
+  .card p, .card li { font-size: 13px; color: #475569; line-height: 1.7; }
+  .card ul, .card ol { padding-left: 20px; margin: 8px 0; }
+  .card li { margin-bottom: 4px; }
+  .card code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 12px; font-family: 'SF Mono', Menlo, monospace; color: #e11d48; }
+  .card pre { background: #1e293b; color: #e2e8f0; padding: 16px; border-radius: 8px; font-size: 12px; overflow-x: auto; margin: 12px 0; line-height: 1.6; }
+  .card pre code { background: none; color: inherit; padding: 0; }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+  th { background: #f1f5f9; text-align: left; padding: 10px 14px; font-weight: 700; color: #334155; border-bottom: 2px solid #e2e8f0; }
+  td { padding: 10px 14px; border-bottom: 1px solid #f1f5f9; color: #475569; }
+  tr:hover td { background: #fafbfc; }
+
+  /* SVG */
+  svg { width: 100%; height: auto; display: block; overflow: visible; margin: 16px 0; }
+  svg text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+
+  /* Step list */
+  .step-list { counter-reset: step; list-style: none; padding: 0; }
+  .step-list li { counter-increment: step; position: relative; padding: 12px 12px 12px 48px; margin-bottom: 8px; background: #f8fafc; border-radius: 8px; border-left: 3px solid #3b82f6; font-size: 13px; color: #334155; }
+  .step-list li::before { content: counter(step); position: absolute; left: 12px; top: 12px; width: 26px; height: 26px; background: #3b82f6; color: #fff; border-radius: 50%; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .step-list li.green { border-left-color: #10b981; }
+  .step-list li.green::before { background: #10b981; }
+  .step-list li.purple { border-left-color: #8b5cf6; }
+  .step-list li.purple::before { background: #8b5cf6; }
+  .step-list li.orange { border-left-color: #f59e0b; }
+  .step-list li.orange::before { background: #f59e0b; }
+  .step-list li.red { border-left-color: #ef4444; }
+  .step-list li.red::before { background: #ef4444; }
+
+  /* Shortcut keys */
+  kbd { background: #f1f5f9; border: 1px solid #d1d5db; border-radius: 4px; padding: 2px 8px; font-size: 11px; font-family: 'SF Mono', Menlo, monospace; font-weight: 600; color: #374151; box-shadow: 0 1px 0 rgba(0,0,0,.1); }
+
+  /* Legend */
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 16px; padding-top: 14px; border-top: 1px solid #f1f5f9; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #64748b; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+  /* Separator */
+  .sep { height: 1px; background: #e2e8f0; margin: 20px 0; }
+
+  /* Role badge */
+  .role { display: inline-flex; align-items: center; gap: 6px; padding: 4px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; margin-bottom: 12px; }
+  .role-dev { background: #dbeafe; color: #1e40af; }
+  .role-po { background: #dcfce7; color: #166534; }
+  .role-sm { background: #f3e8ff; color: #6b21a8; }
+  .role-all { background: #fef3c7; color: #92400e; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- ═══════════════════════════════ HEADER ═══════════════════════════════ -->
+<header>
+  <h1>Auto Spec Kit</h1>
+  <p class="subtitle">Automate the full development workflow: Requirement → Plan → Code → Review → Test → Evidence</p>
+  <div style="margin-top:10px">
+    <span class="badge badge-blue">v1.7.0</span>
+    <span class="badge badge-green">Multi-Agent</span>
+    <span class="badge badge-purple">GitHub Copilot</span>
+    <span class="badge badge-orange">No API Key</span>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════ TABS ═══════════════════════════════ -->
+<div class="tabs">
+  <div class="tab active" onclick="showTab('overview')">Overview</div>
+  <div class="tab" onclick="showTab('setup')">Setup Guide</div>
+  <div class="tab" onclick="showTab('dev')">🧑‍💻 DEV Flow</div>
+  <div class="tab" onclick="showTab('po')">📋 PO/BA Flow</div>
+  <div class="tab" onclick="showTab('sm')">📊 SM/Lead Flow</div>
+  <div class="tab" onclick="showTab('arch')">Architecture</div>
+  <div class="tab" onclick="showTab('config')">Configuration</div>
+</div>
+
+<!-- ═══════════════════════════════ OVERVIEW ═══════════════════════════════ -->
+<div id="overview" class="panel active">
+
+<div class="card">
+  <h2>What is Auto Spec Kit?</h2>
+  <p>A VS Code extension that turns a <strong>one-line task description</strong> into a complete, production-ready deliverable. It orchestrates GitHub Copilot through a structured multi-agent pipeline — from planning to code generation, code review, test writing, and evidence collection — while keeping a growing Knowledge Base that makes every subsequent task smarter.</p>
+  <div class="sep"></div>
+  <h3>Who is it for?</h3>
+  <table>
+    <tr><th>Role</th><th>What they get</th><th>Key Command</th></tr>
+    <tr><td><strong>Developer</strong></td><td>13-step automated pipeline: Plan → Code → Review → Test → Evidence</td><td><kbd>Ctrl+Shift+K</kbd></td></tr>
+    <tr><td><strong>PO / BA</strong></td><td>Epic → auto-discover Features → Impact Analysis → User Stories + Confirmation Checklist</td><td><kbd>Ctrl+Shift+U</kbd></td></tr>
+    <tr><td><strong>SM / Tech Lead</strong></td><td>Knowledge Graph visualization, Knowledge Base generation, Code Review</td><td>Command Palette</td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <h2>Multi-Agent Architecture (v1.7)</h2>
+  <p>Each pipeline step spawns <strong>parallel sub-agents</strong> that analyze different aspects simultaneously, then a merge agent synthesizes the results. This produces deeper, more accurate output than a single AI call.</p>
+
+  <svg viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg">
+    <rect x="10" y="10" width="130" height="50" rx="8" fill="#6366f1" stroke="#4f46e5" stroke-width="1.5"/>
+    <text x="75" y="32" fill="white" text-anchor="middle" font-size="11" font-weight="bold">Smart Context</text>
+    <text x="75" y="46" fill="rgba(255,255,255,.8)" text-anchor="middle" font-size="9">File Discovery Agent</text>
+
+    <line x1="140" y1="35" x2="170" y2="35" stroke="#aaa" stroke-width="1.5" marker-end="url(#ah)"/>
+
+    <rect x="170" y="2" width="120" height="34" rx="6" fill="#10b981" stroke="#059669" stroke-width="1.5"/>
+    <text x="230" y="23" fill="white" text-anchor="middle" font-size="10" font-weight="bold">Agent A</text>
+    <rect x="170" y="40" width="120" height="34" rx="6" fill="#f59e0b" stroke="#d97706" stroke-width="1.5"/>
+    <text x="230" y="61" fill="white" text-anchor="middle" font-size="10" font-weight="bold">Agent B</text>
+    <rect x="170" y="78" width="120" height="34" rx="6" fill="#ef4444" stroke="#dc2626" stroke-width="1.5"/>
+    <text x="230" y="99" fill="white" text-anchor="middle" font-size="10" font-weight="bold">Agent C</text>
+
+    <text x="230" y="130" fill="#64748b" text-anchor="middle" font-size="9" font-style="italic">parallel (Promise.allSettled)</text>
+
+    <line x1="290" y1="19" x2="340" y2="55" stroke="#aaa" stroke-width="1"/>
+    <line x1="290" y1="57" x2="340" y2="55" stroke="#aaa" stroke-width="1"/>
+    <line x1="290" y1="95" x2="340" y2="55" stroke="#aaa" stroke-width="1"/>
+
+    <rect x="340" y="30" width="120" height="50" rx="8" fill="#1e293b" stroke="#0f172a" stroke-width="1.5"/>
+    <text x="400" y="52" fill="white" text-anchor="middle" font-size="11" font-weight="bold">Merge Agent</text>
+    <text x="400" y="66" fill="rgba(255,255,255,.8)" text-anchor="middle" font-size="9">synthesize + dedup</text>
+
+    <line x1="460" y1="55" x2="500" y2="55" stroke="#aaa" stroke-width="1.5" marker-end="url(#ah)"/>
+
+    <rect x="500" y="30" width="140" height="50" rx="8" fill="none" stroke="#3b82f6" stroke-width="2" stroke-dasharray="4"/>
+    <text x="570" y="52" fill="#334155" text-anchor="middle" font-size="11" font-weight="bold">Final Output</text>
+    <text x="570" y="66" fill="#64748b" text-anchor="middle" font-size="9">→ next pipeline step</text>
+
+    <defs><marker id="ah" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#aaa"/></marker></defs>
+  </svg>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#10b981"></div>Sub-Agent (specialized role)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#1e293b"></div>Merge Agent (synthesizer)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#6366f1"></div>Smart Context (file discovery)</div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Commands at a Glance</h2>
+  <table>
+    <tr><th>Command</th><th>Shortcut</th><th>Role</th><th>Description</th></tr>
+    <tr><td>🚀 Run Task</td><td><kbd>Ctrl+Shift+K</kbd></td><td><span class="role role-dev">DEV</span></td><td>Full 13-step multi-agent development workflow</td></tr>
+    <tr><td>📚 Generate KB</td><td><kbd>Ctrl+Shift+B</kbd></td><td><span class="role role-all">ALL</span></td><td>Scan codebase → build 16-file Knowledge Base (batch-parallel + deep analysis)</td></tr>
+    <tr><td>📋 User Stories</td><td><kbd>Ctrl+Shift+U</kbd></td><td><span class="role role-po">PO/BA</span></td><td>Epic → auto-discover Features → Impact → Stories → Sprint Plan</td></tr>
+    <tr><td>🔍 Review File</td><td>Right-click</td><td><span class="role role-dev">DEV</span></td><td>4-agent code review (Security + Architecture + Performance + Business)</td></tr>
+    <tr><td>🔭 Knowledge Graph</td><td>Palette</td><td><span class="role role-sm">SM/Lead</span></td><td>Universal multi-language graph + AI enrichment</td></tr>
+    <tr><td>💬 Ask Codebase</td><td>Palette</td><td><span class="role role-all">ALL</span></td><td>Natural language Q&A grounded in KB</td></tr>
+    <tr><td>📚 Update KB</td><td>Palette</td><td><span class="role role-dev">DEV</span></td><td>Merge changes from manual tasks into KB</td></tr>
+    <tr><td>🤖 Select Model</td><td>Palette</td><td><span class="role role-all">ALL</span></td><td>Choose preferred Copilot model</td></tr>
+  </table>
+</div>
+</div>
+
+<!-- ═══════════════════════════════ SETUP ═══════════════════════════════ -->
+<div id="setup" class="panel">
+
+<div class="card">
+  <h2>📦 Requirements</h2>
+  <ul>
+    <li><strong>VS Code</strong> <code>^1.90.0</code></li>
+    <li><strong>GitHub Copilot</strong> subscription (individual or business)</li>
+    <li><strong>GitHub Copilot Chat</strong> extension installed and active</li>
+    <li>Node.js (for building from source)</li>
+  </ul>
+  <p style="margin-top:12px">Auto Spec Kit uses the <code>vscode.lm</code> API — <strong>no Anthropic, OpenAI, or other API keys needed</strong>.</p>
+</div>
+
+<div class="card">
+  <h2>🔧 Installation</h2>
+
+  <h3>Option A — From VSIX (recommended)</h3>
+  <ol class="step-list">
+    <li>Download <code>auto-spec-kit-1.7.0.vsix</code></li>
+    <li>Open VS Code → Extensions panel (<kbd>Ctrl+Shift+X</kbd>)</li>
+    <li>Click <strong>⋯ → Install from VSIX…</strong></li>
+    <li>Select the downloaded file</li>
+    <li>Reload VS Code when prompted</li>
+  </ol>
+
+  <h3>Option B — From Source</h3>
+  <pre><code>git clone https://github.com/NamHT4Devlop/auto-spec-extension.git
+cd auto-spec-extension
+npm install
+npm run compile
+npx @vscode/vsce package --no-dependencies --allow-missing-repository
+# Install the generated .vsix from the Extensions panel</code></pre>
+</div>
+
+<div class="card">
+  <h2>⚡ Quick Start (3 minutes)</h2>
+  <ol class="step-list">
+    <li>Install the extension (see above)</li>
+    <li>Open any project in VS Code</li>
+    <li class="green">Press <kbd>Ctrl+Shift+B</kbd> → <strong>Generate Knowledge Base</strong><br><em>Scans your project with multi-agent deep analysis. Takes 3-10 minutes.</em></li>
+    <li class="green">Press <kbd>Ctrl+Shift+K</kbd> → <strong>Run Task</strong><br><em>Describe what you want to build. Watch the 13-step pipeline run.</em></li>
+    <li>Review generated files in <code>spec-kit-sessions/</code></li>
+  </ol>
+</div>
+
+<div class="card">
+  <h2>⚙️ Recommended Settings</h2>
+  <pre><code>{
+  "autoSpecKit.language": "typescript",
+  "autoSpecKit.testCommand": "npx jest --coverage --coverageReporters=text 2>&1",
+  "autoSpecKit.model": "gpt-5.5",
+  "autoSpecKit.autoApplyCode": false,
+  "autoSpecKit.agents.maxParallel": 3,
+  "autoSpecKit.agents.mergeStrategy": "ai",
+  "autoSpecKit.agents.contextStrategy": "smart"
+}</code></pre>
+</div>
+</div>
+
+<!-- ═══════════════════════════════ DEV FLOW ═══════════════════════════════ -->
+<div id="dev" class="panel">
+
+<div class="card">
+  <h2>🧑‍💻 Developer Flow — Run Task</h2>
+  <span class="role role-dev">FOR: Developers</span>
+  <p>The core command. Give it a task description and it runs a <strong>13-step multi-agent pipeline</strong> from planning to evidence collection. Press <kbd>Ctrl+Shift+K</kbd> to start.</p>
+
+  <svg viewBox="0 0 700 680" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="ad" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#94a3b8"/></marker>
+    </defs>
+    <!-- Steps -->
+    <rect x="10" y="5" width="210" height="42" rx="8" fill="#3b82f6" stroke="#2563eb" stroke-width="1.5"/>
+    <text x="20" y="22" fill="white" font-size="10" font-weight="bold">STEP 01</text>
+    <text x="78" y="22" fill="rgba(255,255,255,.85)" font-size="10">Planning</text>
+    <text x="20" y="38" fill="rgba(255,255,255,.7)" font-size="8">3 agents: Codebase + Impact + Business Flow</text>
+
+    <rect x="240" y="5" width="210" height="42" rx="8" fill="#3b82f6" stroke="#2563eb" stroke-width="1.5"/>
+    <text x="250" y="22" fill="white" font-size="10" font-weight="bold">STEP 02</text>
+    <text x="308" y="22" fill="rgba(255,255,255,.85)" font-size="10">Plan Review</text>
+    <text x="250" y="38" fill="rgba(255,255,255,.7)" font-size="8">2 agents: Technical + Business Alignment</text>
+
+    <rect x="470" y="5" width="210" height="42" rx="8" fill="#94a3b8" stroke="#64748b" stroke-width="1.5"/>
+    <text x="480" y="22" fill="white" font-size="10" font-weight="bold">STEP 03</text>
+    <text x="538" y="22" fill="rgba(255,255,255,.85)" font-size="10">Plan Feedback</text>
+    <text x="480" y="38" fill="rgba(255,255,255,.7)" font-size="8">User checkpoint — optional feedback</text>
+
+    <line x1="220" y1="26" x2="240" y2="26" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ad)"/>
+    <line x1="450" y1="26" x2="470" y2="26" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ad)"/>
+
+    <!-- Row 2 -->
+    <line x1="575" y1="47" x2="575" y2="72" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ad)"/>
+
+    <rect x="10" y="75" width="210" height="42" rx="8" fill="#10b981" stroke="#059669" stroke-width="1.5"/>
+    <text x="20" y="92" fill="white" font-size="10" font-weight="bold">STEP 04</text>
+    <text x="78" y="92" fill="rgba(255,255,255,.85)" font-size="10">Code Generation</text>
+    <text x="20" y="108" fill="rgba(255,255,255,.7)" font-size="8">N agents: 1 per module (parallel)</text>
+
+    <rect x="240" y="75" width="210" height="42" rx="8" fill="#10b981" stroke="#059669" stroke-width="1.5"/>
+    <text x="250" y="92" fill="white" font-size="10" font-weight="bold">STEP 05</text>
+    <text x="308" y="92" fill="rgba(255,255,255,.85)" font-size="10">Code Review</text>
+    <text x="250" y="108" fill="rgba(255,255,255,.7)" font-size="8">4 agents: Security+Arch+Perf+Business</text>
+
+    <rect x="470" y="75" width="210" height="42" rx="8" fill="#94a3b8" stroke="#64748b" stroke-width="1.5"/>
+    <text x="480" y="92" fill="white" font-size="10" font-weight="bold">STEP 06</text>
+    <text x="538" y="92" fill="rgba(255,255,255,.85)" font-size="10">Code Feedback</text>
+    <text x="480" y="108" fill="rgba(255,255,255,.7)" font-size="8">User checkpoint — approve or fix</text>
+
+    <line x1="220" y1="96" x2="240" y2="96" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ad)"/>
+    <line x1="450" y1="96" x2="470" y2="96" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ad)"/>
+
+    <!-- Row 3 -->
+    <line x1="575" y1="117" x2="575" y2="142" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ad)"/>
+
+    <rect x="10" y="145" width="210" height="42" rx="8" fill="#f59e0b" stroke="#d97706" stroke-width="1.5"/>
+    <text x="20" y="162" fill="white" font-size="10" font-weight="bold">STEP 07</text>
+    <text x="78" y="162" fill="rgba(255,255,255,.85)" font-size="10">Write Tests</text>
+    <text x="20" y="178" fill="rgba(255,255,255,.7)" font-size="8">3 agents: Unit + Integration + Edge Case</text>
+
+    <rect x="240" y="145" width="210" height="42" rx="8" fill="#f59e0b" stroke="#d97706" stroke-width="1.5"/>
+    <text x="250" y="162" fill="white" font-size="10" font-weight="bold">STEP 08</text>
+    <text x="308" y="162" fill="rgba(255,255,255,.85)" font-size="10">Test Review</text>
+    <text x="250" y="178" fill="rgba(255,255,255,.7)" font-size="8">2 agents: Coverage + Quality</text>
+
+    <rect x="470" y="145" width="210" height="42" rx="8" fill="#94a3b8" stroke="#64748b" stroke-width="1.5"/>
+    <text x="480" y="162" fill="white" font-size="10" font-weight="bold">STEP 09</text>
+    <text x="538" y="162" fill="rgba(255,255,255,.85)" font-size="10">Test Feedback</text>
+    <text x="480" y="178" fill="rgba(255,255,255,.7)" font-size="8">User checkpoint — approve or improve</text>
+
+    <line x1="220" y1="166" x2="240" y2="166" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ad)"/>
+    <line x1="450" y1="166" x2="470" y2="166" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ad)"/>
+
+    <!-- Row 4 -->
+    <line x1="575" y1="187" x2="575" y2="212" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ad)"/>
+
+    <rect x="10" y="215" width="210" height="42" rx="8" fill="#8b5cf6" stroke="#7c3aed" stroke-width="1.5"/>
+    <text x="20" y="232" fill="white" font-size="10" font-weight="bold">STEP 10</text>
+    <text x="84" y="232" fill="rgba(255,255,255,.85)" font-size="10">Save Files</text>
+    <text x="20" y="248" fill="rgba(255,255,255,.7)" font-size="8">Extract files → apply to project or session</text>
+
+    <rect x="240" y="215" width="210" height="42" rx="8" fill="#8b5cf6" stroke="#7c3aed" stroke-width="1.5"/>
+    <text x="250" y="232" fill="white" font-size="10" font-weight="bold">STEP 11</text>
+    <text x="308" y="232" fill="rgba(255,255,255,.85)" font-size="10">Execute Tests</text>
+    <text x="250" y="248" fill="rgba(255,255,255,.7)" font-size="8">Run testCommand → capture results</text>
+
+    <line x1="220" y1="236" x2="240" y2="236" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ad)"/>
+
+    <!-- Row 5 -->
+    <line x1="345" y1="257" x2="345" y2="282" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ad)"/>
+
+    <rect x="10" y="285" width="210" height="42" rx="8" fill="#ef4444" stroke="#dc2626" stroke-width="1.5"/>
+    <text x="20" y="302" fill="white" font-size="10" font-weight="bold">STEP 12</text>
+    <text x="84" y="302" fill="rgba(255,255,255,.85)" font-size="10">Evidence Report</text>
+    <text x="20" y="318" fill="rgba(255,255,255,.7)" font-size="8">2 agents: Technical + Business evidence</text>
+
+    <rect x="240" y="285" width="210" height="42" rx="8" fill="#ef4444" stroke="#dc2626" stroke-width="1.5"/>
+    <text x="250" y="302" fill="white" font-size="10" font-weight="bold">STEP 13</text>
+    <text x="308" y="302" fill="rgba(255,255,255,.85)" font-size="10">Update KB</text>
+    <text x="250" y="318" fill="rgba(255,255,255,.7)" font-size="8">2 agents: Tech Delta + Business Delta</text>
+
+    <line x1="220" y1="306" x2="240" y2="306" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ad)"/>
+
+    <!-- Legend -->
+    <rect x="10" y="345" width="680" height="30" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+    <circle cx="30" cy="360" r="5" fill="#3b82f6"/><text x="42" y="364" font-size="9" fill="#64748b">Planning (multi-agent)</text>
+    <circle cx="170" cy="360" r="5" fill="#10b981"/><text x="182" y="364" font-size="9" fill="#64748b">Code (multi-agent)</text>
+    <circle cx="300" cy="360" r="5" fill="#f59e0b"/><text x="312" y="364" font-size="9" fill="#64748b">Tests (multi-agent)</text>
+    <circle cx="430" cy="360" r="5" fill="#8b5cf6"/><text x="442" y="364" font-size="9" fill="#64748b">Execution</text>
+    <circle cx="520" cy="360" r="5" fill="#ef4444"/><text x="532" y="364" font-size="9" fill="#64748b">Evidence & KB</text>
+    <circle cx="630" cy="360" r="5" fill="#94a3b8"/><text x="642" y="364" font-size="9" fill="#64748b">User input</text>
+  </svg>
+
+  <h3>Key Features</h3>
+  <ul>
+    <li><strong>Checkpoint Resume</strong> — If pipeline fails at step 7, you can resume from step 8 next time. State saved to <code>.pipeline-state.json</code>.</li>
+    <li><strong>Smart Context</strong> — File Discovery Agent identifies relevant files before each step. Each sub-agent gets only the context it needs.</li>
+    <li><strong>Token Budget</strong> — Auto-manages context size to prevent model overflow.</li>
+    <li><strong>Transparency</strong> — Individual agent outputs saved as <code>agent-*.md</code> in session folder for debugging.</li>
+  </ul>
+</div>
+
+<div class="card">
+  <h2>🔍 Code Review Flow</h2>
+  <span class="role role-dev">FOR: Developers</span>
+  <p>Right-click any file → <strong>Auto Spec Kit: Review Current File</strong></p>
+
+  <ol class="step-list">
+    <li>Load file content + git diff context (branch changes + working tree)</li>
+    <li>Load review skills (KB version or universal template)</li>
+    <li class="red"><strong>4 parallel review agents</strong>:
+      <br>🔒 Security Reviewer — injection, auth bypass, data exposure
+      <br>🏗 Architecture Reviewer — patterns, coupling, layer violations
+      <br>⚡ Performance Reviewer — N+1 queries, memory leaks, bottlenecks
+      <br>🏢 Business Reviewer — rules intact, state machines valid, logic preserved</li>
+    <li class="purple">Merge Agent produces final review: Section Coverage table + Business Consistency table + Issues with fixes + Verdict + Score</li>
+    <li>Review opens in a new panel beside the editor</li>
+  </ol>
+</div>
+</div>
+
+<!-- ═══════════════════════════════ PO/BA FLOW ═══════════════════════════════ -->
+<div id="po" class="panel">
+
+<div class="card">
+  <h2>📋 PO/BA Flow — Generate User Stories</h2>
+  <span class="role role-po">FOR: Product Owners, Business Analysts</span>
+  <p>Press <kbd>Ctrl+Shift+U</kbd>. Enter only <strong>Epic Title + Description</strong>. The system does everything else automatically.</p>
+
+  <svg viewBox="0 0 700 520" xmlns="http://www.w3.org/2000/svg">
+    <defs><marker id="ap" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#94a3b8"/></marker></defs>
+
+    <!-- Input -->
+    <rect x="200" y="5" width="300" height="36" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+    <text x="350" y="28" fill="#92400e" text-anchor="middle" font-size="11" font-weight="bold">INPUT: Epic Title + Description (only 2 fields)</text>
+
+    <line x1="350" y1="41" x2="350" y2="58" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ap)"/>
+
+    <!-- Step 1 -->
+    <rect x="40" y="60" width="620" height="50" rx="8" fill="#f0fdf4" stroke="#86efac" stroke-width="1"/>
+    <text x="55" y="78" fill="#166534" font-size="11" font-weight="bold">STEP 1 — KB Deep Investigation</text>
+    <text x="55" y="98" fill="#15803d" font-size="9">3 parallel agents: Domain & Entities | Business Rules | Flows & Integrations</text>
+    <circle cx="660" cy="85" r="14" fill="#10b981"/><text x="660" y="89" fill="white" text-anchor="middle" font-size="10" font-weight="bold">1</text>
+
+    <line x1="350" y1="110" x2="350" y2="125" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ap)"/>
+
+    <!-- Step 2 -->
+    <rect x="40" y="127" width="620" height="42" rx="8" fill="#ede9fe" stroke="#c4b5fd" stroke-width="1"/>
+    <text x="55" y="146" fill="#5b21b6" font-size="11" font-weight="bold">STEP 2 — Auto Feature Discovery</text>
+    <text x="55" y="160" fill="#6d28d9" font-size="9">AI splits Epic into 3-8 Features with scope boundaries — NO manual feature list needed</text>
+    <circle cx="660" cy="148" r="14" fill="#8b5cf6"/><text x="660" y="152" fill="white" text-anchor="middle" font-size="10" font-weight="bold">2</text>
+
+    <line x1="350" y1="169" x2="350" y2="184" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ap)"/>
+
+    <!-- Step 3 -->
+    <rect x="40" y="186" width="620" height="50" rx="8" fill="#fef2f2" stroke="#fca5a5" stroke-width="1"/>
+    <text x="55" y="204" fill="#991b1b" font-size="11" font-weight="bold">STEP 3 — Impact Analysis per Feature</text>
+    <text x="55" y="224" fill="#b91c1c" font-size="9">1 agent per feature (parallel): BEFORE flow ↔ AFTER flow | Breaking changes | Migration needs | Dependencies</text>
+    <circle cx="660" cy="211" r="14" fill="#ef4444"/><text x="660" y="215" fill="white" text-anchor="middle" font-size="10" font-weight="bold">3</text>
+
+    <line x1="350" y1="236" x2="350" y2="251" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ap)"/>
+
+    <!-- Step 4 -->
+    <rect x="40" y="253" width="620" height="42" rx="8" fill="#fefce8" stroke="#fde047" stroke-width="1"/>
+    <text x="55" y="272" fill="#854d0e" font-size="11" font-weight="bold">STEP 4 — Confirmation Checklist</text>
+    <text x="55" y="286" fill="#a16207" font-size="9">🔴 Must Confirm | 🟡 Should Clarify | 🔵 Assumptions Made | ⚪ Out of Scope — questions for stakeholders</text>
+    <circle cx="660" cy="274" r="14" fill="#eab308"/><text x="660" y="278" fill="white" text-anchor="middle" font-size="10" font-weight="bold">4</text>
+
+    <line x1="350" y1="295" x2="350" y2="310" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ap)"/>
+
+    <!-- Step 5 -->
+    <rect x="40" y="312" width="620" height="50" rx="8" fill="#f0fdf4" stroke="#86efac" stroke-width="1"/>
+    <text x="55" y="330" fill="#166534" font-size="11" font-weight="bold">STEP 5 — User Story Generation</text>
+    <text x="55" y="350" fill="#15803d" font-size="9">1 agent per feature (parallel): Stories + ACs (Given/When/Then) + Impact Notes (BEFORE/AFTER) + Technical Notes</text>
+    <circle cx="660" cy="337" r="14" fill="#10b981"/><text x="660" y="341" fill="white" text-anchor="middle" font-size="10" font-weight="bold">5</text>
+
+    <line x1="350" y1="362" x2="350" y2="377" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ap)"/>
+
+    <!-- Step 6 -->
+    <rect x="40" y="379" width="620" height="42" rx="8" fill="#ede9fe" stroke="#c4b5fd" stroke-width="1"/>
+    <text x="55" y="398" fill="#5b21b6" font-size="11" font-weight="bold">STEP 6 — Sprint Planning</text>
+    <text x="55" y="412" fill="#6d28d9" font-size="9">Assign sprints | Validate capacity (~35 pts/sprint) | Check dependencies | Sequence by risk</text>
+    <circle cx="660" cy="400" r="14" fill="#8b5cf6"/><text x="660" y="404" fill="white" text-anchor="middle" font-size="10" font-weight="bold">6</text>
+
+    <line x1="350" y1="421" x2="350" y2="436" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ap)"/>
+
+    <!-- Output -->
+    <rect x="40" y="438" width="300" height="50" rx="8" fill="#3b82f6" stroke="#2563eb" stroke-width="1.5"/>
+    <text x="190" y="458" fill="white" text-anchor="middle" font-size="11" font-weight="bold">Interactive HTML Report</text>
+    <text x="190" y="475" fill="rgba(255,255,255,.8)" text-anchor="middle" font-size="9">Sprint board + Impact matrix + Checklist</text>
+
+    <rect x="360" y="438" width="300" height="50" rx="8" fill="#3b82f6" stroke="#2563eb" stroke-width="1.5"/>
+    <text x="510" y="458" fill="white" text-anchor="middle" font-size="11" font-weight="bold">4 Output Files</text>
+    <text x="510" y="475" fill="rgba(255,255,255,.8)" text-anchor="middle" font-size="9">HTML + JSON + Impact.md + Confirmation.md</text>
+
+    <circle cx="660" cy="463" r="14" fill="#3b82f6"/><text x="660" y="467" fill="white" text-anchor="middle" font-size="10" font-weight="bold">7</text>
+  </svg>
+
+  <h3>What's in the Output?</h3>
+  <table>
+    <tr><th>File</th><th>Content</th></tr>
+    <tr><td><code>user-stories-*.html</code></td><td>Interactive sprint board with filters, expandable story cards, ACs, impact notes</td></tr>
+    <tr><td><code>user-stories-*.json</code></td><td>Structured EpicOutput JSON — importable to Jira, Linear, Asana</td></tr>
+    <tr><td><code>impact-analysis-*.md</code></td><td>Per-feature BEFORE/AFTER flow comparison, breaking changes, migration needs</td></tr>
+    <tr><td><code>confirmation-*.md</code></td><td>Questions for stakeholders categorized by urgency (🔴🟡🔵⚪)</td></tr>
+  </table>
+</div>
+</div>
+
+<!-- ═══════════════════════════════ SM/LEAD FLOW ═══════════════════════════════ -->
+<div id="sm" class="panel">
+
+<div class="card">
+  <h2>📊 SM / Tech Lead Flow — Knowledge Base & Graph</h2>
+  <span class="role role-sm">FOR: Scrum Masters, Tech Leads, Architects</span>
+
+  <h3>Generate Knowledge Base (<kbd>Ctrl+Shift+B</kbd>)</h3>
+  <p>Scans the entire project and generates 16 analysis files with multi-agent deep analysis on critical business files.</p>
+
+  <svg viewBox="0 0 700 220" xmlns="http://www.w3.org/2000/svg">
+    <defs><marker id="as" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#94a3b8"/></marker></defs>
+
+    <rect x="10" y="10" width="130" height="50" rx="8" fill="#6366f1" stroke="#4f46e5" stroke-width="1.5"/>
+    <text x="75" y="32" fill="white" text-anchor="middle" font-size="10" font-weight="bold">Project Scan</text>
+    <text x="75" y="46" fill="rgba(255,255,255,.8)" text-anchor="middle" font-size="8">file tree + source</text>
+
+    <line x1="140" y1="35" x2="160" y2="35" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#as)"/>
+
+    <rect x="160" y="10" width="130" height="50" rx="8" fill="#8b5cf6" stroke="#7c3aed" stroke-width="1.5"/>
+    <text x="225" y="32" fill="white" text-anchor="middle" font-size="10" font-weight="bold">Source Slicing</text>
+    <text x="225" y="46" fill="rgba(255,255,255,.8)" text-anchor="middle" font-size="8">services | tests | models</text>
+
+    <line x1="290" y1="35" x2="310" y2="35" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#as)"/>
+
+    <rect x="310" y="2" width="200" height="66" rx="8" fill="#f0fdf4" stroke="#86efac" stroke-width="1"/>
+    <text x="410" y="20" fill="#166534" text-anchor="middle" font-size="10" font-weight="bold">5 Batches × 3 Steps Parallel</text>
+    <text x="410" y="36" fill="#15803d" text-anchor="middle" font-size="8">Batch 1: Structure · Stack · Entry Points</text>
+    <text x="410" y="48" fill="#15803d" text-anchor="middle" font-size="8">Batch 2: Domain★ · Model★ · Modules</text>
+    <text x="410" y="60" fill="#15803d" text-anchor="middle" font-size="8">★ = 3 sub-agents (deep analysis)</text>
+
+    <line x1="510" y1="35" x2="530" y2="35" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#as)"/>
+
+    <rect x="530" y="10" width="150" height="50" rx="8" fill="#ef4444" stroke="#dc2626" stroke-width="1.5"/>
+    <text x="605" y="32" fill="white" text-anchor="middle" font-size="10" font-weight="bold">16 KB Files</text>
+    <text x="605" y="46" fill="rgba(255,255,255,.8)" text-anchor="middle" font-size="8">knowledge-base/</text>
+
+    <!-- KB files list -->
+    <text x="10" y="90" font-size="9" fill="#475569" font-weight="bold">Critical files (multi-agent deep analysis):</text>
+    <text x="10" y="106" font-size="9" fill="#64748b">★ 04-business-domain.md — product brief, user roles, core features, user journeys</text>
+    <text x="10" y="120" font-size="9" fill="#64748b">★ 05-domain-model.md — entities, state machines, relationships, data lifecycle</text>
+    <text x="10" y="134" font-size="9" fill="#64748b">★ 10-core-flows.md — business flows end-to-end with sequence diagrams</text>
+    <text x="10" y="148" font-size="9" fill="#64748b">★ 13-business-rules.md — all validations, state rules, calculations, invariants</text>
+    <text x="10" y="168" font-size="9" fill="#475569" font-weight="bold">Standard files (single agent):</text>
+    <text x="10" y="184" font-size="9" fill="#64748b">01-structure · 02-stack · 03-entry-points · 06-modules · 07-architecture · 08-database</text>
+    <text x="10" y="198" font-size="9" fill="#64748b">09-auth-security · 11-api-docs · 12-conventions · 14-integrations · 15-errors · review-skills.md</text>
+  </svg>
+</div>
+
+<div class="card">
+  <h2>🔭 Knowledge Graph</h2>
+  <span class="role role-sm">FOR: Architects, Tech Leads</span>
+  <p>Command Palette → <strong>Visualize Knowledge Graph</strong>. Universal multi-language scanner + optional AI enrichment.</p>
+
+  <ol class="step-list">
+    <li><strong>Static Scan</strong> — Multi-language parser (TS/JS/Python/Java/Go/Ruby/C#/PHP/Rust). Detects: file imports, class hierarchy, method declarations, API routes, decorators.</li>
+    <li class="green"><strong>Deep Analysis</strong> — Method-to-method call tracing across files. Class <code>extends</code>/<code>implements</code> relationships. Entity field extraction.</li>
+    <li class="purple"><strong>AI Enrichment</strong> (optional — user chooses):
+      <br>🔄 Flow Tracer Agent — maps business flows through the graph
+      <br>🔗 Entity Mapper Agent — finds belongs_to/has_many relationships
+      <br>🏗 Arch Validator Agent — corrects layer classifications, detects violations</li>
+    <li>D3.js force-directed graph opens in VS Code webview + HTML file saved for sharing</li>
+  </ol>
+
+  <h3>Supported Languages</h3>
+  <table>
+    <tr><th>Language</th><th>Imports</th><th>Classes</th><th>Functions</th><th>Routes</th></tr>
+    <tr><td>TypeScript/JavaScript</td><td>✅ import/require</td><td>✅ class/extends/implements</td><td>✅ function/arrow/async</td><td>✅ Express/NestJS</td></tr>
+    <tr><td>Python</td><td>✅ import/from</td><td>✅ class(Base)</td><td>✅ def/async def</td><td>✅ Flask/FastAPI</td></tr>
+    <tr><td>Java/Kotlin</td><td>✅ import</td><td>✅ class/extends/implements</td><td>✅ methods</td><td>✅ Spring @Mapping</td></tr>
+    <tr><td>Go</td><td>✅ import</td><td>✅ struct</td><td>✅ func</td><td>✅ r.GET/POST</td></tr>
+    <tr><td>Ruby</td><td>✅ require</td><td>✅ class < Base</td><td>✅ def</td><td>✅ Rails routes</td></tr>
+    <tr><td>C#</td><td>✅ using</td><td>✅ class : Base</td><td>✅ methods</td><td>—</td></tr>
+    <tr><td>PHP</td><td>✅ use/require</td><td>✅ class/extends</td><td>✅ function</td><td>—</td></tr>
+    <tr><td>Rust</td><td>✅ use/mod</td><td>✅ struct</td><td>✅ fn</td><td>—</td></tr>
+  </table>
+</div>
+</div>
+
+<!-- ═══════════════════════════════ ARCHITECTURE ═══════════════════════════════ -->
+<div id="arch" class="panel">
+
+<div class="card">
+  <h2>🏗 System Architecture</h2>
+
+  <svg viewBox="0 0 700 400" xmlns="http://www.w3.org/2000/svg">
+    <defs><marker id="aa" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#94a3b8"/></marker></defs>
+
+    <text x="350" y="18" fill="#64748b" text-anchor="middle" font-size="9" text-transform="uppercase" letter-spacing="1">Entry Point</text>
+    <rect x="250" y="24" width="200" height="36" rx="8" fill="#3b82f6" stroke="#2563eb" stroke-width="1.5"/>
+    <text x="350" y="46" fill="white" text-anchor="middle" font-size="11" font-weight="bold">extension.ts — 8 commands</text>
+
+    <text x="350" y="82" fill="#64748b" text-anchor="middle" font-size="9" text-transform="uppercase" letter-spacing="1">Workflow Layer</text>
+
+    <rect x="10" y="90" width="95" height="42" rx="6" fill="#10b981" stroke="#059669" stroke-width="1"/>
+    <text x="57" y="108" fill="white" text-anchor="middle" font-size="9" font-weight="bold">run-task</text>
+    <text x="57" y="122" fill="rgba(255,255,255,.8)" text-anchor="middle" font-size="7">13 steps</text>
+
+    <rect x="115" y="90" width="95" height="42" rx="6" fill="#10b981" stroke="#059669" stroke-width="1"/>
+    <text x="162" y="108" fill="white" text-anchor="middle" font-size="9" font-weight="bold">generate-kb</text>
+    <text x="162" y="122" fill="rgba(255,255,255,.8)" text-anchor="middle" font-size="7">16 KB files</text>
+
+    <rect x="220" y="90" width="95" height="42" rx="6" fill="#10b981" stroke="#059669" stroke-width="1"/>
+    <text x="267" y="108" fill="white" text-anchor="middle" font-size="9" font-weight="bold">review-file</text>
+    <text x="267" y="122" fill="rgba(255,255,255,.8)" text-anchor="middle" font-size="7">4 reviewers</text>
+
+    <rect x="325" y="90" width="95" height="42" rx="6" fill="#10b981" stroke="#059669" stroke-width="1"/>
+    <text x="372" y="108" fill="white" text-anchor="middle" font-size="9" font-weight="bold">user-stories</text>
+    <text x="372" y="122" fill="rgba(255,255,255,.8)" text-anchor="middle" font-size="7">7-step PO/BA</text>
+
+    <rect x="430" y="90" width="85" height="42" rx="6" fill="#6ee7b7" stroke="#059669" stroke-width="1"/>
+    <text x="472" y="108" fill="#065f46" text-anchor="middle" font-size="9" font-weight="bold">visualize</text>
+
+    <rect x="525" y="90" width="75" height="42" rx="6" fill="#6ee7b7" stroke="#059669" stroke-width="1"/>
+    <text x="562" y="108" fill="#065f46" text-anchor="middle" font-size="9" font-weight="bold">ask-kb</text>
+
+    <rect x="610" y="90" width="80" height="42" rx="6" fill="#6ee7b7" stroke="#059669" stroke-width="1"/>
+    <text x="650" y="108" fill="#065f46" text-anchor="middle" font-size="9" font-weight="bold">update-kb</text>
+
+    <text x="350" y="156" fill="#64748b" text-anchor="middle" font-size="9" text-transform="uppercase" letter-spacing="1">Pipeline Layer (run-task only)</text>
+    <rect x="10" y="164" width="680" height="36" rx="6" fill="#ede9fe" stroke="#c4b5fd" stroke-width="1"/>
+    <text x="350" y="186" fill="#5b21b6" text-anchor="middle" font-size="10" font-weight="bold">PipelineRunner + 13 Step Classes (pipeline/steps/step-01..13.ts)</text>
+
+    <text x="350" y="222" fill="#64748b" text-anchor="middle" font-size="9" text-transform="uppercase" letter-spacing="1">Utils Layer</text>
+
+    <rect x="10" y="230" width="100" height="36" rx="6" fill="#f59e0b" stroke="#d97706" stroke-width="1"/>
+    <text x="60" y="252" fill="white" text-anchor="middle" font-size="9" font-weight="bold">copilot.ts</text>
+
+    <rect x="120" y="230" width="100" height="36" rx="6" fill="#f59e0b" stroke="#d97706" stroke-width="1"/>
+    <text x="170" y="252" fill="white" text-anchor="middle" font-size="9" font-weight="bold">orchestrator</text>
+
+    <rect x="230" y="230" width="100" height="36" rx="6" fill="#f59e0b" stroke="#d97706" stroke-width="1"/>
+    <text x="280" y="252" fill="white" text-anchor="middle" font-size="9" font-weight="bold">smart-context</text>
+
+    <rect x="340" y="230" width="100" height="36" rx="6" fill="#f59e0b" stroke="#d97706" stroke-width="1"/>
+    <text x="390" y="252" fill="white" text-anchor="middle" font-size="9" font-weight="bold">graph-builder</text>
+
+    <rect x="450" y="230" width="100" height="36" rx="6" fill="#f59e0b" stroke="#d97706" stroke-width="1"/>
+    <text x="500" y="252" fill="white" text-anchor="middle" font-size="9" font-weight="bold">token-budget</text>
+
+    <rect x="560" y="230" width="130" height="36" rx="6" fill="#f59e0b" stroke="#d97706" stroke-width="1"/>
+    <text x="625" y="252" fill="white" text-anchor="middle" font-size="9" font-weight="bold">git-utils · file-utils</text>
+
+    <text x="350" y="290" fill="#64748b" text-anchor="middle" font-size="9" text-transform="uppercase" letter-spacing="1">External</text>
+    <rect x="150" y="296" width="400" height="30" rx="6" fill="none" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4"/>
+    <text x="350" y="316" fill="#64748b" text-anchor="middle" font-size="10">vscode.lm API → GitHub Copilot (no external API keys)</text>
+
+    <text x="350" y="354" fill="#64748b" text-anchor="middle" font-size="9" text-transform="uppercase" letter-spacing="1">Storage</text>
+    <rect x="60" y="360" width="200" height="30" rx="6" fill="#9b59b6" stroke="#8e44ad" stroke-width="1"/>
+    <text x="160" y="380" fill="white" text-anchor="middle" font-size="10" font-weight="bold">knowledge-base/ (16 .md files)</text>
+    <rect x="280" y="360" width="200" height="30" rx="6" fill="#9b59b6" stroke="#8e44ad" stroke-width="1"/>
+    <text x="380" y="380" fill="white" text-anchor="middle" font-size="10" font-weight="bold">spec-kit-sessions/ (outputs)</text>
+    <rect x="500" y="360" width="160" height="30" rx="6" fill="#9b59b6" stroke="#8e44ad" stroke-width="1"/>
+    <text x="580" y="380" fill="white" text-anchor="middle" font-size="10" font-weight="bold">review-skills.md</text>
+  </svg>
+
+  <h3>File Structure (46 TypeScript files)</h3>
+  <pre><code>src/
+├── extension.ts                    ← entry point, 8 commands
+├── logger.ts                       ← output channel
+├── types/index.ts                  ← ExtractedFile, TestResult
+├── constants/kb-steps.ts           ← 15 KB generation prompts
+├── utils/
+│   ├── agent-orchestrator.ts       ← multi-agent runner (NEW)
+│   ├── smart-context.ts            ← file discovery + context loading (NEW)
+│   ├── token-budget.ts             ← token estimation + budget (NEW)
+│   ├── session-store.ts            ← session management (NEW)
+│   ├── graph-enricher.ts           ← AI graph analysis (NEW)
+│   ├── copilot.ts                  ← vscode.lm wrapper + retry
+│   ├── graph-builder.ts            ← universal multi-lang scanner
+│   ├── html-builder.ts             ← HTML report generator
+│   ├── model-selector.ts           ← model discovery + ranking
+│   ├── git-utils.ts                ← git diff context
+│   ├── file-utils.ts               ← KB loader, file extractor
+│   ├── project-scanner.ts          ← project file walker
+│   ├── coverage.ts                 ← test coverage parser
+│   └── checkpoint.ts               ← user feedback prompts
+├── workflow/
+│   ├── run-task.ts                 ← 13-step pipeline orchestrator
+│   ├── generate-kb.ts              ← KB generation (batch-parallel)
+│   ├── generate-user-stories.ts    ← PO/BA 7-step workflow
+│   ├── review-file.ts              ← 4-agent code review
+│   ├── update-kb.ts                ← incremental KB update
+│   ├── ask-kb.ts                   ← Q&A over KB
+│   ├── visualize-kb.ts             ← knowledge graph
+│   └── pipeline/
+│       ├── types.ts                ← PipelineContext, PipelineStep
+│       ├── runner.ts               ← PipelineRunner (checkpoint/resume)
+│       ├── index.ts                ← exports + ALL_STEPS
+│       └── steps/
+│           ├── step-01-planning.ts         ← 3 agents
+│           ├── step-02-plan-review.ts      ← 2 agents
+│           ├── step-03-plan-feedback.ts    ← user input
+│           ├── step-04-code-generation.ts  ← N agents
+│           ├── step-05-code-review.ts      ← 4 agents
+│           ├── step-06-code-feedback.ts    ← user input
+│           ├── step-07-write-tests.ts      ← 3 agents
+│           ├── step-08-test-review.ts      ← 2 agents
+│           ├── step-09-test-feedback.ts    ← user input
+│           ├── step-10-save-files.ts       ← file I/O
+│           ├── step-11-execute-tests.ts    ← shell exec
+│           ├── step-12-evidence.ts         ← 2 agents
+│           └── step-13-update-kb.ts        ← 2 agents</code></pre>
+</div>
+</div>
+
+<!-- ═══════════════════════════════ CONFIG ═══════════════════════════════ -->
+<div id="config" class="panel">
+
+<div class="card">
+  <h2>⚙️ Configuration Reference</h2>
+  <p>Open VS Code Settings (<kbd>Ctrl+,</kbd>) and search <strong>Auto Spec Kit</strong>.</p>
+
+  <h3>Core Settings</h3>
+  <table>
+    <tr><th>Setting</th><th>Default</th><th>Description</th></tr>
+    <tr><td><code>autoSpecKit.language</code></td><td><code>typescript</code></td><td>Primary language: typescript, javascript, python, java, go</td></tr>
+    <tr><td><code>autoSpecKit.testCommand</code></td><td><code>""</code></td><td>Command to run tests. E.g. <code>npx jest --coverage 2>&1</code></td></tr>
+    <tr><td><code>autoSpecKit.knowledgeBasePath</code></td><td><code>knowledge-base</code></td><td>Relative path to KB folder</td></tr>
+    <tr><td><code>autoSpecKit.sessionsDir</code></td><td><code>spec-kit-sessions</code></td><td>Where session outputs are saved</td></tr>
+    <tr><td><code>autoSpecKit.autoApplyCode</code></td><td><code>false</code></td><td>Auto-write generated code to project</td></tr>
+    <tr><td><code>autoSpecKit.model</code></td><td><code>""</code></td><td>Preferred Copilot model ID. Blank = auto-select best</td></tr>
+    <tr><td><code>autoSpecKit.askModelOnStart</code></td><td><code>false</code></td><td>Show model picker on every command</td></tr>
+  </table>
+
+  <h3>Multi-Agent Settings</h3>
+  <table>
+    <tr><th>Setting</th><th>Default</th><th>Description</th></tr>
+    <tr><td><code>autoSpecKit.agents.maxParallel</code></td><td><code>3</code></td><td>Max sub-agents running simultaneously (1-6)</td></tr>
+    <tr><td><code>autoSpecKit.agents.timeout</code></td><td><code>90000</code></td><td>Per-agent timeout in ms</td></tr>
+    <tr><td><code>autoSpecKit.agents.mergeStrategy</code></td><td><code>ai</code></td><td><code>ai</code> = LLM merge, <code>concat</code> = join, <code>structured</code> = sections</td></tr>
+    <tr><td><code>autoSpecKit.agents.contextStrategy</code></td><td><code>smart</code></td><td><code>smart</code> = file discovery, <code>full</code> = all KB, <code>minimal</code> = req only</td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <h2>🤖 Model Priority (2026)</h2>
+  <table>
+    <tr><th>Priority</th><th>Model</th><th>Best For</th></tr>
+    <tr><td>⭐ 1</td><td>gpt-5.5</td><td>Complex tasks, large codebases</td></tr>
+    <tr><td>⭐ 2</td><td>claude-opus-4-7</td><td>Deep analysis, business logic</td></tr>
+    <tr><td>3</td><td>gpt-5.4</td><td>General purpose</td></tr>
+    <tr><td>4</td><td>claude-opus-4-6</td><td>Balanced quality/speed</td></tr>
+    <tr><td>5</td><td>gemini-3.1-pro</td><td>Large context windows</td></tr>
+    <tr><td>6</td><td>claude-sonnet-4-6</td><td>Fast iterations</td></tr>
+    <tr><td>7</td><td>o4-mini</td><td>Quick tasks, cost-effective</td></tr>
+  </table>
+</div>
+</div>
+
+</div><!-- .container -->
+
+<script>
+function showTab(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>
