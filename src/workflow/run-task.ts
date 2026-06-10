@@ -34,22 +34,37 @@ function loadReviewSkills(workspaceRoot: string, kbRelPath: string, extensionPat
   return '';
 }
 
+/** Extra context injected by chat-participant (SessionMemory, Profile, Learnings) */
+export interface EnrichmentContext {
+  profileContext?: string;
+  learningsContext?: string;
+  sessionContext?: string;
+  effectiveConfig?: {
+    language: string;
+    testCommand: string;
+    knowledgeBasePath: string;
+    sessionsDir: string;
+    ignore: string[];
+  };
+}
+
 export async function runWorkflow(
   requirement: string,
   workspaceRoot: string,
   model: vscode.LanguageModelChat,
   token: vscode.CancellationToken,
   progress: vscode.Progress<{ message?: string; increment?: number }>,
-  extensionPath: string
+  extensionPath: string,
+  enrichment?: EnrichmentContext,
 ): Promise<void> {
 
-  // ── Config ──────────────────────────────────────────────────────
+  // ── Config (use effective config from .autospec.yml if available) ──
   const cfg = vscode.workspace.getConfiguration('autoSpecKit');
-  const lang = cfg.get<string>('language', 'typescript');
-  const kbRelPath = cfg.get<string>('knowledgeBasePath', 'knowledge-base');
-  const testCmd = cfg.get<string>('testCommand', '');
+  const lang = enrichment?.effectiveConfig?.language ?? cfg.get<string>('language', 'typescript');
+  const kbRelPath = enrichment?.effectiveConfig?.knowledgeBasePath ?? cfg.get<string>('knowledgeBasePath', 'knowledge-base');
+  const testCmd = enrichment?.effectiveConfig?.testCommand ?? cfg.get<string>('testCommand', '');
   const autoApply = cfg.get<boolean>('autoApplyCode', false);
-  const sessionsDir = cfg.get<string>('sessionsDir', 'spec-kit-sessions');
+  const sessionsDir = enrichment?.effectiveConfig?.sessionsDir ?? cfg.get<string>('sessionsDir', 'spec-kit-sessions');
 
   // ── Session directory ───────────────────────────────────────────
   const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
@@ -81,11 +96,26 @@ export async function runWorkflow(
   const kb = loadKnowledgeBase(workspaceRoot, kbRelPath);
   const reviewSkills = loadReviewSkills(workspaceRoot, kbRelPath, extensionPath);
 
+  // ── Build enriched system prompt ─────────────────────────────────
+  const enrichmentSections: string[] = [];
+
+  if (enrichment?.profileContext) {
+    enrichmentSections.push(`=== PROJECT PROFILE ===\n${enrichment.profileContext}`);
+  }
+  if (enrichment?.learningsContext) {
+    enrichmentSections.push(enrichment.learningsContext);
+  }
+  if (enrichment?.sessionContext) {
+    enrichmentSections.push(enrichment.sessionContext);
+  }
+
   const systemPrompt = `\
 You are a senior software engineer implementing tasks inside a real codebase.
 
 === PROJECT KNOWLEDGE BASE ===
 ${kb || '(No knowledge base found. Use general best practices.)'}
+
+${enrichmentSections.join('\n\n')}
 
 === ABSOLUTE RULES ===
 1. Follow the EXACT patterns, naming conventions, and folder structure from the knowledge base.

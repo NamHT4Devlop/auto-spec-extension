@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Auto Spec Kit v1.7.0 — Documentation</title>
+<title>Auto Spec Kit v1.8.0 — Documentation</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #1e293b; min-height: 100vh; }
@@ -88,9 +88,9 @@
   <h1>Auto Spec Kit</h1>
   <p class="subtitle">Automate the full development workflow: Requirement → Plan → Code → Review → Test → Evidence</p>
   <div style="margin-top:10px">
-    <span class="badge badge-blue">v1.7.0</span>
+    <span class="badge badge-blue">v1.8.0</span>
     <span class="badge badge-green">Multi-Agent</span>
-    <span class="badge badge-purple">GitHub Copilot</span>
+    <span class="badge badge-purple">Adaptive Intelligence</span>
     <span class="badge badge-orange">No API Key</span>
   </div>
 </header>
@@ -103,6 +103,7 @@
   <div class="tab" onclick="showTab('dev')">🧑‍💻 DEV Flow</div>
   <div class="tab" onclick="showTab('po')">📋 PO/BA Flow</div>
   <div class="tab" onclick="showTab('sm')">📊 SM/Lead Flow</div>
+  <div class="tab" onclick="showTab('intel')">🧠 Intelligence</div>
   <div class="tab" onclick="showTab('arch')">Architecture</div>
   <div class="tab" onclick="showTab('config')">Configuration</div>
 </div>
@@ -261,6 +262,7 @@ npx @vscode/vsce package --no-dependencies --allow-missing-repository
     <tr><td><code>@autospec /ask</code></td><td>Ask about codebase (uses KB)</td><td><code>@autospec /ask How does auth work?</code></td></tr>
     <tr><td><code>@autospec /plan</code></td><td>Plan user stories (PO/BA)</td><td><code>@autospec /plan User onboarding redesign...</code></td></tr>
     <tr><td><code>@autospec /map</code></td><td>Map the codebase — dependency graph</td><td><code>@autospec /map</code></td></tr>
+    <tr><td><code>@autospec /help</code></td><td>Status dashboard + command reference</td><td><code>@autospec /help</code></td></tr>
   </table>
 
   <h3>Free Text (no slash command)</h3>
@@ -291,7 +293,7 @@ npx @vscode/vsce package --no-dependencies --allow-missing-repository
     <!-- chat-participant.ts -->
     <rect x="540" y="10" width="150" height="36" rx="8" fill="#3b82f6" stroke="#2563eb" stroke-width="1.5"/>
     <text x="615" y="26" fill="white" text-anchor="middle" font-size="9" font-weight="bold">chat-participant.ts</text>
-    <text x="615" y="40" fill="rgba(255,255,255,.8)" text-anchor="middle" font-size="8">handleRun()</text>
+    <text x="615" y="40" fill="rgba(255,255,255,.8)" text-anchor="middle" font-size="8">handleBuild()</text>
 
     <!-- Arrow down -->
     <line x1="615" y1="46" x2="615" y2="68" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ac)"/>
@@ -669,6 +671,187 @@ Bot:     💬 Searching Knowledge Base...
     <tr><td>Rust</td><td>✅ use/mod</td><td>✅ struct</td><td>✅ fn</td><td>—</td></tr>
   </table>
 </div>
+</div>
+
+<!-- ═══════════════════════════════ INTELLIGENCE (v1.8.0) ═══════════════════════════════ -->
+<div id="intel" class="panel">
+
+<div class="card">
+  <h2>🧠 Adaptive Intelligence — v1.8.0</h2>
+  <p>Five systems that make Auto Spec Kit smarter over time and work across any project structure.</p>
+
+  <svg viewBox="0 0 700 380" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="ia" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#94a3b8"/></marker>
+    </defs>
+
+    <!-- Title -->
+    <text x="350" y="22" fill="#1e293b" text-anchor="middle" font-size="14" font-weight="700">Adaptive Intelligence Architecture</text>
+
+    <!-- User Input -->
+    <rect x="250" y="40" width="200" height="36" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="350" y="63" text-anchor="middle" font-size="12" font-weight="600" fill="#1e40af">@autospec /build "add login"</text>
+
+    <!-- Arrow down -->
+    <line x1="350" y1="76" x2="350" y2="100" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ia)"/>
+
+    <!-- WorkspaceResolver -->
+    <rect x="20" y="100" width="160" height="56" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+    <text x="100" y="122" text-anchor="middle" font-size="11" font-weight="700" fill="#92400e">WorkspaceResolver</text>
+    <text x="100" y="140" text-anchor="middle" font-size="9" fill="#a16207">Multi-root · Monorepo</text>
+    <text x="100" y="150" text-anchor="middle" font-size="9" fill="#a16207">.autospec.yml config</text>
+
+    <!-- RequirementClarifier -->
+    <rect x="200" y="100" width="160" height="56" rx="10" fill="#fce7f3" stroke="#ec4899" stroke-width="1.5"/>
+    <text x="280" y="122" text-anchor="middle" font-size="11" font-weight="700" fill="#9d174d">RequirementClarifier</text>
+    <text x="280" y="138" text-anchor="middle" font-size="9" fill="#be185d">4-dimension scoring</text>
+    <text x="280" y="150" text-anchor="middle" font-size="9" fill="#be185d">Targeted questions</text>
+
+    <!-- ProjectProfile -->
+    <rect x="520" y="100" width="160" height="56" rx="10" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+    <text x="600" y="122" text-anchor="middle" font-size="11" font-weight="700" fill="#166534">ProjectProfile</text>
+    <text x="600" y="138" text-anchor="middle" font-size="9" fill="#15803d">Auto-detect stack</text>
+    <text x="600" y="150" text-anchor="middle" font-size="9" fill="#15803d">20+ frameworks</text>
+
+    <!-- Arrows into pipeline -->
+    <line x1="100" y1="156" x2="100" y2="195" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4"/>
+    <line x1="100" y1="195" x2="200" y2="195" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4" marker-end="url(#ia)"/>
+    <line x1="280" y1="156" x2="280" y2="180" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ia)"/>
+    <line x1="600" y1="156" x2="600" y2="195" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4"/>
+    <line x1="600" y1="195" x2="500" y2="195" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4" marker-end="url(#ia)"/>
+
+    <!-- Enriched System Prompt -->
+    <rect x="200" y="180" width="300" height="40" rx="10" fill="#1e293b" stroke="#475569" stroke-width="1.5"/>
+    <text x="350" y="200" text-anchor="middle" font-size="11" font-weight="700" fill="#e2e8f0">Enriched System Prompt</text>
+    <text x="350" y="214" text-anchor="middle" font-size="9" fill="#94a3b8">KB + Profile + Learnings + Session Memory</text>
+
+    <!-- Arrow down -->
+    <line x1="350" y1="220" x2="350" y2="250" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ia)"/>
+
+    <!-- 13-Step Pipeline -->
+    <rect x="200" y="250" width="300" height="36" rx="10" fill="#3b82f6" stroke="#2563eb" stroke-width="1.5"/>
+    <text x="350" y="273" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">13-Step Pipeline (Multi-Agent)</text>
+
+    <!-- SessionMemory on left -->
+    <rect x="20" y="240" width="155" height="56" rx="10" fill="#e0e7ff" stroke="#6366f1" stroke-width="1.5"/>
+    <text x="97" y="262" text-anchor="middle" font-size="11" font-weight="700" fill="#3730a3">SessionMemory</text>
+    <text x="97" y="278" text-anchor="middle" font-size="9" fill="#4338ca">Rolling context</text>
+    <text x="97" y="288" text-anchor="middle" font-size="9" fill="#4338ca">Cross-turn persistence</text>
+    <line x1="175" y1="268" x2="200" y2="268" stroke="#6366f1" stroke-width="1.5" marker-end="url(#ia)"/>
+
+    <!-- LearningStore on right -->
+    <rect x="525" y="240" width="155" height="56" rx="10" fill="#fef9c3" stroke="#eab308" stroke-width="1.5"/>
+    <text x="602" y="262" text-anchor="middle" font-size="11" font-weight="700" fill="#854d0e">LearningStore</text>
+    <text x="602" y="278" text-anchor="middle" font-size="9" fill="#a16207">Reinforced patterns</text>
+    <text x="602" y="288" text-anchor="middle" font-size="9" fill="#a16207">Gets smarter over time</text>
+    <line x1="525" y1="268" x2="500" y2="268" stroke="#eab308" stroke-width="1.5" marker-end="url(#ia)"/>
+
+    <!-- Arrow down from pipeline -->
+    <line x1="350" y1="286" x2="350" y2="310" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ia)"/>
+
+    <!-- Output -->
+    <rect x="230" y="310" width="240" height="32" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+    <text x="350" y="331" text-anchor="middle" font-size="11" font-weight="600" fill="#166534">✅ Production-Ready Code + Tests + Evidence</text>
+
+    <!-- Feedback loop arrow from output back to LearningStore -->
+    <path d="M470,326 L602,326 L602,296" stroke="#eab308" stroke-width="1" stroke-dasharray="4" fill="none" marker-end="url(#ia)"/>
+    <text x="540" y="320" font-size="8" fill="#a16207">feedback loop</text>
+  </svg>
+</div>
+
+<div class="card">
+  <h2>📋 System Details</h2>
+
+  <h3>1. SessionMemory</h3>
+  <p>Long Copilot Chat sessions truncate early messages due to model token limits. SessionMemory persists key context in <code>workspaceState</code>:</p>
+  <table>
+    <tr><th>Feature</th><th>Detail</th></tr>
+    <tr><td>Entry types</td><td><code>requirement</code>, <code>decision</code>, <code>plan</code>, <code>feedback</code>, <code>error</code>, <code>milestone</code>, <code>preference</code></td></tr>
+    <tr><td>Priority system</td><td>1 = must keep, 2 = important, 3 = can summarize</td></tr>
+    <tr><td>Auto-compaction</td><td>At 30 entries, old low-priority entries are rolled into a summary</td></tr>
+    <tr><td>Token budget</td><td><code>getContextForPrompt(maxTokens)</code> — trims from lowest priority first</td></tr>
+    <tr><td>File</td><td><code>src/utils/session-memory.ts</code></td></tr>
+  </table>
+
+  <h3>2. RequirementClarifier</h3>
+  <p>Scores requirement clarity across 4 dimensions before running the pipeline:</p>
+  <table>
+    <tr><th>Dimension</th><th>Score</th><th>What it measures</th></tr>
+    <tr><td>Specificity</td><td>0-25</td><td>Named entities, endpoints, fields, UI elements</td></tr>
+    <tr><td>Scope</td><td>0-25</td><td>Clear boundary — what's included vs excluded</td></tr>
+    <tr><td>Acceptance</td><td>0-25</td><td>Testable success criteria</td></tr>
+    <tr><td>Technical</td><td>0-25</td><td>Tech choices specified or inferable from KB</td></tr>
+  </table>
+  <p>Threshold: <strong>60/100</strong>. Below threshold → asks up to 3 targeted questions. In chat mode, questions appear inline; in Command Palette mode, via Quick Pick dialogs.</p>
+
+  <h3>3. ProjectProfileDetector</h3>
+  <p>Auto-detects your project stack by scanning marker files. Cached in <code>.autospec/profile.json</code> for 24h.</p>
+  <table>
+    <tr><th>Category</th><th>Detected Values</th></tr>
+    <tr><td>Languages</td><td>Java, TypeScript, JavaScript, Python, Ruby, Go, C#</td></tr>
+    <tr><td>Frameworks</td><td>Spring Boot, Next.js, Angular, React, NestJS, Express, Rails, Django, FastAPI, Gin, .NET, and 10+ more</td></tr>
+    <tr><td>Build tools</td><td>Maven, Gradle, npm, yarn, pnpm, vite, webpack, bundler, poetry, pip</td></tr>
+    <tr><td>Test frameworks</td><td>Jest, Vitest, JUnit, RSpec, pytest, go test, xUnit, Mocha, Playwright, Cypress</td></tr>
+    <tr><td>Linters</td><td>ESLint, RuboCop, golangci-lint, Flake8</td></tr>
+    <tr><td>Formatters</td><td>Prettier, Black, gofmt</td></tr>
+    <tr><td>Databases</td><td>PostgreSQL, MongoDB, MySQL (via Prisma, TypeORM, Mongoose, Rails config)</td></tr>
+    <tr><td>CI/CD</td><td>GitHub Actions, GitLab CI, Jenkins, CircleCI, Bitbucket Pipelines</td></tr>
+    <tr><td>Monorepo</td><td>Nx, Turborepo, Lerna, pnpm workspaces, npm workspaces</td></tr>
+  </table>
+
+  <h3>4. LearningStore</h3>
+  <p>Persists patterns from past sessions. Injected as <code>=== PROJECT LEARNINGS ===</code> block in every prompt.</p>
+  <table>
+    <tr><th>Category</th><th>Example</th></tr>
+    <tr><td><code>review-fix</code></td><td>"Always use parameterized queries for SQL"</td></tr>
+    <tr><td><code>test-pattern</code></td><td>"Service tests need database mock setup"</td></tr>
+    <tr><td><code>user-preference</code></td><td>"User prefers service classes over utility functions"</td></tr>
+    <tr><td><code>convention</code></td><td>"API responses use { data, error, meta } wrapper"</td></tr>
+    <tr><td><code>architecture</code></td><td>"Event-driven for inter-service communication"</td></tr>
+    <tr><td><code>avoid</code></td><td>"Don't use library X — user rejected it"</td></tr>
+  </table>
+  <p>Duplicate learnings are reinforced (count incremented). Top 15 learnings injected into prompts. Max 100 entries, auto-pruned by reinforcement count. Stored in <code>.autospec/learnings.json</code>.</p>
+
+  <h3>5. WorkspaceResolver</h3>
+  <p>Handles 4 workspace scenarios automatically:</p>
+  <table>
+    <tr><th>Scenario</th><th>Behavior</th></tr>
+    <tr><td>Single repo</td><td>Uses directly — no picker</td></tr>
+    <tr><td>Multi-root workspace</td><td>Shows Quick Pick to select folder</td></tr>
+    <tr><td>Monorepo (Nx/Turbo/Lerna/pnpm)</td><td>Detects packages, lets you scope to one or target root</td></tr>
+    <tr><td>Folder of repos</td><td>Auto-discovers <code>.git</code> subdirs, shows picker</td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <h2>📄 .autospec.yml — Per-Project Config</h2>
+  <p>Drop a <code>.autospec.yml</code> in your project root to override settings without touching VS Code config:</p>
+  <pre><code># .autospec.yml
+language: java
+testCommand: mvn test
+knowledgeBasePath: docs/kb
+sessionsDir: .autospec-sessions
+ignore:
+  - "*.generated.ts"
+  - "dist/**"</code></pre>
+  <p>Config priority: <code>.autospec.yml</code> &gt; VS Code settings &gt; defaults. Also supports <code>.autospec.json</code> as alternative format.</p>
+</div>
+
+<div class="card">
+  <h2>📊 /help — Context-Aware Dashboard</h2>
+  <p><code>@autospec /help</code> shows a live status dashboard:</p>
+  <table>
+    <tr><th>Item</th><th>What it shows</th></tr>
+    <tr><td>Knowledge Base</td><td>File count + last update time</td></tr>
+    <tr><td>Model</td><td>Configured or auto-selected model</td></tr>
+    <tr><td>Sessions</td><td>Number of past build sessions</td></tr>
+    <tr><td>Project Profile</td><td>Detected language / framework</td></tr>
+    <tr><td>Learnings</td><td>Count of accumulated learnings</td></tr>
+    <tr><td>Workspace</td><td>Single / Multi-root / Monorepo type</td></tr>
+    <tr><td>Config</td><td>.autospec.yml detected or default</td></tr>
+  </table>
+</div>
+
 </div>
 
 <!-- ═══════════════════════════════ ARCHITECTURE ═══════════════════════════════ -->

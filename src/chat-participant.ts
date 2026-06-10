@@ -10,7 +10,15 @@
  *   @autospec /ask Which module handles payment?
  *   @autospec /plan Epic: User onboarding redesign
  *   @autospec /map
+ *   @autospec /help
  *   @autospec (free text → defaults to /ask)
+ *
+ * Integrated systems:
+ *   - SessionMemory     — persistent context across long chat sessions
+ *   - RequirementClarifier — AI-driven requirement enrichment for vague inputs
+ *   - ProjectProfileDetector — auto-detect project stack & conventions
+ *   - LearningStore     — agent gets smarter over time from past sessions
+ *   - WorkspaceResolver — multi-root workspace, monorepo, .autospec.yml support
  */
 
 import * as vscode from 'vscode';
@@ -23,8 +31,18 @@ import { updateKBStandalone } from './workflow/update-kb';
 import { askAboutCodebase } from './workflow/ask-kb';
 import { generateUserStories } from './workflow/generate-user-stories';
 import { visualizeKnowledgeBase } from './workflow/visualize-kb';
+import { SessionMemory } from './utils/session-memory';
+import { RequirementClarifier } from './utils/requirement-clarifier';
+import { ProjectProfileDetector } from './utils/project-profile';
+import { LearningStore } from './utils/learning-store';
+import { WorkspaceResolver } from './utils/workspace-resolver';
 
 const PARTICIPANT_ID = 'auto-spec-kit.autospec';
+
+// ── Shared instances (initialized once per extension activation) ──────────────
+let sessionMemory: SessionMemory;
+let workspaceResolver: WorkspaceResolver;
+let requirementClarifier: RequirementClarifier;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CHAT HANDLER
@@ -37,14 +55,29 @@ async function handleChatRequest(
   chatToken: vscode.CancellationToken,
   extensionContext: vscode.ExtensionContext,
 ): Promise<vscode.ChatResult> {
-  const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  // ── Resolve workspace root (supports multi-root + monorepo) ──
+  const command = request.command ?? '';
+  const userPrompt = request.prompt.trim();
+
+  let root: string | null;
+  if (command === 'help' || (!command && !userPrompt)) {
+    // Quick resolve for help — no picker
+    root = workspaceResolver.resolveQuick();
+  } else {
+    // Full resolve — may show picker for multi-root/monorepo
+    const resolved = await workspaceResolver.resolve();
+    root = resolved?.root ?? null;
+
+    // Apply .autospec.yml overrides if present
+    if (resolved?.configOverrides) {
+      workspaceResolver.applyConfigOverrides(resolved.configOverrides);
+    }
+  }
+
   if (!root) {
     stream.markdown('⚠️ **Please open a workspace folder first.**\n\nAuto Spec Kit needs a project folder to work with.');
     return { metadata: { command: request.command ?? 'none' } };
   }
-
-  const command = request.command ?? '';
-  const userPrompt = request.prompt.trim();
 
   log(`\n🤖 Chat: @autospec /${command} ${userPrompt}`);
 
@@ -71,17 +104,21 @@ async function handleChatRequest(
       case 'map':
         return await handleMap(root, stream, extensionContext);
 
+      case 'help':
+        return showHelp(stream, root);
+
       default:
         // No slash command → treat as /ask if there's a prompt, otherwise show help
         if (userPrompt) {
           return await handleAsk(root, userPrompt, stream, chatToken);
         }
-        return showHelp(stream);
+        return showHelp(stream, root);
     }
   } catch (err: any) {
     if (!chatToken.isCancellationRequested) {
       stream.markdown(`\n\n❌ **Error**: ${err?.message ?? err}`);
       log(`❌ Chat error: ${err?.message ?? err}`);
+      sessionMemory.addError(`${command}: ${err?.message ?? err}`);
     }
     return { metadata: { command, error: err?.message } };
   }
@@ -109,18 +146,48 @@ async function handleBuild(
     return { metadata: { command: 'build' } };
   }
 
+  // ── Clarify vague requirements ──
+  const enrichedRequirement = await requirementClarifier.clarifyIfNeeded(
+    requirement, root, model, token, stream,
+  );
+
+  // ── Auto-detect project profile ──
+  const profileDetector = new ProjectProfileDetector(root);
+  const profile = profileDetector.detect();
+  const profileContext = ProjectProfileDetector.toPromptContext(profile);
+
+  // ── Load learnings ──
+  const learningStore = new LearningStore(root);
+  const learningsContext = learningStore.toPromptContext();
+
+  // ── Start session memory ──
+  sessionMemory.startSession('build', enrichedRequirement);
+  if (profileContext) { sessionMemory.addDecision(`Project: ${profileContext}`); }
+
   stream.progress('Building feature — running 13-step pipeline...');
-  stream.markdown(`🚀 **Auto Spec Kit — Build Feature**\n\n**Requirement:** ${requirement}\n\n**Model:** ${model.name}\n\n---\n\n`);
+  stream.markdown(`🚀 **Auto Spec Kit — Build Feature**\n\n**Requirement:** ${enrichedRequirement}\n\n**Model:** ${model.name}\n\n---\n\n`);
 
   const progress: vscode.Progress<{ message?: string; increment?: number }> = {
     report: (value) => {
       if (value.message) {
         stream.progress(value.message);
+        sessionMemory.addMilestone(value.message);
       }
     },
   };
 
-  await runWorkflow(requirement, root, model, token, progress, extContext.extensionPath);
+  // ── Get effective config (respects .autospec.yml overrides) ──
+  const effectiveConfig = workspaceResolver.getEffectiveConfig(root);
+
+  await runWorkflow(enrichedRequirement, root, model, token, progress, extContext.extensionPath, {
+    profileContext,
+    learningsContext,
+    sessionContext: sessionMemory.getContextForPrompt(3000),
+    effectiveConfig,
+  });
+
+  sessionMemory.addMilestone('Build pipeline completed');
+  sessionMemory.endSession();
 
   stream.markdown('\n\n✅ **Build completed!** Check the Output panel (`Auto Spec Kit`) for full details.\n\nGenerated files are in your `spec-kit-sessions/` folder.');
 
@@ -139,8 +206,13 @@ async function handleScan(
     return { metadata: { command: 'scan' } };
   }
 
+  // Auto-detect project profile (refreshes during scan)
+  const profileDetector = new ProjectProfileDetector(root);
+  const profile = profileDetector.detect(true); // force refresh on scan
+  log(`📋 Scan: detected ${profile.language} / ${profile.framework}`);
+
   stream.progress('Scanning project...');
-  stream.markdown('📚 **Scanning Project**\n\nAnalyzing your codebase with multi-agent batch parallelism (5 batches × 3 agents)...\n\n');
+  stream.markdown(`📚 **Scanning Project** — ${profile.language} / ${profile.framework}\n\nAnalyzing your codebase with multi-agent batch parallelism (5 batches × 3 agents)...\n\n`);
 
   const progress: vscode.Progress<{ message?: string; increment?: number }> = {
     report: (value) => {
@@ -290,8 +362,111 @@ async function handleRescan(
 // HELP
 // ═══════════════════════════════════════════════════════════════════════════════
 
-function showHelp(stream: vscode.ChatResponseStream): vscode.ChatResult {
-  stream.markdown(`# 🚀 Auto Spec Kit — Commands
+function showHelp(stream: vscode.ChatResponseStream, root?: string): vscode.ChatResult {
+  // ── Detect KB status ──
+  let kbStatus = '❌ Not generated yet';
+  if (root) {
+    const cfg = vscode.workspace.getConfiguration('autoSpecKit');
+    const kbRelPath = cfg.get<string>('knowledgeBasePath', 'knowledge-base');
+    const kbDir = require('path').join(root, kbRelPath);
+    const fs = require('fs');
+    if (fs.existsSync(kbDir)) {
+      try {
+        const files = fs.readdirSync(kbDir).filter((f: string) => f.endsWith('.md'));
+        const stat = fs.statSync(kbDir);
+        const ago = Math.round((Date.now() - stat.mtimeMs) / 60000);
+        const agoText = ago < 60 ? `${ago}m ago` : ago < 1440 ? `${Math.round(ago / 60)}h ago` : `${Math.round(ago / 1440)}d ago`;
+        kbStatus = `✅ ${files.length} files (updated ${agoText})`;
+      } catch { kbStatus = '⚠️ Error reading KB'; }
+    }
+  }
+
+  // ── Detect model ──
+  const modelCfg = vscode.workspace.getConfiguration('autoSpecKit').get<string>('model', '');
+  const modelText = modelCfg ? `\`${modelCfg}\`` : 'Auto (best available)';
+
+  // ── Detect sessions ──
+  let sessionText = 'No sessions yet';
+  if (root) {
+    const fs = require('fs');
+    const path = require('path');
+    const sessionsDir = vscode.workspace.getConfiguration('autoSpecKit').get<string>('sessionsDir', 'spec-kit-sessions');
+    const sessionsPath = path.join(root, sessionsDir);
+    if (fs.existsSync(sessionsPath)) {
+      try {
+        const dirs = fs.readdirSync(sessionsPath, { withFileTypes: true })
+          .filter((e: any) => e.isDirectory());
+        sessionText = dirs.length > 0 ? `${dirs.length} session(s)` : 'No sessions yet';
+      } catch { /* ignore */ }
+    }
+  }
+
+  // ── Detect project profile ──
+  let profileText = 'Not detected';
+  if (root) {
+    const fs = require('fs');
+    const path = require('path');
+    const profilePath = path.join(root, '.autospec', 'profile.json');
+    if (fs.existsSync(profilePath)) {
+      try {
+        const profile = JSON.parse(fs.readFileSync(profilePath, 'utf-8'));
+        profileText = `✅ ${profile.language ?? 'unknown'} / ${profile.framework ?? 'unknown'}`;
+      } catch { profileText = '⚠️ Error'; }
+    }
+  }
+
+  // ── Detect learnings ──
+  let learningsText = 'No learnings yet';
+  if (root) {
+    const fs = require('fs');
+    const path = require('path');
+    const learningsPath = path.join(root, '.autospec', 'learnings.json');
+    if (fs.existsSync(learningsPath)) {
+      try {
+        const data = JSON.parse(fs.readFileSync(learningsPath, 'utf-8'));
+        const count = data.learnings?.length ?? 0;
+        learningsText = count > 0 ? `🧠 ${count} learning(s)` : 'No learnings yet';
+      } catch { /* ignore */ }
+    }
+  }
+
+  // ── Detect monorepo ──
+  let workspaceText = 'Single project';
+  if (root) {
+    const mono = workspaceResolver.detectMonorepo(root);
+    if (mono) {
+      workspaceText = `📦 ${mono.tool} monorepo (${mono.packages.length} packages)`;
+    }
+    const folders = vscode.workspace.workspaceFolders;
+    if (folders && folders.length > 1) {
+      workspaceText = `📂 Multi-root (${folders.length} folders)`;
+    }
+  }
+
+  // ── Detect .autospec.yml ──
+  let configText = 'Default';
+  if (root) {
+    const fs = require('fs');
+    const path = require('path');
+    if (fs.existsSync(path.join(root, '.autospec.yml'))) { configText = '✅ .autospec.yml'; }
+    else if (fs.existsSync(path.join(root, '.autospec.json'))) { configText = '✅ .autospec.json'; }
+  }
+
+  stream.markdown(`# 🚀 Auto Spec Kit — Help
+
+## Status
+
+| Item | Status |
+|------|--------|
+| **Knowledge Base** | ${kbStatus} |
+| **Model** | ${modelText} |
+| **Sessions** | ${sessionText} |
+| **Project Profile** | ${profileText} |
+| **Learnings** | ${learningsText} |
+| **Workspace** | ${workspaceText} |
+| **Config** | ${configText} |
+
+## Commands
 
 | Command | Description |
 |---------|-------------|
@@ -302,10 +477,17 @@ function showHelp(stream: vscode.ChatResponseStream): vscode.ChatResult {
 | \`@autospec /ask <question>\` | Ask about codebase — Q&A powered by KB |
 | \`@autospec /plan <epic>\` | Plan user stories — Epic → Stories → Sprint Plan |
 | \`@autospec /map\` | Map the codebase — interactive dependency graph |
+| \`@autospec /help\` | Show this help with status info |
 
-**Quick start:** Type \`@autospec /scan\` first to scan your project, then use other commands.
+## Quick Start
+
+1. \`@autospec /scan\` — scan your project first (generates Knowledge Base)
+2. \`@autospec /build Add reset password feature\` — run the 13-step pipeline
+3. \`@autospec /review\` — review any open file with 4 AI agents
 
 **Free text:** \`@autospec How does auth work?\` defaults to \`/ask\`.
+
+**Keyboard shortcuts:** \`Cmd+Shift+K\` (Build) · \`Cmd+Shift+B\` (Scan) · \`Cmd+Shift+U\` (Plan)
 `);
   return { metadata: { command: 'help' } };
 }
@@ -315,6 +497,11 @@ function showHelp(stream: vscode.ChatResponseStream): vscode.ChatResult {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export function registerChatParticipant(context: vscode.ExtensionContext): void {
+  // ── Initialize shared instances ──
+  sessionMemory = new SessionMemory(context);
+  workspaceResolver = new WorkspaceResolver();
+  requirementClarifier = new RequirementClarifier();
+
   const participant = vscode.chat.createChatParticipant(
     PARTICIPANT_ID,
     (request, chatContext, stream, token) =>
@@ -323,6 +510,6 @@ export function registerChatParticipant(context: vscode.ExtensionContext): void 
 
   participant.iconPath = vscode.Uri.joinPath(context.extensionUri, 'resources', 'icon.png');
 
-  log('🤖 Chat Participant @autospec registered');
+  log('🤖 Chat Participant @autospec registered (with SessionMemory, Clarifier, Resolver)');
   context.subscriptions.push(participant);
 }

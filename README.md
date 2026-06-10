@@ -1,4 +1,4 @@
-# 🚀 Auto Spec Kit — v1.7.0
+# 🚀 Auto Spec Kit — v1.8.0
 
 > **Automate the full development workflow: Requirement → Plan → Code → Review → Test → Evidence**  
 > Powered by **GitHub Copilot** (`vscode.lm` API) — no external API keys required.
@@ -25,6 +25,7 @@ Auto Spec Kit is a VS Code extension that turns a one-line task description into
   - [Map Codebase (Dependency Graph)](#6-map-codebase-dependency-graph)
   - [Select Model](#7-select-model)
 - [Multi-Agent Architecture (v1.7.0)](#-multi-agent-architecture-v170)
+- [Adaptive Intelligence (v1.8.0)](#-adaptive-intelligence-v180)
 - [Keyboard Shortcuts](#-keyboard-shortcuts)
 - [Configuration Reference](#-configuration-reference)
 - [Knowledge Base](#-knowledge-base)
@@ -68,7 +69,7 @@ Traditional AI coding assistants answer one question at a time. Auto Spec Kit ru
 
 ### From VSIX (recommended)
 
-1. Download `auto-spec-kit-1.7.0.vsix`
+1. Download `auto-spec-kit-1.8.0.vsix`
 2. Open VS Code → Extensions panel (`Ctrl+Shift+X`)
 3. Click **⋯ → Install from VSIX…**
 4. Select the downloaded file
@@ -83,7 +84,7 @@ npm install
 npm run compile
 npm run package
 # Install the generated .vsix:
-code --install-extension auto-spec-kit-1.7.0.vsix
+code --install-extension auto-spec-kit-1.8.0.vsix
 ```
 
 ---
@@ -466,6 +467,57 @@ v1.7.0 introduces **parallel sub-agents** for deeper analysis. Instead of one Co
 
 ---
 
+## 🧠 Adaptive Intelligence (v1.8.0)
+
+v1.8.0 introduces 5 systems that make Auto Spec Kit smarter over time and work across any project structure.
+
+### `/help` — Context-Aware Status
+
+`@autospec /help` now shows a live dashboard: KB status, model info, project profile, learnings count, workspace type, and `.autospec.yml` detection — all at a glance.
+
+### SessionMemory — No Context Lost
+
+Long chat sessions in Copilot truncate early messages. `SessionMemory` persists key decisions, milestones, and the original requirement in `workspaceState`, injecting a rolling summary into every prompt. Auto-compacts at 30 entries to stay within token budget.
+
+### RequirementClarifier — Handle Vague Inputs
+
+Before running the 13-step pipeline, the `RequirementClarifier` scores your requirement across 4 dimensions (Specificity, Scope, Acceptance, Technical — 0-25 each). If the score is below 60, it asks targeted clarifying questions. In chat mode, questions appear inline; in Command Palette mode, via Quick Pick dialogs.
+
+### ProjectProfile + LearningStore — Gets Smarter Over Time
+
+`ProjectProfileDetector` auto-detects your stack (language, framework, build tool, test framework, linter, formatter, database, CI/CD, monorepo tool) by scanning project files. Cached in `.autospec/profile.json` for 24 hours.
+
+`LearningStore` persists patterns from past sessions (code review fixes, test patterns, user preferences, conventions, architecture decisions, things to avoid) in `.autospec/learnings.json`. Duplicate learnings are reinforced (count incremented), and the top learnings are injected into every prompt — so the agent avoids past mistakes and follows your conventions.
+
+### WorkspaceResolver — Any Repo Structure
+
+Handles 4 workspace scenarios automatically:
+
+| Scenario | Behavior |
+|---|---|
+| Single repo | Uses directly |
+| Multi-root workspace | Shows picker to select folder |
+| Monorepo (Nx, Turbo, Lerna, pnpm) | Detects packages, lets you scope to one |
+| Folder of repos | Auto-discovers, shows picker |
+
+### `.autospec.yml` — Per-Project Config
+
+Drop a `.autospec.yml` in your project root to override settings without touching VS Code config:
+
+```yaml
+language: java
+testCommand: mvn test
+knowledgeBasePath: docs/kb
+sessionsDir: .autospec-sessions
+ignore:
+  - "*.generated.ts"
+  - "dist/**"
+```
+
+Config priority: `.autospec.yml` > VS Code settings > defaults.
+
+---
+
 ## ⌨️ Keyboard Shortcuts
 
 | Action | Windows / Linux | macOS |
@@ -629,7 +681,19 @@ Code Review (Step 05) and Review File both load git context:
 
 ## 📝 Changelog
 
-### v1.7.0 (current)
+### v1.8.0 (current)
+
+**Adaptive Intelligence**
+- ✅ `/help` — context-aware status dashboard (KB, model, profile, learnings, workspace, config)
+- ✅ `SessionMemory` — persistent context across long chat sessions with rolling compaction
+- ✅ `RequirementClarifier` — AI-driven clarity scoring (4 dimensions) + targeted questions
+- ✅ `ProjectProfileDetector` — auto-detect language, framework, build tool, test framework, linter, formatter, database, CI/CD, monorepo tool
+- ✅ `LearningStore` — reinforcement-based learning from past sessions (review fixes, test patterns, conventions, preferences)
+- ✅ `WorkspaceResolver` — multi-root workspace, monorepo (Nx/Turbo/Lerna/pnpm), `.autospec.yml` config
+- ✅ All systems integrated into chat-participant.ts and the build pipeline
+- ✅ Enriched system prompts: project profile + learnings + session context injected into every AI call
+
+### v1.7.0
 
 **Multi-Agent Architecture**
 - ✅ `AgentOrchestrator` — parallel sub-agents with 3 merge strategies (ai/concat/structured)

@@ -2,7 +2,7 @@
   "name": "auto-spec-kit",
   "displayName": "Auto Spec Kit",
   "description": "Automate the full development workflow: Requirement → Plan → Code → Review → Test → Evidence, powered by GitHub Copilot",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "publisher": "auto-spec-kit",
   "author": {
     "name": "nam.hotrung190920",
@@ -41,7 +41,8 @@
           { "name": "review", "description": "Review current file — check security, architecture, performance, business logic" },
           { "name": "ask", "description": "Ask about codebase — natural language Q&A powered by Knowledge Base" },
           { "name": "plan", "description": "Plan user stories — Epic → Features → Impact Analysis → Sprint Plan (PO/BA)" },
-          { "name": "map", "description": "Map the codebase — interactive dependency graph with AI enrichment" }
+          { "name": "map", "description": "Map the codebase — interactive dependency graph with AI enrichment" },
+          { "name": "help", "description": "Show all commands, KB status, and quick-start guide" }
         ]
       }
     ],
