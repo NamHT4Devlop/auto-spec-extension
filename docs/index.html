@@ -99,6 +99,7 @@
 <div class="tabs">
   <div class="tab active" onclick="showTab('overview')">Overview</div>
   <div class="tab" onclick="showTab('setup')">Setup Guide</div>
+  <div class="tab" onclick="showTab('chat')">🤖 Copilot Chat</div>
   <div class="tab" onclick="showTab('dev')">🧑‍💻 DEV Flow</div>
   <div class="tab" onclick="showTab('po')">📋 PO/BA Flow</div>
   <div class="tab" onclick="showTab('sm')">📊 SM/Lead Flow</div>
@@ -188,7 +189,7 @@
 <div class="card">
   <h2>📦 Requirements</h2>
   <ul>
-    <li><strong>VS Code</strong> <code>^1.90.0</code></li>
+    <li><strong>VS Code</strong> <code>^1.93.0</code></li>
     <li><strong>GitHub Copilot</strong> subscription (individual or business)</li>
     <li><strong>GitHub Copilot Chat</strong> extension installed and active</li>
     <li>Node.js (for building from source)</li>
@@ -239,6 +240,126 @@ npx @vscode/vsce package --no-dependencies --allow-missing-repository
   "autoSpecKit.agents.mergeStrategy": "ai",
   "autoSpecKit.agents.contextStrategy": "smart"
 }</code></pre>
+</div>
+</div>
+
+<!-- ═══════════════════════════════ COPILOT CHAT ═══════════════════════════════ -->
+<div id="chat" class="panel">
+
+<div class="card">
+  <h2>🤖 Copilot Chat — @autospec</h2>
+  <span class="role role-all">FOR: Everyone</span>
+  <p>The <strong>primary way</strong> to use Auto Spec Kit. Open the Copilot Chat panel in VS Code and type <code>@autospec</code> followed by a slash command.</p>
+
+  <h3>All Commands</h3>
+  <table>
+    <tr><th>Command</th><th>What it does</th><th>Example</th></tr>
+    <tr><td><code>@autospec /run</code></td><td>Run full 13-step dev pipeline</td><td><code>@autospec /run Add reset password feature using email OTP</code></td></tr>
+    <tr><td><code>@autospec /kb</code></td><td>Generate Knowledge Base</td><td><code>@autospec /kb</code></td></tr>
+    <tr><td><code>@autospec /update-kb</code></td><td>Update KB with latest changes</td><td><code>@autospec /update-kb</code></td></tr>
+    <tr><td><code>@autospec /review</code></td><td>Review current open file</td><td><code>@autospec /review</code></td></tr>
+    <tr><td><code>@autospec /ask</code></td><td>Ask about codebase (uses KB)</td><td><code>@autospec /ask How does auth work?</code></td></tr>
+    <tr><td><code>@autospec /stories</code></td><td>Generate User Stories (PO/BA)</td><td><code>@autospec /stories User onboarding redesign...</code></td></tr>
+    <tr><td><code>@autospec /graph</code></td><td>Visualize Knowledge Graph</td><td><code>@autospec /graph</code></td></tr>
+  </table>
+
+  <h3>Free Text (no slash command)</h3>
+  <p>If you type <code>@autospec Which module handles payment?</code> without a slash command, it defaults to <code>/ask</code> — a Q&amp;A answered from the Knowledge Base.</p>
+</div>
+
+<div class="card">
+  <h2>Deep Dive: <code>@autospec /run</code></h2>
+  <p>When you type <code>@autospec /run Add reset password feature using email OTP, expires after 10 minutes</code>, this is the full execution path:</p>
+
+  <svg viewBox="0 0 700 320" xmlns="http://www.w3.org/2000/svg">
+    <defs><marker id="ac" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#94a3b8"/></marker></defs>
+
+    <!-- User input -->
+    <rect x="10" y="10" width="300" height="36" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+    <text x="160" y="28" fill="#92400e" text-anchor="middle" font-size="9" font-weight="bold">USER: @autospec /run Add reset password...</text>
+    <text x="160" y="40" fill="#a16207" text-anchor="middle" font-size="8">typed in Copilot Chat panel</text>
+
+    <line x1="310" y1="28" x2="340" y2="28" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ac)"/>
+
+    <!-- VS Code routes -->
+    <rect x="340" y="10" width="170" height="36" rx="8" fill="#6366f1" stroke="#4f46e5" stroke-width="1.5"/>
+    <text x="425" y="26" fill="white" text-anchor="middle" font-size="9" font-weight="bold">VS Code Chat API</text>
+    <text x="425" y="40" fill="rgba(255,255,255,.8)" text-anchor="middle" font-size="8">routes to @autospec participant</text>
+
+    <line x1="510" y1="28" x2="540" y2="28" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ac)"/>
+
+    <!-- chat-participant.ts -->
+    <rect x="540" y="10" width="150" height="36" rx="8" fill="#3b82f6" stroke="#2563eb" stroke-width="1.5"/>
+    <text x="615" y="26" fill="white" text-anchor="middle" font-size="9" font-weight="bold">chat-participant.ts</text>
+    <text x="615" y="40" fill="rgba(255,255,255,.8)" text-anchor="middle" font-size="8">handleRun()</text>
+
+    <!-- Arrow down -->
+    <line x1="615" y1="46" x2="615" y2="68" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ac)"/>
+
+    <!-- resolveModel + progress adapter -->
+    <rect x="440" y="70" width="250" height="50" rx="8" fill="#f0fdf4" stroke="#86efac" stroke-width="1"/>
+    <text x="565" y="88" fill="#166534" text-anchor="middle" font-size="9" font-weight="bold">1. resolveModel() → picks best Copilot model</text>
+    <text x="565" y="104" fill="#15803d" text-anchor="middle" font-size="8">2. Creates Progress adapter → bridges stream.progress()</text>
+
+    <line x1="565" y1="120" x2="565" y2="142" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ac)"/>
+
+    <!-- runWorkflow -->
+    <rect x="360" y="144" width="330" height="36" rx="8" fill="#10b981" stroke="#059669" stroke-width="1.5"/>
+    <text x="525" y="162" fill="white" text-anchor="middle" font-size="10" font-weight="bold">runWorkflow(requirement, root, model, token, progress)</text>
+    <text x="525" y="176" fill="rgba(255,255,255,.8)" text-anchor="middle" font-size="8">workflow/run-task.ts</text>
+
+    <line x1="525" y1="180" x2="525" y2="202" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ac)"/>
+
+    <!-- PipelineRunner -->
+    <rect x="300" y="204" width="450" height="36" rx="8" fill="#8b5cf6" stroke="#7c3aed" stroke-width="1.5"/>
+    <text x="525" y="222" fill="white" text-anchor="middle" font-size="10" font-weight="bold">PipelineRunner.execute(ALL_STEPS, context)</text>
+    <text x="525" y="236" fill="rgba(255,255,255,.8)" text-anchor="middle" font-size="8">pipeline/runner.ts — checkpoint/resume, loops through 13 steps</text>
+
+    <line x1="525" y1="240" x2="525" y2="262" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ac)"/>
+
+    <!-- 13 steps -->
+    <rect x="10" y="264" width="680" height="42" rx="8" fill="#1e293b" stroke="#0f172a" stroke-width="1.5"/>
+    <text x="350" y="282" fill="white" text-anchor="middle" font-size="10" font-weight="bold">13 Step Classes (each spawns multi-agent orchestration)</text>
+    <text x="350" y="298" fill="rgba(255,255,255,.7)" text-anchor="middle" font-size="8">Planning(3) → PlanReview(2) → Feedback → CodeGen(N) → CodeReview(4) → Feedback → Tests(3) → TestReview(2) → Feedback → Save → Execute → Evidence(2) → UpdateKB(2)</text>
+  </svg>
+
+  <h3>How the Chat Participant bridges to the pipeline</h3>
+  <ol class="step-list">
+    <li>You type <code>@autospec /run Add reset password feature</code> in Copilot Chat</li>
+    <li>VS Code routes the message to the <code>@autospec</code> Chat Participant (registered in <code>chat-participant.ts</code>)</li>
+    <li class="green"><code>handleRun()</code> calls <code>resolveModel()</code> to pick the best available Copilot model, then creates a <strong>Progress adapter</strong> that converts <code>vscode.Progress.report()</code> calls into <code>stream.progress()</code> — so every pipeline step updates the chat panel in real-time</li>
+    <li class="green"><code>handleRun()</code> calls <code>runWorkflow()</code> from <code>workflow/run-task.ts</code> — the same function used by the Command Palette command</li>
+    <li class="purple"><code>runWorkflow()</code> creates a <code>PipelineRunner</code> and executes <code>ALL_STEPS</code> (13 step classes). Each step spawns sub-agents via <code>AgentOrchestrator</code> with <code>SmartContextLoader</code>-selected context</li>
+    <li class="orange">3 human checkpoints (steps 03, 06, 09) pause the pipeline with VS Code Quick Pick dialogs — you approve, add comments, or cancel</li>
+    <li>When the pipeline completes, <code>handleRun()</code> writes a final completion message to the chat stream</li>
+  </ol>
+</div>
+
+<div class="card">
+  <h2>Example Session</h2>
+  <pre><code>You:     @autospec /kb
+Bot:     📚 Generating Knowledge Base...
+         Analyzing your codebase with multi-agent batch parallelism...
+         ✅ Knowledge Base generated! Check knowledge-base/ folder.
+
+You:     @autospec /run Add reset password feature using email OTP, expires after 10 minutes
+Bot:     🚀 Auto Spec Kit — Dev Workflow
+         Requirement: Add reset password feature...
+         [Step 01/13] Planning with 3 parallel agents...
+         [Step 02/13] Plan review (2 agents)...
+         [Step 03/13] ⏸ Please review the plan...
+         ... (you approve) ...
+         [Step 04/13] Code generation (4 modules, parallel)...
+         ...
+         ✅ Pipeline completed! Check spec-kit-sessions/ for full details.
+
+You:     @autospec /review
+Bot:     🔍 Reviewing: src/services/auth.service.ts
+         ✅ Review complete! Check Output panel for findings.
+
+You:     @autospec What API endpoints require authentication?
+Bot:     💬 Searching Knowledge Base...
+         ✅ Check Output panel for the full answer.</code></pre>
 </div>
 </div>
 
@@ -559,9 +680,11 @@ npx @vscode/vsce package --no-dependencies --allow-missing-repository
   <svg viewBox="0 0 700 400" xmlns="http://www.w3.org/2000/svg">
     <defs><marker id="aa" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#94a3b8"/></marker></defs>
 
-    <text x="350" y="18" fill="#64748b" text-anchor="middle" font-size="9" text-transform="uppercase" letter-spacing="1">Entry Point</text>
-    <rect x="250" y="24" width="200" height="36" rx="8" fill="#3b82f6" stroke="#2563eb" stroke-width="1.5"/>
-    <text x="350" y="46" fill="white" text-anchor="middle" font-size="11" font-weight="bold">extension.ts — 8 commands</text>
+    <text x="350" y="18" fill="#64748b" text-anchor="middle" font-size="9" text-transform="uppercase" letter-spacing="1">Entry Points</text>
+    <rect x="130" y="24" width="200" height="36" rx="8" fill="#3b82f6" stroke="#2563eb" stroke-width="1.5"/>
+    <text x="230" y="46" fill="white" text-anchor="middle" font-size="11" font-weight="bold">extension.ts — 8 commands</text>
+    <rect x="370" y="24" width="220" height="36" rx="8" fill="#6366f1" stroke="#4f46e5" stroke-width="1.5"/>
+    <text x="480" y="46" fill="white" text-anchor="middle" font-size="11" font-weight="bold">chat-participant.ts — @autospec</text>
 
     <text x="350" y="82" fill="#64748b" text-anchor="middle" font-size="9" text-transform="uppercase" letter-spacing="1">Workflow Layer</text>
 
@@ -630,6 +753,7 @@ npx @vscode/vsce package --no-dependencies --allow-missing-repository
   <h3>File Structure (46 TypeScript files)</h3>
   <pre><code>src/
 ├── extension.ts                    ← entry point, 8 commands
+├── chat-participant.ts             ← @autospec Copilot Chat (7 slash commands)
 ├── logger.ts                       ← output channel
 ├── types/index.ts                  ← ExtractedFile, TestResult
 ├── constants/kb-steps.ts           ← 15 KB generation prompts

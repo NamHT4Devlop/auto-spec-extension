@@ -1,4 +1,4 @@
-# 🚀 Auto Spec Kit — v1.6.0
+# 🚀 Auto Spec Kit — v1.7.0
 
 > **Automate the full development workflow: Requirement → Plan → Code → Review → Test → Evidence**  
 > Powered by **GitHub Copilot** (`vscode.lm` API) — no external API keys required.
@@ -13,16 +13,18 @@ Auto Spec Kit is a VS Code extension that turns a one-line task description into
 - [Requirements](#-requirements)
 - [Installation](#-installation)
 - [Quick Start](#-quick-start)
-- [Commands Overview](#-commands-overview)
+- [Usage — Copilot Chat (`@autospec`)](#-usage--copilot-chat-autospec)
+- [Usage — Command Palette](#-usage--command-palette)
+- [Deep Dive: `/run` — 13-Step Pipeline](#-deep-dive-run--13-step-pipeline)
 - [Detailed Workflows](#-detailed-workflows)
-  - [Run Task (13-Step Pipeline)](#1-run-task--13-step-pipeline)
-  - [Generate Knowledge Base](#2-generate-knowledge-base)
-  - [Review Current File](#3-review-current-file)
-  - [Update Knowledge Base](#4-update-knowledge-base)
-  - [Ask About Codebase](#5-ask-about-codebase)
-  - [Generate User Stories (PO/BA)](#6-generate-user-stories-poba)
-  - [Visualize Knowledge Graph](#7-visualize-knowledge-graph)
-  - [Select Model](#8-select-model)
+  - [Generate Knowledge Base](#1-generate-knowledge-base)
+  - [Review Current File](#2-review-current-file)
+  - [Update Knowledge Base](#3-update-knowledge-base)
+  - [Ask About Codebase](#4-ask-about-codebase)
+  - [Generate User Stories (PO/BA)](#5-generate-user-stories-poba)
+  - [Visualize Knowledge Graph](#6-visualize-knowledge-graph)
+  - [Select Model](#7-select-model)
+- [Multi-Agent Architecture (v1.7.0)](#-multi-agent-architecture-v170)
 - [Keyboard Shortcuts](#-keyboard-shortcuts)
 - [Configuration Reference](#-configuration-reference)
 - [Knowledge Base](#-knowledge-base)
@@ -43,16 +45,17 @@ Traditional AI coding assistants answer one question at a time. Auto Spec Kit ru
 | Without Auto Spec Kit | With Auto Spec Kit |
 |---|---|
 | Manually prompt Copilot for a plan | 13-step pipeline runs automatically |
-| No code review | Two-phase review: quality + business consistency |
+| No code review | Multi-agent review: security + architecture + performance + business |
 | No tests written | Test scaffolding generated for every task |
 | No documentation | Evidence files saved with every session |
 | AI has no project context | Knowledge Base grows with every task |
+| Single AI perspective | Multiple parallel sub-agents for deeper analysis |
 
 ---
 
 ## 📦 Requirements
 
-- **VS Code** `^1.90.0`
+- **VS Code** `^1.93.0`
 - **GitHub Copilot** subscription (individual or business)
 - **GitHub Copilot Chat** extension installed and active
 - Node.js (for local development / building from source)
@@ -65,7 +68,7 @@ Traditional AI coding assistants answer one question at a time. Auto Spec Kit ru
 
 ### From VSIX (recommended)
 
-1. Download `auto-spec-kit-1.6.0.vsix`
+1. Download `auto-spec-kit-1.7.0.vsix`
 2. Open VS Code → Extensions panel (`Ctrl+Shift+X`)
 3. Click **⋯ → Install from VSIX…**
 4. Select the downloaded file
@@ -74,12 +77,13 @@ Traditional AI coding assistants answer one question at a time. Auto Spec Kit ru
 ### From Source
 
 ```bash
-git clone <repo>
+git clone https://github.com/NamHT4Devlop/auto-spec-extension.git
 cd auto-spec-extension
 npm install
 npm run compile
-npx @vscode/vsce package --no-dependencies --allow-missing-repository
-# Install the generated .vsix from the Extensions panel
+npm run package
+# Install the generated .vsix:
+code --install-extension auto-spec-kit-1.7.0.vsix
 ```
 
 ---
@@ -88,75 +92,253 @@ npx @vscode/vsce package --no-dependencies --allow-missing-repository
 
 1. **Install** the extension (see above)
 2. Open any project in VS Code
-3. Press `Ctrl+Shift+B` (`Cmd+Shift+B` on Mac) → **Generate Knowledge Base**
-   - Auto Spec Kit scans your project and generates 16 analysis files in `knowledge-base/`
-4. Press `Ctrl+Shift+K` (`Cmd+Shift+K` on Mac) → **Run Task**
-   - Describe what you want to build (e.g. `"Add email verification to user registration"`)
-   - Watch the 13-step pipeline run in the Output panel
-5. Review the generated files in `spec-kit-sessions/`
+3. Open **Copilot Chat** panel → type `@autospec /kb` → Generate Knowledge Base
+4. Then type `@autospec /run Add email verification to user registration`
+5. Watch the 13-step multi-agent pipeline run
+
+Or use keyboard shortcuts: `Cmd+Shift+B` (KB), `Cmd+Shift+K` (Run Task).
 
 ---
 
-## 🎯 Commands Overview
+## 🤖 Usage — Copilot Chat (`@autospec`)
+
+**This is the primary way to use Auto Spec Kit.** Open the Copilot Chat panel in VS Code and type:
+
+| Command | What it does |
+|---|---|
+| `@autospec /run Add reset password feature` | Run full 13-step dev pipeline |
+| `@autospec /kb` | Generate Knowledge Base from codebase |
+| `@autospec /update-kb` | Update KB with latest code changes |
+| `@autospec /review` | Review the currently open file |
+| `@autospec /ask How does auth work?` | Ask about codebase (uses KB) |
+| `@autospec /stories User onboarding redesign...` | Generate User Stories (PO/BA) |
+| `@autospec /graph` | Visualize Knowledge Graph |
+
+### Free text (no slash command)
+
+```
+@autospec Which module handles payment processing?
+```
+
+If you don't use a slash command, your message is treated as `/ask` — a question about the codebase answered from the Knowledge Base.
+
+### How it works
+
+When you type `@autospec`, VS Code routes your message to the Auto Spec Kit **Chat Participant**. The extension:
+
+1. Reads your slash command (e.g., `/run`, `/kb`, `/review`)
+2. Resolves the best available Copilot model
+3. Runs the corresponding workflow (with multi-agent orchestration where applicable)
+4. Streams progress and results directly into the chat panel
+5. Saves full outputs to `spec-kit-sessions/` and/or `knowledge-base/`
+
+### Example session
+
+```
+You:     @autospec /kb
+Bot:     📚 Generating Knowledge Base...
+         Analyzing your codebase with multi-agent batch parallelism...
+         ✅ Knowledge Base generated! Check knowledge-base/ folder.
+
+You:     @autospec /run Add reset password feature using email OTP, expires after 10 minutes
+Bot:     🚀 Auto Spec Kit — Dev Workflow
+         Requirement: Add reset password feature using email OTP...
+         [Step 01/13] Planning with 3 parallel agents...
+         [Step 02/13] Plan review...
+         ...
+         ✅ Pipeline completed! Check spec-kit-sessions/ for full details.
+
+You:     @autospec /review
+Bot:     🔍 Reviewing: src/services/auth.service.ts
+         ✅ Review complete! Check Output panel for findings.
+
+You:     @autospec What API endpoints require authentication?
+Bot:     💬 Searching Knowledge Base...
+         ✅ Check Output panel for the full answer.
+```
+
+---
+
+## 🎮 Usage — Command Palette
+
+All commands are also available via **Command Palette** (`Ctrl+Shift+P` → type `Auto Spec Kit`):
 
 | Command | Shortcut | Description |
 |---|---|---|
-| 🚀 **Run Task** | `Ctrl+Shift+K` | Full 13-step dev workflow for any task |
-| 📚 **Generate Knowledge Base** | `Ctrl+Shift+B` | Analyze codebase → build 16-file KB |
-| 🔍 **Review Current File** | *(right-click menu)* | Two-phase code review with fix suggestions |
-| 📚 **Update Knowledge Base** | *(command palette)* | Merge changes from a completed task into KB |
-| 💬 **Ask About Codebase** | *(command palette / explorer right-click)* | Natural language Q&A against KB |
-| 📋 **Generate User Stories** | `Ctrl+Shift+U` | PO/BA workflow: Epic → Features → User Stories → HTML |
-| 🔭 **Visualize Knowledge Graph** | *(command palette)* | D3.js force graph: architecture, modules, domain, files |
-| 🤖 **Select Model** | *(command palette)* | Browse and choose GitHub Copilot model |
+| 🚀 **Run Task** | `Ctrl+Shift+K` | Full 13-step dev workflow |
+| 📚 **Generate Knowledge Base** | `Ctrl+Shift+B` | Analyze codebase → build KB |
+| 🔍 **Review Current File** | *(right-click menu)* | Multi-agent code review |
+| 📚 **Update Knowledge Base** | *(command palette)* | Merge latest changes into KB |
+| 💬 **Ask About Codebase** | *(command palette / explorer right-click)* | Natural language Q&A |
+| 📋 **Generate User Stories** | `Ctrl+Shift+U` | PO/BA: Epic → Stories → Sprint Plan |
+| 🔭 **Visualize Knowledge Graph** | *(command palette)* | D3.js interactive graph |
+| 🤖 **Select Model** | *(command palette)* | Choose GitHub Copilot model |
 
-All commands are accessible via the **Command Palette** (`Ctrl+Shift+P` → type `Auto Spec Kit`).
+---
+
+## 🔬 Deep Dive: `/run` — 13-Step Pipeline
+
+When you type `@autospec /run Add reset password feature using email OTP, expires after 10 minutes`, this is exactly what happens:
+
+### Input
+
+You provide **one line** — a task description. The extension handles everything else.
+
+### Pipeline Steps
+
+```
+Step 01  Planning ─────────────── 3 parallel agents analyze your codebase
+Step 02  Plan Review ──────────── 2 agents validate feasibility + business alignment
+Step 03  Plan Feedback ────────── ⏸ YOU review the plan, add comments
+Step 04  Code Generation ──────── N parallel generators (one per module)
+Step 05  Code Review ──────────── 4 agents: Security + Architecture + Performance + Business
+Step 06  Code Feedback ────────── ⏸ YOU review the code, request changes
+Step 07  Write Tests ──────────── 3 agents: Unit + Integration + Edge Case
+Step 08  Test Review ──────────── 2 agents: Coverage + Quality
+Step 09  Test Feedback ────────── ⏸ YOU review tests, add comments
+Step 10  Save & Apply ─────────── Extract files, write to project
+Step 11  Execute Tests ────────── Run your test command, capture results
+Step 12  Evidence Collection ──── 2 agents: Technical + Business evidence
+Step 13  Update KB ────────────── 2 agents: Technical Delta + Business Delta
+```
+
+### Step-by-step detail
+
+**Step 01 — Planning (3 agents in parallel)**
+
+Your requirement triggers 3 sub-agents that run simultaneously:
+
+| Agent | Role | What it does |
+|---|---|---|
+| Codebase Analyzer | Scans project via SmartContextLoader | Discovers which files, classes, and modules are relevant to the task |
+| Impact Detector | Traces dependencies | Identifies all files that will be affected by the change (direct + transitive) |
+| Business Flow Tracer | Reads Knowledge Base | Maps existing business flows that interact with the change area |
+
+A **merge agent** then combines the 3 outputs into a unified implementation plan.
+
+**Example for "Add reset password feature":**
+- Codebase Analyzer → finds `auth.service.ts`, `user.repository.ts`, `email.service.ts`, existing password change flow
+- Impact Detector → identifies `auth.controller.ts` needs new endpoint, `user.entity.ts` needs OTP fields, `auth.module.ts` needs new provider
+- Business Flow Tracer → maps existing login flow, token refresh flow, identifies where reset intersects
+
+**Step 02 — Plan Review (2 agents)**
+
+| Agent | Focus |
+|---|---|
+| Technical Feasibility | Can this plan actually be implemented? Are there dependency conflicts? Missing prerequisites? |
+| Business Alignment | Does the plan match the requirement? Are there business rules being violated? |
+
+**Step 03 — Plan Feedback (human checkpoint)**
+
+The pipeline pauses and shows you the plan. You can:
+- ✅ Approve and continue
+- ✏️ Add comments ("also add rate limiting on the OTP endpoint")
+- ❌ Cancel the pipeline
+
+**Step 04 — Code Generation (N parallel generators)**
+
+The plan is split into **work units** — one per module/file. Each work unit gets its own code generator agent running in parallel:
+
+```
+Work Unit 1: auth.controller.ts  → Agent generates POST /reset-password, POST /verify-otp
+Work Unit 2: auth.service.ts     → Agent generates resetPassword(), verifyOtp(), generateOtp()
+Work Unit 3: user.entity.ts      → Agent adds otpCode, otpExpiresAt fields
+Work Unit 4: email.service.ts    → Agent generates sendOtpEmail()
+Work Unit 5: auth.module.ts      → Agent wires new providers
+```
+
+All agents share the same context (plan + KB + relevant source files) but generate code independently.
+
+**Step 05 — Code Review (4 agents in parallel)**
+
+The generated code is reviewed by 4 specialized agents simultaneously:
+
+| Agent | Checks |
+|---|---|
+| 🔒 Security | SQL injection, XSS, auth bypass, OTP brute-force protection, timing attacks |
+| 🏗 Architecture | Layer violations, coupling, DI patterns, SOLID principles |
+| ⚡ Performance | N+1 queries, missing indexes, memory leaks, unnecessary allocations |
+| 🏢 Business Consistency | Cross-references `13-business-rules.md` — validates domain rules intact |
+
+**Step 06 — Code Feedback (human checkpoint)**
+
+Pipeline pauses. You review the generated code + review findings. Approve, request fixes, or cancel.
+
+**Step 07 — Write Tests (3 agents in parallel)**
+
+| Agent | Generates |
+|---|---|
+| Unit Tests | Tests for each function/method in isolation, mocking dependencies |
+| Integration Tests | Tests for API endpoints, database interactions, service-to-service calls |
+| Edge Case / Security | Boundary values, expired OTP, invalid tokens, brute-force scenarios |
+
+**Step 08 — Test Review (2 agents)**
+
+| Agent | Focus |
+|---|---|
+| Coverage Analyzer | Are all code paths covered? Missing branches? Uncovered error handlers? |
+| Quality Reviewer | Are tests maintainable? Proper assertions? No false positives? |
+
+**Step 09 — Test Feedback (human checkpoint)**
+
+Review tests. Approve or request changes.
+
+**Step 10 — Save & Apply**
+
+Files are extracted from generated markdown and written to your project. You choose:
+- ✅ Apply to project now → files written to workspace
+- 📁 Save in session folder only → non-destructive
+
+**Step 11 — Execute Tests**
+
+Runs your configured `autoSpecKit.testCommand` (e.g., `npx jest --coverage`). Captures stdout, stderr, exit code. If tests fail, Copilot analyzes failures and suggests fixes.
+
+**Step 12 — Evidence Collection (2 agents)**
+
+| Agent | Produces |
+|---|---|
+| Technical Evidence | Summary of all code changes, architecture decisions, test results |
+| Business Evidence | How the change affects business flows, what was validated, risk assessment |
+
+Saved as `evidence.md` in the session folder — ready for code review, sprint review, or audit.
+
+**Step 13 — Update Knowledge Base (2 agents)**
+
+| Agent | Updates |
+|---|---|
+| Technical Delta | Updates architecture, API contracts, tech stack KB files with new information |
+| Business Delta | Updates business rules, core flows, domain model KB files |
+
+This is how the KB **gets smarter over time** — each completed task enriches the knowledge for future tasks.
+
+### Output
+
+After the pipeline completes, your session folder contains:
+
+```
+spec-kit-sessions/2026-06-10T14-30-00/
+├── plan.md              ← Implementation plan
+├── plan-review.md       ← Plan validation results
+├── code.md              ← Generated code (all files)
+├── code-review.md       ← 4-agent review results
+├── tests.md             ← Generated tests
+├── test-review.md       ← Test quality assessment
+├── test-results.md      ← Actual test execution output
+├── evidence.md          ← Technical + business evidence
+└── kb-delta.md          ← KB update patches applied
+```
 
 ---
 
 ## 📖 Detailed Workflows
 
-### 1. Run Task — 13-Step Pipeline
+### 1. Generate Knowledge Base
 
-**Shortcut:** `Ctrl+Shift+K` / `Cmd+Shift+K`
+**Chat:** `@autospec /kb` | **Shortcut:** `Ctrl+Shift+B` / `Cmd+Shift+B`
 
-The core command. Give it a task description and it runs 13 sequential steps using GitHub Copilot:
+Scans your entire project and generates a comprehensive Knowledge Base — 15 Markdown files covering every aspect of the codebase at **business depth**.
 
-| Step | Name | What it does |
-|---|---|---|
-| 01 | **Analysis** | Understands the requirement; checks if KB/files exist |
-| 02 | **Task Plan** | Writes a detailed implementation plan |
-| 03 | **Plan Review** | Reviews the plan for correctness and completeness |
-| 04 | **Code Generation** | Generates all code changes / new files |
-| 05 | **Code Review** | Two-phase review: quality checklist + business consistency |
-| 06 | **Fix Issues** | Applies fixes found in the code review |
-| 07 | **Tests** | Writes unit tests and integration tests |
-| 08 | **Test Review** | Reviews test quality and coverage |
-| 09 | **Fix Tests** | Applies test improvements |
-| 10 | **Run Tests** | Executes `autoSpecKit.testCommand` and captures output |
-| 11 | **Fix Failing Tests** | Diagnoses and fixes any test failures |
-| 12 | **Evidence** | Builds final evidence document (plan, code, tests, results) |
-| 13 | **Update KB** | Merges new learnings back into the Knowledge Base |
-
-**After code generation (Step 04), you will be asked:**
-- ✅ **Yes — Apply to project now** → files are written directly to your workspace
-- 📁 **No — Save in session folder only** → files are saved to `spec-kit-sessions/<timestamp>/`
-
-**After Update KB (Step 13), you will be asked:**
-- ⭐ **Yes — Update KB with changes from this task** → KB files are updated
-- ⏭ **No — Skip (not recommended)** → KB stays unchanged
-
-All step outputs are saved to the session folder regardless of your choices.
-
----
-
-### 2. Generate Knowledge Base
-
-**Shortcut:** `Ctrl+Shift+B` / `Cmd+Shift+B`
-
-Scans your entire project and generates a comprehensive Knowledge Base — 16 Markdown files covering every aspect of the codebase at **business depth** (not just technical description).
-
-#### What gets analyzed
+Uses **batch parallelism** (5 batches × 3 parallel agents). Critical business steps get additional sub-agents for deeper analysis.
 
 | File | Content |
 |---|---|
@@ -175,172 +357,112 @@ Scans your entire project and generates a comprehensive Knowledge Base — 16 Ma
 | `13-business-rules.md` | Business invariants, validations, constraints |
 | `14-performance-scalability.md` | Bottlenecks, caching, scaling patterns |
 | `15-tech-debt.md` | Known issues, TODOs, areas needing attention |
-| `review-skills.md` | Project-specific rules merged with universal template |
-| `_project-scan.md` | Raw file listing used during generation |
-
-> **If a KB already exists**, you'll be asked to confirm overwrite before regenerating.
-
-After generation, `review-skills.md` is opened automatically — this file is injected into every subsequent code review and task run.
 
 ---
 
-### 3. Review Current File
+### 2. Review Current File
 
-**Access:** Right-click on any file in the editor → **Auto Spec Kit: Review Current File**  
-Or via the Command Palette.
+**Chat:** `@autospec /review` | **Access:** Right-click → **Auto Spec Kit: Review Current File**
 
-Performs a **two-phase, deep code review** on the currently open file:
-
-**Phase 1 — Code Quality**  
-Goes through every section in `review-skills.md` as a checklist:
-- Security (injection, auth bypass, data exposure)
-- Architecture (layer violations, coupling)
-- Performance (N+1 queries, missing indexes, memory leaks)
-- Error handling
-- Code quality & naming
-- Testability
-- Type safety
-- And all project-specific rules from Section 14
-
-**Phase 2 — Business Consistency**  
-Cross-references with the Knowledge Base:
-- Does this code violate any business rule in `13-business-rules.md`?
-- Has any important business logic been silently deleted?
-- Are state transitions valid per the domain model?
-- Is the API contract unchanged?
-
-**Output format:**
-
-```
-## 📋 SECTION COVERAGE
-| Section       | Status | Issues count |
-|---------------|--------|-------------|
-| Security      | ✅     | 0           |
-| Architecture  | ⚠️     | 1           |
-...
-
-## 🏢 BUSINESS CONSISTENCY
-| Check                  | Result | Notes |
-|------------------------|--------|-------|
-| Business rules intact  | ✅     |       |
-...
-
-## 🐛 ISSUES
-### Issue #1 — [CRITICAL] · processOrder() · line ~45
-> **Problem:** Missing input validation allows negative quantities.
-
-**❌ Bad code (current):**
-...
-
-**✅ Fixed code (complete, no placeholders):**
-...
-
-## ✅ STRENGTHS (at least 3 points)
-
-## 🎯 VERDICT: APPROVED / NEEDS_REVISION
-## 📊 QUALITY SCORE: X/10 — reason
-```
-
-Review results open in a new panel beside the editor.
+Multi-agent code review with 4 parallel reviewers (Security, Architecture, Performance, Business Consistency). Cross-references your Knowledge Base for business rule validation.
 
 ---
 
-### 4. Update Knowledge Base
+### 3. Update Knowledge Base
 
-**Access:** Command Palette → `Auto Spec Kit: Update Knowledge Base`
+**Chat:** `@autospec /update-kb` | **Access:** Command Palette
 
-Merges learnings from a completed task session back into the Knowledge Base. Useful when you complete a task manually (without using **Run Task**) and want to keep the KB current.
-
-You will be prompted to describe what was added or changed in the session. Copilot then identifies which KB files are affected and applies targeted updates.
+Merges learnings from manual work back into the KB. Useful when you complete tasks outside the `/run` pipeline.
 
 ---
 
-### 5. Ask About Codebase
+### 4. Ask About Codebase
 
-**Access:** Command Palette → `Auto Spec Kit: Ask About Codebase`  
-Or right-click any folder in the Explorer panel.
+**Chat:** `@autospec /ask <question>` or just `@autospec <question>`
 
 Natural language Q&A grounded in the Knowledge Base. Examples:
-
-- *"How does order cancellation work?"*
-- *"What validations exist for user registration?"*
-- *"Which services call the payment gateway?"*
-- *"What environment variables are required?"*
-- *"What is the tech debt in the auth module?"*
-
-Responses cite actual file paths and function names from the KB.
+- `@autospec /ask How does order cancellation work?`
+- `@autospec Which services call the payment gateway?`
+- `@autospec What environment variables are required?`
 
 ---
 
-### 6. Generate User Stories (PO/BA)
+### 5. Generate User Stories (PO/BA)
 
-**Shortcut:** `Ctrl+Shift+U` / `Cmd+Shift+U`
+**Chat:** `@autospec /stories <epic description>` | **Shortcut:** `Ctrl+Shift+U`
 
-A dedicated PO/BA workflow that transforms an Epic description into a full structured backlog.
+A 7-step AI pipeline for PO/BA that requires only 2 inputs (Epic title + description):
 
-**Input (3 prompts):**
-1. **Epic Title** — e.g. `"User Authentication & Authorization"`
-2. **Epic Description** — business context, goals, constraints
-3. **Feature List** — comma-separated list of features in scope
-
-**4-step pipeline:**
-
-| Step | Output |
+| Step | What happens |
 |---|---|
-| Investigation | Domain analysis: actors, business rules, edge cases, technical constraints |
-| User Stories | Full story list with roles, actions, benefits, story points, priorities |
-| Acceptance Criteria | Given/When/Then ACs + Definition of Done for each story |
-| Sprint Planning | Stories grouped by sprint, sequenced by dependency and risk |
+| 1. KB Investigation | 3 agents scan KB for domain context, existing flows, constraints |
+| 2. Feature Discovery | AI auto-discovers features from epic description + KB context |
+| 3. Impact Analysis | Per-feature: maps old business flow vs. new flow |
+| 4. Confirmation Checklist | Generates questions to confirm with stakeholders |
+| 5. User Story Generation | Per-feature parallel story writing |
+| 6. Sprint Planning | Groups stories into sprints by dependency and priority |
+| 7. HTML Report | Interactive sprint board with filters |
 
-**Output:**
-- **JSON file** (`epic-<title>-<timestamp>.json`) — structured `EpicOutput` schema with all epics, features, stories, and ACs
-- **Interactive HTML report** (`epic-<title>-<timestamp>.html`) — sprint board with:
-  - Sprint columns with collapsible story cards
-  - Priority filters (P1 / P2 / P3)
-  - Role filter and sprint filter
-  - Expandable cards showing ACs (Given/When/Then), Definition of Done, dependencies, technical notes, API endpoints
-  - Print/export to PDF support
-
-Story format in the HTML:
-> *As **[role]**, I want to **[action]** so that **[benefit]**.*
-
-Both files are saved to `spec-kit-sessions/<timestamp>/` and opened automatically on completion.
+**Example:**
+```
+@autospec /stories User Onboarding Redesign: Simplify registration, add social login 
+(Google, GitHub), implement email verification with OTP, create guided setup wizard.
+```
 
 ---
 
+### 6. Visualize Knowledge Graph
 
-### 7. Visualize Knowledge Graph
+**Chat:** `@autospec /graph` | **Access:** Command Palette
 
-**Access:** Command Palette → `Auto Spec Kit: Visualize Knowledge Graph`
+Generates an interactive D3.js force-directed graph of your project. Supports **9 programming languages** (TypeScript, JavaScript, Python, Java, Go, Ruby, C#, PHP, Rust).
 
-Generates an interactive D3.js force-directed knowledge graph of your project and opens it as a **VS Code Webview Panel** — while also saving a standalone HTML file to `spec-kit-sessions/`.
+Two phases:
+1. **Static scan** — file imports, class hierarchy, method calls, API routes, decorators
+2. **AI enrichment** (optional) — 3 agents: Flow Tracer, Entity Mapper, Architecture Validator
 
-The graph is built from two sources automatically:
-- **KB files** in `knowledge-base/` — domain model, architecture, business flows, module relationships
-- **TypeScript source** in `src/` — actual import/export dependency graph
+Click any node in the graph → opens the source file in VS Code.
 
-**Graph features:**
+---
 
-| Feature | Details |
+### 7. Select Model
+
+**Chat:** N/A | **Access:** Command Palette → `Auto Spec Kit: Select Model`
+
+Browse available GitHub Copilot models. Selection saved to settings.
+
+---
+
+## 🧠 Multi-Agent Architecture (v1.7.0)
+
+v1.7.0 introduces **parallel sub-agents** for deeper analysis. Instead of one Copilot call per step, critical steps spawn multiple specialized agents that work simultaneously.
+
+### Core infrastructure
+
+| Component | Purpose |
 |---|---|
-| 5 View tabs | All · Architecture · Workflow · Domain / KB · Source Files |
-| Force-directed layout | D3.js simulation with drag, zoom, pan |
-| Color-coded layers | Commands (blue) · Workflow (green) · Utils (orange) · Storage (purple) · Domain (red) |
-| Node click | Detail panel slides in: description, connections, "Open File" button |
-| Real-time search | Fuzzy match by name or description |
-| Arrow edge types | `imports` · `calls` · `depends` · `flows-to` · `defines` |
-| HTML export | Self-contained file saved to `spec-kit-sessions/knowledge-graph-YYYY-MM-DD.html` |
+| `AgentOrchestrator` | Runs N agents in parallel with concurrency control, timeout, and 3 merge strategies |
+| `SmartContextLoader` | File Discovery Agent selects relevant files; builds per-agent token-budgeted context |
+| `TokenBudget` | Estimates tokens, allocates budget by priority, auto-truncates to fit model limits |
 
-**Does not require a KB to be generated first** — the graph can be run on any project at any time and will use whatever KB files exist alongside live source analysis.
+### Merge strategies
 
----
-### 8. Select Model
+| Strategy | How it works | Best for |
+|---|---|---|
+| `ai` | A merge agent synthesizes all outputs into one coherent document | Planning, evidence |
+| `concat` | Simple concatenation with headers | Code generation, tests |
+| `structured` | Section-based merge with deduplication | Reviews, KB updates |
 
-**Access:** Command Palette → `Auto Spec Kit: Select Model`
+### Configuration
 
-Browse all available GitHub Copilot language models and select your preferred one. The selection is saved to `autoSpecKit.model` in VS Code settings and used for all subsequent commands.
-
-Models are sorted by quality (best first) using a built-in priority ranking. The currently active model is marked with `← current`.
+```jsonc
+{
+  "autoSpecKit.agents.maxParallel": 3,        // 1-6 parallel agents per step
+  "autoSpecKit.agents.timeout": 90000,         // Per-agent timeout (ms)
+  "autoSpecKit.agents.mergeStrategy": "ai",    // ai | concat | structured
+  "autoSpecKit.agents.contextStrategy": "smart" // smart | full | minimal
+}
+```
 
 ---
 
@@ -352,62 +474,42 @@ Models are sorted by quality (best first) using a built-in priority ranking. The
 | Generate Knowledge Base | `Ctrl+Shift+B` | `Cmd+Shift+B` |
 | Generate User Stories | `Ctrl+Shift+U` | `Cmd+Shift+U` |
 
-All other commands are accessible via the Command Palette (`Ctrl+Shift+P` → `Auto Spec Kit`).
+All other commands: Command Palette (`Ctrl+Shift+P` → `Auto Spec Kit`) or Copilot Chat (`@autospec`).
 
 ---
 
 ## ⚙️ Configuration Reference
 
-Open VS Code Settings (`Ctrl+,`) and search for **Auto Spec Kit**, or edit `settings.json` directly:
+Open VS Code Settings (`Ctrl+,`) → search **Auto Spec Kit**:
 
 ```jsonc
 {
-  // Command to run your test suite.
-  // Output is captured and analyzed by Copilot in Step 10 (Run Tests).
-  // Leave blank to skip the test-run step.
-  // Examples:
-  //   "npx jest --coverage --coverageReporters=text 2>&1"
-  //   "npm test 2>&1"
-  //   "python -m pytest --tb=short 2>&1"
-  "autoSpecKit.testCommand": "",
+  // Test command for Step 11
+  "autoSpecKit.testCommand": "npx jest --coverage --coverageReporters=text 2>&1",
 
-  // Primary programming language of the project.
-  // Used to guide code generation style and test framework choices.
-  // Options: "typescript" | "javascript" | "python" | "java" | "go"
+  // Primary language
   "autoSpecKit.language": "typescript",
 
-  // Relative path (from workspace root) to the Knowledge Base folder.
-  // Default creates a `knowledge-base/` directory at the project root.
+  // KB folder (relative to workspace)
   "autoSpecKit.knowledgeBasePath": "knowledge-base",
 
-  // When true, generated code is automatically written to the project
-  // without showing the apply/skip prompt.
+  // Auto-apply generated code without prompt
   "autoSpecKit.autoApplyCode": false,
 
-  // Folder where session outputs (plans, code, reviews, evidence) are saved.
-  // Relative to workspace root.
+  // Session output folder
   "autoSpecKit.sessionsDir": "spec-kit-sessions",
 
-  // Preferred Copilot model ID. Leave blank for auto-selection (best available).
-  // Run "Auto Spec Kit: Select Model" to browse all options.
-  // Examples: "gpt-5.5", "gpt-5.4", "claude-opus-4-7", "claude-sonnet-4-6",
-  //           "gemini-2.5-pro", "o3", "o4-mini"
+  // Preferred Copilot model ID (blank = auto-select best)
   "autoSpecKit.model": "",
 
-  // When true, shows the model Quick Pick at the start of every command run,
-  // ignoring the saved autoSpecKit.model value.
-  "autoSpecKit.askModelOnStart": false
-}
-```
+  // Show model picker on every run
+  "autoSpecKit.askModelOnStart": false,
 
-### Recommended setup
-
-```jsonc
-{
-  "autoSpecKit.language": "typescript",
-  "autoSpecKit.testCommand": "npx jest --coverage --coverageReporters=text 2>&1",
-  "autoSpecKit.model": "gpt-5.5",
-  "autoSpecKit.autoApplyCode": false
+  // Multi-agent settings (v1.7.0)
+  "autoSpecKit.agents.maxParallel": 3,
+  "autoSpecKit.agents.timeout": 90000,
+  "autoSpecKit.agents.mergeStrategy": "ai",
+  "autoSpecKit.agents.contextStrategy": "smart"
 }
 ```
 
@@ -415,23 +517,7 @@ Open VS Code Settings (`Ctrl+,`) and search for **Auto Spec Kit**, or edit `sett
 
 ## 🧠 Knowledge Base
 
-The Knowledge Base is the foundation of Auto Spec Kit. It is a folder of Markdown files (`knowledge-base/` by default) that:
-
-1. **Powers code generation** — Copilot knows the exact architecture, patterns, and business rules before writing new code
-2. **Powers code review** — every review cross-references business rules and domain constraints
-3. **Powers Q&A** — the Ask command answers questions grounded in actual codebase evidence
-4. **Powers planning** — task plans reference existing flows and avoid duplicate implementations
-5. **Gets smarter over time** — every completed task updates the KB automatically
-
-### Generating the KB for the first time
-
-```
-Ctrl+Shift+B  →  Wait ~3–10 minutes (depends on project size and model)
-```
-
-### Keeping the KB current
-
-The **Run Task** pipeline automatically offers to update the KB at Step 13. For manual tasks, use **Update Knowledge Base** from the Command Palette.
+The Knowledge Base is the foundation of Auto Spec Kit. It powers code generation, review, Q&A, and planning.
 
 ### KB directory structure
 
@@ -456,89 +542,40 @@ knowledge-base/
 └── _project-scan.md           ← raw scan (for debugging)
 ```
 
-> **Tip:** Commit `review-skills.md` to share project review standards with your team.  
-> Add the rest of `knowledge-base/` to `.gitignore` if you prefer not to commit auto-generated analysis files.
-
 ---
 
 ## 📁 Session Outputs
 
-Every command run produces a timestamped session folder under `spec-kit-sessions/`:
+Every command run saves to `spec-kit-sessions/<timestamp>/`:
 
 ```
 spec-kit-sessions/
-└── 2026-05-25T14-30-00/
-    ├── 01-analysis.md
-    ├── 02-task-plan.md
-    ├── 03-plan-review.md
-    ├── 04-code-gen.md          ← or actual .ts/.py files if applied to project
-    ├── 05-code-review.md
-    ├── 06-fix-issues.md
-    ├── 07-tests.md
-    ├── 08-test-review.md
-    ├── 09-fix-tests.md
-    ├── 10-test-results.md
-    ├── 11-fix-failing.md
-    ├── 12-evidence.md
-    └── 13-kb-delta.md
-```
-
-For User Stories, outputs look like:
-
-```
-spec-kit-sessions/
-└── 2026-05-25T14-45-00/
-    ├── epic-user-auth-2026-05-25T14-45-00.json
-    └── epic-user-auth-2026-05-25T14-45-00.html
+└── 2026-06-10T14-30-00/
+    ├── plan.md
+    ├── plan-review.md
+    ├── code.md
+    ├── code-review.md
+    ├── tests.md
+    ├── test-review.md
+    ├── test-results.md
+    ├── evidence.md
+    └── kb-delta.md
 ```
 
 ---
 
 ## 🛡️ Review Skills System
 
-The review skill system has two layers that are merged into a single `review-skills.md` file.
+Two-layer review system:
 
-### Universal Template (`resources/review-skills-universal.md`)
-
-Bundled with the extension. Contains 13 sections of review rules applicable to any project:
-
-1. Security
-2. Architecture & Design
-3. Performance
-4. Error Handling
-5. Code Quality & Readability
-6. Type Safety
-7. Testability
-8. API Design
-9. Database & Data Layer
-10. Documentation
-11. Observability & Logging
-12. DevOps & Deployment
-13. Business Logic
-
-### Section 14 — Project-Specific Rules
-
-Generated by Copilot during **Generate Knowledge Base**. Contains rules unique to _your_ project:
-- Naming conventions
-- Mandatory patterns and conventions
-- Banned anti-patterns
-- Business rules to enforce in every new feature
-- Project-specific technology usage
-
-**Priority:** Section 14 (project-specific) takes highest priority over universal rules.
-
-### Load order for reviews
-
-When reviewing a file or running a task, review skills are loaded in this order:
-1. **`knowledge-base/review-skills.md`** — preferred (universal rules + project Section 14)
-2. **`resources/review-skills-universal.md`** — fallback if no KB exists
-3. **Generic checklist** — last resort if neither file is found
+1. **Universal Template** (`resources/review-skills-universal.md`) — 13 sections: Security, Architecture, Performance, Error Handling, Code Quality, Type Safety, Testability, API Design, Database, Documentation, Observability, DevOps, Business Logic
+2. **Section 14 — Project-Specific Rules** — generated by Copilot during KB generation, unique to your project
 
 ---
 
 ## 🤖 Model Selection & Priority
 
-Auto Spec Kit ranks available GitHub Copilot models and auto-selects the best one. Built-in priority (2026):
+Built-in priority ranking (2026):
 
 | Priority | Model ID |
 |---|---|
@@ -550,119 +587,111 @@ Auto Spec Kit ranks available GitHub Copilot models and auto-selects the best on
 | 6 | `gemini-2.5-pro` |
 | 7 | `gpt-5` |
 | 8 | `o4-mini` |
-| ... | *(other models sorted alphabetically)* |
 
-**To override auto-selection:**
-- Run **Select Model** from the Command Palette, or
-- Set `"autoSpecKit.model": "gpt-5.5"` in settings directly, or
-- Enable `"autoSpecKit.askModelOnStart": true` to choose on every run
+Override: `"autoSpecKit.model": "gpt-5.5"` in settings.
 
 ---
 
 ## 🔀 Git Context Integration
 
-The **Run Task** Step 05 (Code Review) and **Review Current File** both automatically load git context:
-
-- **Diff vs. default branch** — all changes since branching off `main`/`master`/`develop`
-- **Working tree diff** — uncommitted local changes
-- **Recent commit messages** — provides intent context for the reviewer
-
-This means Copilot reviews _what changed_, not just the file in isolation — catching regressions, unintended deletions, and API contract breaks.
+Code Review (Step 05) and Review File both load git context:
+- Diff vs. default branch (`main`/`master`/`develop`)
+- Working tree diff (uncommitted changes)
+- Recent commit messages
 
 ---
 
 ## 💻 Supported Languages
 
-Configure `autoSpecKit.language` to tune code generation:
-
-| Language | Test Framework Hints | Code Style |
-|---|---|---|
-| `typescript` | Jest / Vitest | ES modules, strict types |
-| `javascript` | Jest / Mocha | CommonJS or ESM |
-| `python` | pytest | PEP 8 |
-| `java` | JUnit 5 / Mockito | Maven/Gradle conventions |
-| `go` | `testing` package | Go idioms |
+| Language | KB Scan | Graph Scanner | Code Gen | Test Gen |
+|---|---|---|---|---|
+| TypeScript | ✅ | ✅ | ✅ | ✅ |
+| JavaScript | ✅ | ✅ | ✅ | ✅ |
+| Python | ✅ | ✅ | ✅ | ✅ |
+| Java | ✅ | ✅ | ✅ | ✅ |
+| Go | ✅ | ✅ | ✅ | ✅ |
+| Ruby | — | ✅ | — | — |
+| C# | — | ✅ | — | — |
+| PHP | — | ✅ | — | — |
+| Rust | — | ✅ | — | — |
 
 ---
 
 ## 💡 Tips & Best Practices
 
-### Getting the best results from Run Task
-
-- **Be specific.** Instead of *"add auth"*, write *"Add JWT-based email/password authentication with refresh tokens, bcrypt password hashing, and rate limiting on the login endpoint."*
-- **Generate KB first.** The pipeline is significantly more accurate when it can reference your actual codebase architecture.
-- **Set `autoSpecKit.testCommand`** so Step 10 runs your real tests and Step 11 can fix actual failures.
-- **Read Step 05 output carefully.** The two-phase review often surfaces issues a manual review would miss.
-
-### Knowledge Base tips
-
-- Re-run **Generate KB** after major refactors or architecture changes.
-- The most valuable KB file is `13-business-rules.md` — the more accurate it is, the better every review becomes.
-- Commit `review-skills.md` to share your project's review standards with the entire team.
-
-### User Stories tips
-
-- Provide a detailed Epic Description including non-functional requirements and explicit out-of-scope items.
-- 5–10 features per epic produces the most useful story granularity.
-- The generated HTML can be printed as a PDF for stakeholder review sessions.
-
-### Model tips
-
-- For **complex tasks or large files**, use `gpt-5.5` or `claude-opus-4-7` for deepest analysis.
-- For **fast iterations**, `o4-mini` or `claude-sonnet-4-6` are noticeably faster.
-- KB generation is the most token-intensive operation — use the best model available for it.
+- **Be specific** with `/run` — "Add JWT refresh token rotation with 7-day expiry" beats "add auth"
+- **Generate KB first** (`@autospec /kb`) — the pipeline is significantly more accurate with KB context
+- **Set `autoSpecKit.testCommand`** so Step 11 runs real tests
+- **Use `/review` often** — the 4-agent review catches issues manual review misses
+- For **complex tasks**, use `gpt-5.5` or `claude-opus-4-7`; for **fast iterations**, `o4-mini`
 
 ---
 
 ## 📝 Changelog
 
-### v1.6.0 (current)
-- ✅ Added **Visualize Knowledge Graph** command — D3.js force-directed interactive graph
-- ✅ 5 view tabs: All, Architecture, Workflow, Domain/KB, Source Files
-- ✅ Auto-parses `knowledge-base/` markdown + `src/` TypeScript imports to build nodes/edges
-- ✅ VS Code Webview Panel (in-editor) + saves self-contained HTML file for sharing
-- ✅ Node click → detail panel with description, connections, and "Open File" button
-- ✅ Real-time search, zoom controls, color-coded layers, arrow edge types
-- ✅ Author metadata (name, email, GitHub, repository, bugs URL) added to extension manifest
+### v1.7.0 (current)
+
+**Multi-Agent Architecture**
+- ✅ `AgentOrchestrator` — parallel sub-agents with 3 merge strategies (ai/concat/structured)
+- ✅ `SmartContextLoader` — File Discovery Agent + per-agent token-budgeted context
+- ✅ `TokenBudget` — estimate, allocate, truncate tokens across agents
+- ✅ All 8 AI pipeline steps upgraded to multi-agent (3-4 parallel agents each)
+
+**Copilot Chat Integration**
+- ✅ `@autospec` Chat Participant with 7 slash commands
+- ✅ Stream progress and results directly into chat panel
+- ✅ Free text defaults to `/ask`
+
+**Pipeline Refactor**
+- ✅ `PipelineRunner` with checkpoint/resume via `.pipeline-state.json`
+- ✅ 13 step classes replacing 32KB monolith
+- ✅ 3 human checkpoints (steps 03, 06, 09)
+
+**Universal Graph Scanner**
+- ✅ 9-language support (TS/JS/Python/Java/Go/Ruby/C#/PHP/Rust)
+- ✅ Class/method/route/decorator/field detection per language
+- ✅ Auto architecture layer inference
+- ✅ AI enrichment: Flow Tracer + Entity Mapper + Arch Validator
+
+**KB Generation — Batch Parallelism**
+- ✅ 5 batches × 3 parallel steps (was 15 sequential)
+- ✅ Critical steps get 3 sub-agents for deeper analysis
+
+**PO/BA User Story Pipeline**
+- ✅ 2 inputs only (title + description), AI auto-discovers features
+- ✅ 7-step pipeline with per-feature impact analysis
+- ✅ Outputs: features.md, confirmation-checklist.md, user-stories.md, sprint-plan.md
+
+**Other**
+- ✅ `copilot.ts` — retry with exponential backoff (3 attempts)
+- ✅ Jest test suite for utilities
+- ✅ `docs/index.html` — 7-tab documentation with SVG diagrams
+
+### v1.6.0
+- Added Visualize Knowledge Graph command (D3.js)
+- 5 view tabs, node click → open file, real-time search
 
 ### v1.5.3
-- ✅ Added **Generate User Stories (PO/BA)** command (`Ctrl+Shift+U`)
-- ✅ Interactive HTML sprint board with priority/role/sprint filters
-- ✅ Structured JSON output (`EpicOutput` schema) for integration with PM tools
-- ✅ Given/When/Then acceptance criteria format
-- ✅ Story cards: *As [role], I want to [action] so that [benefit]*
-- ✅ Git diff context integrated into Run Task Step 05 and Review Current File
-- ✅ All UI, prompts, and generated output in English
+- Added Generate User Stories (PO/BA) with HTML sprint board
+- Git diff context in code review
 
 ### v1.5.0
-- ✅ Expanded KB from 12 to 15 analysis steps
-- ✅ Business-depth KB prompts — cites actual file paths and function names as evidence
-- ✅ Added `13-business-rules.md`, `14-performance-scalability.md`, `15-tech-debt.md`
-- ✅ Updated model priority list for 2026 GitHub Copilot models
+- Expanded KB to 15 analysis steps with business-depth prompts
 
 ### v1.4.1
-- ✅ Model selection UI with quality ranking
-- ✅ `autoSpecKit.model` and `autoSpecKit.askModelOnStart` settings
-- ✅ **Select Model** command
+- Model selection UI with quality ranking
 
 ### v1.3.0
-- ✅ **Review Current File** command (standalone two-phase review)
-- ✅ Universal review skills template (`resources/review-skills-universal.md`)
-- ✅ Section 14 project-specific rules merged during KB generation
-- ✅ **Update Knowledge Base** command
+- Review Current File, review skills system, Update KB
 
 ### v1.2.0
-- ✅ **Generate Knowledge Base** command (15-file structure)
-- ✅ **Ask About Codebase** command
-- ✅ KB referenced in all Run Task steps
+- Generate Knowledge Base, Ask About Codebase
 
 ### v1.1.0
-- ✅ **Run Task** 13-step pipeline
-- ✅ Session output folder with all step outputs
-- ✅ Apply-to-project vs. save-to-session choice
+- Run Task 13-step pipeline
 
 ### v1.0.0
-- ✅ Initial release
+- Initial release
 
 ---
 
