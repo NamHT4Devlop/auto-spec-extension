@@ -171,13 +171,13 @@
   <h2>Commands at a Glance</h2>
   <table>
     <tr><th>Command</th><th>Shortcut</th><th>Role</th><th>Description</th></tr>
-    <tr><td>🚀 Run Task</td><td><kbd>Ctrl+Shift+K</kbd></td><td><span class="role role-dev">DEV</span></td><td>Full 13-step multi-agent development workflow</td></tr>
-    <tr><td>📚 Generate KB</td><td><kbd>Ctrl+Shift+B</kbd></td><td><span class="role role-all">ALL</span></td><td>Scan codebase → build 16-file Knowledge Base (batch-parallel + deep analysis)</td></tr>
-    <tr><td>📋 User Stories</td><td><kbd>Ctrl+Shift+U</kbd></td><td><span class="role role-po">PO/BA</span></td><td>Epic → auto-discover Features → Impact → Stories → Sprint Plan</td></tr>
+    <tr><td>🚀 Build Feature</td><td><kbd>Ctrl+Shift+K</kbd></td><td><span class="role role-dev">DEV</span></td><td>Full 13-step multi-agent development pipeline</td></tr>
+    <tr><td>📚 Scan Project</td><td><kbd>Ctrl+Shift+B</kbd></td><td><span class="role role-all">ALL</span></td><td>Scan codebase → generate 16-file Knowledge Base (batch-parallel + deep analysis)</td></tr>
+    <tr><td>📋 Plan Stories</td><td><kbd>Ctrl+Shift+U</kbd></td><td><span class="role role-po">PO/BA</span></td><td>Epic → auto-discover Features → Impact → Stories → Sprint Plan</td></tr>
     <tr><td>🔍 Review File</td><td>Right-click</td><td><span class="role role-dev">DEV</span></td><td>4-agent code review (Security + Architecture + Performance + Business)</td></tr>
-    <tr><td>🔭 Knowledge Graph</td><td>Palette</td><td><span class="role role-sm">SM/Lead</span></td><td>Universal multi-language graph + AI enrichment</td></tr>
+    <tr><td>🔭 Map Codebase</td><td>Palette</td><td><span class="role role-sm">SM/Lead</span></td><td>Universal multi-language dependency graph + AI enrichment</td></tr>
     <tr><td>💬 Ask Codebase</td><td>Palette</td><td><span class="role role-all">ALL</span></td><td>Natural language Q&A grounded in KB</td></tr>
-    <tr><td>📚 Update KB</td><td>Palette</td><td><span class="role role-dev">DEV</span></td><td>Merge changes from manual tasks into KB</td></tr>
+    <tr><td>📚 Rescan Changes</td><td>Palette</td><td><span class="role role-dev">DEV</span></td><td>Update KB with latest code changes</td></tr>
     <tr><td>🤖 Select Model</td><td>Palette</td><td><span class="role role-all">ALL</span></td><td>Choose preferred Copilot model</td></tr>
   </table>
 </div>
@@ -223,8 +223,8 @@ npx @vscode/vsce package --no-dependencies --allow-missing-repository
   <ol class="step-list">
     <li>Install the extension (see above)</li>
     <li>Open any project in VS Code</li>
-    <li class="green">Press <kbd>Ctrl+Shift+B</kbd> → <strong>Generate Knowledge Base</strong><br><em>Scans your project with multi-agent deep analysis. Takes 3-10 minutes.</em></li>
-    <li class="green">Press <kbd>Ctrl+Shift+K</kbd> → <strong>Run Task</strong><br><em>Describe what you want to build. Watch the 13-step pipeline run.</em></li>
+    <li class="green">Press <kbd>Ctrl+Shift+B</kbd> → <strong>Scan Project</strong><br><em>Scans your project with multi-agent deep analysis. Takes 3-10 minutes.</em></li>
+    <li class="green">Press <kbd>Ctrl+Shift+K</kbd> → <strong>Build Feature</strong><br><em>Describe what you want to build. Watch the 13-step pipeline run.</em></li>
     <li>Review generated files in <code>spec-kit-sessions/</code></li>
   </ol>
 </div>
@@ -254,13 +254,13 @@ npx @vscode/vsce package --no-dependencies --allow-missing-repository
   <h3>All Commands</h3>
   <table>
     <tr><th>Command</th><th>What it does</th><th>Example</th></tr>
-    <tr><td><code>@autospec /run</code></td><td>Run full 13-step dev pipeline</td><td><code>@autospec /run Add reset password feature using email OTP</code></td></tr>
-    <tr><td><code>@autospec /kb</code></td><td>Generate Knowledge Base</td><td><code>@autospec /kb</code></td></tr>
-    <tr><td><code>@autospec /update-kb</code></td><td>Update KB with latest changes</td><td><code>@autospec /update-kb</code></td></tr>
+    <tr><td><code>@autospec /build</code></td><td>Build a feature — full 13-step pipeline</td><td><code>@autospec /build Add reset password feature using email OTP</code></td></tr>
+    <tr><td><code>@autospec /scan</code></td><td>Scan the project — generate Knowledge Base</td><td><code>@autospec /scan</code></td></tr>
+    <tr><td><code>@autospec /rescan</code></td><td>Rescan latest changes — update KB</td><td><code>@autospec /rescan</code></td></tr>
     <tr><td><code>@autospec /review</code></td><td>Review current open file</td><td><code>@autospec /review</code></td></tr>
     <tr><td><code>@autospec /ask</code></td><td>Ask about codebase (uses KB)</td><td><code>@autospec /ask How does auth work?</code></td></tr>
-    <tr><td><code>@autospec /stories</code></td><td>Generate User Stories (PO/BA)</td><td><code>@autospec /stories User onboarding redesign...</code></td></tr>
-    <tr><td><code>@autospec /graph</code></td><td>Visualize Knowledge Graph</td><td><code>@autospec /graph</code></td></tr>
+    <tr><td><code>@autospec /plan</code></td><td>Plan user stories (PO/BA)</td><td><code>@autospec /plan User onboarding redesign...</code></td></tr>
+    <tr><td><code>@autospec /map</code></td><td>Map the codebase — dependency graph</td><td><code>@autospec /map</code></td></tr>
   </table>
 
   <h3>Free Text (no slash command)</h3>
@@ -268,15 +268,15 @@ npx @vscode/vsce package --no-dependencies --allow-missing-repository
 </div>
 
 <div class="card">
-  <h2>Deep Dive: <code>@autospec /run</code></h2>
-  <p>When you type <code>@autospec /run Add reset password feature using email OTP, expires after 10 minutes</code>, this is the full execution path:</p>
+  <h2>Deep Dive: <code>@autospec /build</code></h2>
+  <p>When you type <code>@autospec /build Add reset password feature using email OTP, expires after 10 minutes</code>, this is the full execution path:</p>
 
   <svg viewBox="0 0 700 320" xmlns="http://www.w3.org/2000/svg">
     <defs><marker id="ac" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#94a3b8"/></marker></defs>
 
     <!-- User input -->
     <rect x="10" y="10" width="300" height="36" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
-    <text x="160" y="28" fill="#92400e" text-anchor="middle" font-size="9" font-weight="bold">USER: @autospec /run Add reset password...</text>
+    <text x="160" y="28" fill="#92400e" text-anchor="middle" font-size="9" font-weight="bold">USER: @autospec /build Add reset password...</text>
     <text x="160" y="40" fill="#a16207" text-anchor="middle" font-size="8">typed in Copilot Chat panel</text>
 
     <line x1="310" y1="28" x2="340" y2="28" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ac)"/>
@@ -325,24 +325,24 @@ npx @vscode/vsce package --no-dependencies --allow-missing-repository
 
   <h3>How the Chat Participant bridges to the pipeline</h3>
   <ol class="step-list">
-    <li>You type <code>@autospec /run Add reset password feature</code> in Copilot Chat</li>
+    <li>You type <code>@autospec /build Add reset password feature</code> in Copilot Chat</li>
     <li>VS Code routes the message to the <code>@autospec</code> Chat Participant (registered in <code>chat-participant.ts</code>)</li>
-    <li class="green"><code>handleRun()</code> calls <code>resolveModel()</code> to pick the best available Copilot model, then creates a <strong>Progress adapter</strong> that converts <code>vscode.Progress.report()</code> calls into <code>stream.progress()</code> — so every pipeline step updates the chat panel in real-time</li>
-    <li class="green"><code>handleRun()</code> calls <code>runWorkflow()</code> from <code>workflow/run-task.ts</code> — the same function used by the Command Palette command</li>
+    <li class="green"><code>handleBuild()</code> calls <code>resolveModel()</code> to pick the best available Copilot model, then creates a <strong>Progress adapter</strong> that converts <code>vscode.Progress.report()</code> calls into <code>stream.progress()</code> — so every pipeline step updates the chat panel in real-time</li>
+    <li class="green"><code>handleBuild()</code> calls <code>runWorkflow()</code> from <code>workflow/run-task.ts</code> — the same function used by the Command Palette command</li>
     <li class="purple"><code>runWorkflow()</code> creates a <code>PipelineRunner</code> and executes <code>ALL_STEPS</code> (13 step classes). Each step spawns sub-agents via <code>AgentOrchestrator</code> with <code>SmartContextLoader</code>-selected context</li>
     <li class="orange">3 human checkpoints (steps 03, 06, 09) pause the pipeline with VS Code Quick Pick dialogs — you approve, add comments, or cancel</li>
-    <li>When the pipeline completes, <code>handleRun()</code> writes a final completion message to the chat stream</li>
+    <li>When the pipeline completes, <code>handleBuild()</code> writes a final completion message to the chat stream</li>
   </ol>
 </div>
 
 <div class="card">
   <h2>Example Session</h2>
-  <pre><code>You:     @autospec /kb
-Bot:     📚 Generating Knowledge Base...
+  <pre><code>You:     @autospec /scan
+Bot:     📚 Scanning Project...
          Analyzing your codebase with multi-agent batch parallelism...
-         ✅ Knowledge Base generated! Check knowledge-base/ folder.
+         ✅ Scan complete! Knowledge Base generated in knowledge-base/ folder.
 
-You:     @autospec /run Add reset password feature using email OTP, expires after 10 minutes
+You:     @autospec /build Add reset password feature using email OTP, expires after 10 minutes
 Bot:     🚀 Auto Spec Kit — Dev Workflow
          Requirement: Add reset password feature...
          [Step 01/13] Planning with 3 parallel agents...
@@ -367,7 +367,7 @@ Bot:     💬 Searching Knowledge Base...
 <div id="dev" class="panel">
 
 <div class="card">
-  <h2>🧑‍💻 Developer Flow — Run Task</h2>
+  <h2>🧑‍💻 Developer Flow — Build Feature</h2>
   <span class="role role-dev">FOR: Developers</span>
   <p>The core command. Give it a task description and it runs a <strong>13-step multi-agent pipeline</strong> from planning to evidence collection. Press <kbd>Ctrl+Shift+K</kbd> to start.</p>
 
@@ -508,7 +508,7 @@ Bot:     💬 Searching Knowledge Base...
 <div id="po" class="panel">
 
 <div class="card">
-  <h2>📋 PO/BA Flow — Generate User Stories</h2>
+  <h2>📋 PO/BA Flow — Plan User Stories</h2>
   <span class="role role-po">FOR: Product Owners, Business Analysts</span>
   <p>Press <kbd>Ctrl+Shift+U</kbd>. Enter only <strong>Epic Title + Description</strong>. The system does everything else automatically.</p>
 
@@ -599,7 +599,7 @@ Bot:     💬 Searching Knowledge Base...
   <h2>📊 SM / Tech Lead Flow — Knowledge Base & Graph</h2>
   <span class="role role-sm">FOR: Scrum Masters, Tech Leads, Architects</span>
 
-  <h3>Generate Knowledge Base (<kbd>Ctrl+Shift+B</kbd>)</h3>
+  <h3>Scan Project (<kbd>Ctrl+Shift+B</kbd>)</h3>
   <p>Scans the entire project and generates 16 analysis files with multi-agent deep analysis on critical business files.</p>
 
   <svg viewBox="0 0 700 220" xmlns="http://www.w3.org/2000/svg">
@@ -642,9 +642,9 @@ Bot:     💬 Searching Knowledge Base...
 </div>
 
 <div class="card">
-  <h2>🔭 Knowledge Graph</h2>
+  <h2>🔭 Map Codebase</h2>
   <span class="role role-sm">FOR: Architects, Tech Leads</span>
-  <p>Command Palette → <strong>Visualize Knowledge Graph</strong>. Universal multi-language scanner + optional AI enrichment.</p>
+  <p>Command Palette → <strong>Map Codebase</strong> or <code>@autospec /map</code>. Universal multi-language scanner + optional AI enrichment.</p>
 
   <ol class="step-list">
     <li><strong>Static Scan</strong> — Multi-language parser (TS/JS/Python/Java/Go/Ruby/C#/PHP/Rust). Detects: file imports, class hierarchy, method declarations, API routes, decorators.</li>

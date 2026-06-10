@@ -3,13 +3,13 @@
  *
  * Registers @autospec as a Chat Participant in VS Code Copilot Chat.
  * Users can invoke:
- *   @autospec /run Add reset password feature
- *   @autospec /kb
+ *   @autospec /build Add reset password feature
+ *   @autospec /scan
+ *   @autospec /rescan
  *   @autospec /review
  *   @autospec /ask Which module handles payment?
- *   @autospec /stories Epic: User onboarding redesign
- *   @autospec /graph
- *   @autospec /update-kb
+ *   @autospec /plan Epic: User onboarding redesign
+ *   @autospec /map
  *   @autospec (free text → defaults to /ask)
  */
 
@@ -50,11 +50,14 @@ async function handleChatRequest(
 
   try {
     switch (command) {
-      case 'run':
-        return await handleRun(root, userPrompt, stream, chatToken, extensionContext);
+      case 'build':
+        return await handleBuild(root, userPrompt, stream, chatToken, extensionContext);
 
-      case 'kb':
-        return await handleGenerateKB(root, stream, chatToken, extensionContext);
+      case 'scan':
+        return await handleScan(root, stream, chatToken, extensionContext);
+
+      case 'rescan':
+        return await handleRescan(root, stream, chatToken);
 
       case 'review':
         return await handleReview(root, stream, chatToken, extensionContext);
@@ -62,14 +65,11 @@ async function handleChatRequest(
       case 'ask':
         return await handleAsk(root, userPrompt, stream, chatToken);
 
-      case 'stories':
-        return await handleStories(root, userPrompt, stream, chatToken);
+      case 'plan':
+        return await handlePlan(root, userPrompt, stream, chatToken);
 
-      case 'graph':
-        return await handleGraph(root, stream, extensionContext);
-
-      case 'update-kb':
-        return await handleUpdateKB(root, stream, chatToken);
+      case 'map':
+        return await handleMap(root, stream, extensionContext);
 
       default:
         // No slash command → treat as /ask if there's a prompt, otherwise show help
@@ -91,7 +91,7 @@ async function handleChatRequest(
 // COMMAND HANDLERS
 // ═══════════════════════════════════════════════════════════════════════════════
 
-async function handleRun(
+async function handleBuild(
   root: string,
   requirement: string,
   stream: vscode.ChatResponseStream,
@@ -99,18 +99,18 @@ async function handleRun(
   extContext: vscode.ExtensionContext,
 ): Promise<vscode.ChatResult> {
   if (!requirement) {
-    stream.markdown('Please describe the feature or task to implement.\n\n**Example:**\n```\n@autospec /run Add reset password feature using email OTP, expires after 10 minutes\n```');
-    return { metadata: { command: 'run' } };
+    stream.markdown('Please describe the feature to build.\n\n**Example:**\n```\n@autospec /build Add reset password feature using email OTP, expires after 10 minutes\n```');
+    return { metadata: { command: 'build' } };
   }
 
   const model = await resolveModel();
   if (!model) {
     stream.markdown('⚠️ No Copilot model available. Please ensure GitHub Copilot is active.');
-    return { metadata: { command: 'run' } };
+    return { metadata: { command: 'build' } };
   }
 
-  stream.progress('Running 13-step pipeline...');
-  stream.markdown(`🚀 **Auto Spec Kit — Dev Workflow**\n\n**Requirement:** ${requirement}\n\n**Model:** ${model.name}\n\n---\n\n`);
+  stream.progress('Building feature — running 13-step pipeline...');
+  stream.markdown(`🚀 **Auto Spec Kit — Build Feature**\n\n**Requirement:** ${requirement}\n\n**Model:** ${model.name}\n\n---\n\n`);
 
   const progress: vscode.Progress<{ message?: string; increment?: number }> = {
     report: (value) => {
@@ -122,12 +122,12 @@ async function handleRun(
 
   await runWorkflow(requirement, root, model, token, progress, extContext.extensionPath);
 
-  stream.markdown('\n\n✅ **Pipeline completed!** Check the Output panel (`Auto Spec Kit`) for full details.\n\nGenerated files are in your `spec-kit-sessions/` folder.');
+  stream.markdown('\n\n✅ **Build completed!** Check the Output panel (`Auto Spec Kit`) for full details.\n\nGenerated files are in your `spec-kit-sessions/` folder.');
 
-  return { metadata: { command: 'run' } };
+  return { metadata: { command: 'build' } };
 }
 
-async function handleGenerateKB(
+async function handleScan(
   root: string,
   stream: vscode.ChatResponseStream,
   token: vscode.CancellationToken,
@@ -136,11 +136,11 @@ async function handleGenerateKB(
   const model = await resolveModel();
   if (!model) {
     stream.markdown('⚠️ No Copilot model available.');
-    return { metadata: { command: 'kb' } };
+    return { metadata: { command: 'scan' } };
   }
 
-  stream.progress('Scanning codebase and generating Knowledge Base...');
-  stream.markdown('📚 **Generating Knowledge Base**\n\nAnalyzing your codebase with multi-agent batch parallelism (5 batches × 3 agents)...\n\n');
+  stream.progress('Scanning project...');
+  stream.markdown('📚 **Scanning Project**\n\nAnalyzing your codebase with multi-agent batch parallelism (5 batches × 3 agents)...\n\n');
 
   const progress: vscode.Progress<{ message?: string; increment?: number }> = {
     report: (value) => {
@@ -150,9 +150,9 @@ async function handleGenerateKB(
 
   await generateKnowledgeBase(root, model, token, progress, extContext.extensionPath);
 
-  stream.markdown('\n\n✅ **Knowledge Base generated!** Check the `knowledge-base/` folder for 15 markdown files covering architecture, APIs, business logic, and more.');
+  stream.markdown('\n\n✅ **Scan complete!** Knowledge Base generated in `knowledge-base/` — 15 markdown files covering architecture, APIs, business logic, and more.');
 
-  return { metadata: { command: 'kb' } };
+  return { metadata: { command: 'scan' } };
 }
 
 async function handleReview(
@@ -191,7 +191,7 @@ async function handleAsk(
   token: vscode.CancellationToken,
 ): Promise<vscode.ChatResult> {
   if (!question) {
-    stream.markdown('Please ask a question about your codebase.\n\n**Examples:**\n```\n@autospec /ask Which module handles payment?\n@autospec /ask What API endpoints require authentication?\n@autospec /ask How does the order flow work?\n```');
+    stream.markdown('Ask a question about your codebase.\n\n**Examples:**\n```\n@autospec /ask Which module handles payment?\n@autospec /ask What API endpoints require authentication?\n@autospec /ask How does the order flow work?\n```');
     return { metadata: { command: 'ask' } };
   }
 
@@ -211,25 +211,25 @@ async function handleAsk(
   return { metadata: { command: 'ask' } };
 }
 
-async function handleStories(
+async function handlePlan(
   root: string,
   epicDescription: string,
   stream: vscode.ChatResponseStream,
   token: vscode.CancellationToken,
 ): Promise<vscode.ChatResult> {
   if (!epicDescription) {
-    stream.markdown('Please provide an Epic description.\n\n**Example:**\n```\n@autospec /stories User Onboarding Redesign: Simplify the registration process, add social login (Google, GitHub), implement email verification with OTP, and create a guided setup wizard for new users.\n```');
-    return { metadata: { command: 'stories' } };
+    stream.markdown('Please provide an Epic description.\n\n**Example:**\n```\n@autospec /plan User Onboarding Redesign: Simplify the registration process, add social login (Google, GitHub), implement email verification with OTP, and create a guided setup wizard for new users.\n```');
+    return { metadata: { command: 'plan' } };
   }
 
   const model = await resolveModel();
   if (!model) {
     stream.markdown('⚠️ No Copilot model available.');
-    return { metadata: { command: 'stories' } };
+    return { metadata: { command: 'plan' } };
   }
 
-  stream.progress('Investigating KB & auto-discovering features...');
-  stream.markdown(`📋 **PO/BA: User Story Generation**\n\n**Epic:** ${epicDescription}\n\n7-step pipeline: KB Investigation → Feature Discovery → Impact Analysis → Confirmation → Story Gen → Sprint Planning → Report\n\n`);
+  stream.progress('Planning user stories — investigating KB...');
+  stream.markdown(`📋 **Plan User Stories**\n\n**Epic:** ${epicDescription}\n\n7-step pipeline: KB Investigation → Feature Discovery → Impact Analysis → Confirmation → Story Gen → Sprint Planning → Report\n\n`);
 
   const progress: vscode.Progress<{ message?: string; increment?: number }> = {
     report: (value) => {
@@ -239,27 +239,27 @@ async function handleStories(
 
   await generateUserStories(root, model, token, progress);
 
-  stream.markdown('\n\n✅ **User Stories generated!** Check `spec-kit-sessions/` for:\n- `features.md` — discovered features\n- `confirmation-checklist.md` — items to confirm\n- `user-stories.md` — full user stories\n- `sprint-plan.md` — sprint breakdown');
+  stream.markdown('\n\n✅ **User Stories planned!** Check `spec-kit-sessions/` for:\n- `features.md` — discovered features\n- `confirmation-checklist.md` — items to confirm\n- `user-stories.md` — full user stories\n- `sprint-plan.md` — sprint breakdown');
 
-  return { metadata: { command: 'stories' } };
+  return { metadata: { command: 'plan' } };
 }
 
-async function handleGraph(
+async function handleMap(
   root: string,
   stream: vscode.ChatResponseStream,
   extContext: vscode.ExtensionContext,
 ): Promise<vscode.ChatResult> {
-  stream.progress('Building Knowledge Graph...');
-  stream.markdown('🔭 **Knowledge Graph**\n\nScanning codebase (multi-language) and optionally enriching with AI...\n\n');
+  stream.progress('Mapping codebase dependencies...');
+  stream.markdown('🔭 **Map Codebase**\n\nScanning codebase (multi-language) and optionally enriching with AI...\n\n');
 
   await visualizeKnowledgeBase(root, extContext);
 
-  stream.markdown('\n\n✅ **Graph opened!** Check the webview panel and saved HTML file.');
+  stream.markdown('\n\n✅ **Codebase map opened!** Check the webview panel and saved HTML file.');
 
-  return { metadata: { command: 'graph' } };
+  return { metadata: { command: 'map' } };
 }
 
-async function handleUpdateKB(
+async function handleRescan(
   root: string,
   stream: vscode.ChatResponseStream,
   token: vscode.CancellationToken,
@@ -267,11 +267,11 @@ async function handleUpdateKB(
   const model = await resolveModel();
   if (!model) {
     stream.markdown('⚠️ No Copilot model available.');
-    return { metadata: { command: 'update-kb' } };
+    return { metadata: { command: 'rescan' } };
   }
 
-  stream.progress('Updating Knowledge Base...');
-  stream.markdown('📚 **Updating Knowledge Base** with latest codebase changes...\n\n');
+  stream.progress('Rescanning latest changes...');
+  stream.markdown('📚 **Rescanning** — updating Knowledge Base with latest changes...\n\n');
 
   const progress: vscode.Progress<{ message?: string; increment?: number }> = {
     report: (value) => {
@@ -281,9 +281,9 @@ async function handleUpdateKB(
 
   await updateKBStandalone(root, model, token, progress);
 
-  stream.markdown('\n\n✅ **Knowledge Base updated!**');
+  stream.markdown('\n\n✅ **Rescan complete!** Knowledge Base updated.');
 
-  return { metadata: { command: 'update-kb' } };
+  return { metadata: { command: 'rescan' } };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -295,15 +295,15 @@ function showHelp(stream: vscode.ChatResponseStream): vscode.ChatResult {
 
 | Command | Description |
 |---------|-------------|
-| \`@autospec /run <requirement>\` | Run full 13-step dev pipeline |
-| \`@autospec /kb\` | Generate Knowledge Base |
-| \`@autospec /update-kb\` | Update KB with latest changes |
-| \`@autospec /review\` | Review current open file |
-| \`@autospec /ask <question>\` | Ask about codebase (uses KB) |
-| \`@autospec /stories <epic>\` | Generate User Stories (PO/BA) |
-| \`@autospec /graph\` | Visualize Knowledge Graph |
+| \`@autospec /build <requirement>\` | Build a feature — full 13-step pipeline |
+| \`@autospec /scan\` | Scan the project — generate Knowledge Base |
+| \`@autospec /rescan\` | Rescan latest changes — update Knowledge Base |
+| \`@autospec /review\` | Review current file — security, architecture, performance |
+| \`@autospec /ask <question>\` | Ask about codebase — Q&A powered by KB |
+| \`@autospec /plan <epic>\` | Plan user stories — Epic → Stories → Sprint Plan |
+| \`@autospec /map\` | Map the codebase — interactive dependency graph |
 
-**Quick start:** Type \`@autospec /kb\` first to generate your Knowledge Base, then use other commands.
+**Quick start:** Type \`@autospec /scan\` first to scan your project, then use other commands.
 
 **Free text:** \`@autospec How does auth work?\` defaults to \`/ask\`.
 `);

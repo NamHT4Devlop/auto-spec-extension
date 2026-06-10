@@ -35,25 +35,25 @@
         "description": "AI-powered development workflow: plan, code, review, test, generate KB & user stories",
         "isSticky": true,
         "commands": [
-          { "name": "run", "description": "Run full dev workflow (plan → code → review → test → evidence)" },
-          { "name": "kb", "description": "Generate Knowledge Base from codebase" },
-          { "name": "review", "description": "Review current file for quality, security, performance" },
-          { "name": "ask", "description": "Ask a question about the codebase (uses Knowledge Base)" },
-          { "name": "stories", "description": "Generate User Stories from Epic description (PO/BA flow)" },
-          { "name": "graph", "description": "Visualize Knowledge Graph (static + AI enrichment)" },
-          { "name": "update-kb", "description": "Update existing Knowledge Base with latest changes" }
+          { "name": "build", "description": "Build a feature — full 13-step pipeline: plan → code → review → test → evidence" },
+          { "name": "scan", "description": "Scan the project — generate Knowledge Base from your codebase" },
+          { "name": "rescan", "description": "Rescan latest changes — update Knowledge Base with new code" },
+          { "name": "review", "description": "Review current file — check security, architecture, performance, business logic" },
+          { "name": "ask", "description": "Ask about codebase — natural language Q&A powered by Knowledge Base" },
+          { "name": "plan", "description": "Plan user stories — Epic → Features → Impact Analysis → Sprint Plan (PO/BA)" },
+          { "name": "map", "description": "Map the codebase — interactive dependency graph with AI enrichment" }
         ]
       }
     ],
     "commands": [
-      { "command": "autoSpecKit.run", "title": "🚀 Auto Spec Kit: Run Task", "category": "Auto Spec Kit" },
-      { "command": "autoSpecKit.generateKB", "title": "📚 Auto Spec Kit: Generate Knowledge Base", "category": "Auto Spec Kit" },
+      { "command": "autoSpecKit.run", "title": "🚀 Auto Spec Kit: Build Feature (13-step pipeline)", "category": "Auto Spec Kit" },
+      { "command": "autoSpecKit.generateKB", "title": "📚 Auto Spec Kit: Scan Project (generate Knowledge Base)", "category": "Auto Spec Kit" },
       { "command": "autoSpecKit.reviewFile", "title": "🔍 Auto Spec Kit: Review Current File", "category": "Auto Spec Kit" },
-      { "command": "autoSpecKit.updateKB", "title": "📚 Auto Spec Kit: Update Knowledge Base", "category": "Auto Spec Kit" },
+      { "command": "autoSpecKit.updateKB", "title": "📚 Auto Spec Kit: Rescan Latest Changes (update KB)", "category": "Auto Spec Kit" },
       { "command": "autoSpecKit.ask", "title": "💬 Auto Spec Kit: Ask About Codebase", "category": "Auto Spec Kit" },
       { "command": "autoSpecKit.selectModel", "title": "🤖 Auto Spec Kit: Select Model", "category": "Auto Spec Kit" },
-      { "command": "autoSpecKit.generateUserStories", "title": "📋 Auto Spec Kit: Generate User Stories (PO/BA)", "category": "Auto Spec Kit" },
-      { "command": "autoSpecKit.visualize", "title": "🔭 Auto Spec Kit: Visualize Knowledge Graph", "category": "Auto Spec Kit" }
+      { "command": "autoSpecKit.generateUserStories", "title": "📋 Auto Spec Kit: Plan User Stories (PO/BA)", "category": "Auto Spec Kit" },
+      { "command": "autoSpecKit.visualize", "title": "🔭 Auto Spec Kit: Map Codebase (dependency graph)", "category": "Auto Spec Kit" }
     ],
     "configuration": {
       "title": "Auto Spec Kit",

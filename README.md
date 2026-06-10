@@ -15,14 +15,14 @@ Auto Spec Kit is a VS Code extension that turns a one-line task description into
 - [Quick Start](#-quick-start)
 - [Usage — Copilot Chat (`@autospec`)](#-usage--copilot-chat-autospec)
 - [Usage — Command Palette](#-usage--command-palette)
-- [Deep Dive: `/run` — 13-Step Pipeline](#-deep-dive-run--13-step-pipeline)
+- [Deep Dive: `/build` — 13-Step Pipeline](#-deep-dive-build--13-step-pipeline)
 - [Detailed Workflows](#-detailed-workflows)
-  - [Generate Knowledge Base](#1-generate-knowledge-base)
+  - [Scan Project (Knowledge Base)](#1-scan-project-knowledge-base)
   - [Review Current File](#2-review-current-file)
-  - [Update Knowledge Base](#3-update-knowledge-base)
+  - [Rescan Latest Changes](#3-rescan-latest-changes)
   - [Ask About Codebase](#4-ask-about-codebase)
-  - [Generate User Stories (PO/BA)](#5-generate-user-stories-poba)
-  - [Visualize Knowledge Graph](#6-visualize-knowledge-graph)
+  - [Plan User Stories (PO/BA)](#5-plan-user-stories-poba)
+  - [Map Codebase (Dependency Graph)](#6-map-codebase-dependency-graph)
   - [Select Model](#7-select-model)
 - [Multi-Agent Architecture (v1.7.0)](#-multi-agent-architecture-v170)
 - [Keyboard Shortcuts](#-keyboard-shortcuts)
@@ -92,11 +92,11 @@ code --install-extension auto-spec-kit-1.7.0.vsix
 
 1. **Install** the extension (see above)
 2. Open any project in VS Code
-3. Open **Copilot Chat** panel → type `@autospec /kb` → Generate Knowledge Base
-4. Then type `@autospec /run Add email verification to user registration`
+3. Open **Copilot Chat** panel → type `@autospec /scan` → Scan project & generate Knowledge Base
+4. Then type `@autospec /build Add email verification to user registration`
 5. Watch the 13-step multi-agent pipeline run
 
-Or use keyboard shortcuts: `Cmd+Shift+B` (KB), `Cmd+Shift+K` (Run Task).
+Or use keyboard shortcuts: `Cmd+Shift+B` (Scan), `Cmd+Shift+K` (Build).
 
 ---
 
@@ -106,13 +106,13 @@ Or use keyboard shortcuts: `Cmd+Shift+B` (KB), `Cmd+Shift+K` (Run Task).
 
 | Command | What it does |
 |---|---|
-| `@autospec /run Add reset password feature` | Run full 13-step dev pipeline |
-| `@autospec /kb` | Generate Knowledge Base from codebase |
-| `@autospec /update-kb` | Update KB with latest code changes |
-| `@autospec /review` | Review the currently open file |
-| `@autospec /ask How does auth work?` | Ask about codebase (uses KB) |
-| `@autospec /stories User onboarding redesign...` | Generate User Stories (PO/BA) |
-| `@autospec /graph` | Visualize Knowledge Graph |
+| `@autospec /build Add reset password feature` | Build a feature — full 13-step pipeline |
+| `@autospec /scan` | Scan the project — generate Knowledge Base |
+| `@autospec /rescan` | Rescan latest changes — update Knowledge Base |
+| `@autospec /review` | Review current file — security, architecture, performance |
+| `@autospec /ask How does auth work?` | Ask about codebase — Q&A powered by KB |
+| `@autospec /plan User onboarding redesign...` | Plan user stories — Epic → Sprint Plan (PO/BA) |
+| `@autospec /map` | Map the codebase — interactive dependency graph |
 
 ### Free text (no slash command)
 
@@ -126,7 +126,7 @@ If you don't use a slash command, your message is treated as `/ask` — a questi
 
 When you type `@autospec`, VS Code routes your message to the Auto Spec Kit **Chat Participant**. The extension:
 
-1. Reads your slash command (e.g., `/run`, `/kb`, `/review`)
+1. Reads your slash command (e.g., `/build`, `/scan`, `/review`)
 2. Resolves the best available Copilot model
 3. Runs the corresponding workflow (with multi-agent orchestration where applicable)
 4. Streams progress and results directly into the chat panel
@@ -135,12 +135,12 @@ When you type `@autospec`, VS Code routes your message to the Auto Spec Kit **Ch
 ### Example session
 
 ```
-You:     @autospec /kb
+You:     @autospec /scan
 Bot:     📚 Generating Knowledge Base...
          Analyzing your codebase with multi-agent batch parallelism...
          ✅ Knowledge Base generated! Check knowledge-base/ folder.
 
-You:     @autospec /run Add reset password feature using email OTP, expires after 10 minutes
+You:     @autospec /build Add reset password feature using email OTP, expires after 10 minutes
 Bot:     🚀 Auto Spec Kit — Dev Workflow
          Requirement: Add reset password feature using email OTP...
          [Step 01/13] Planning with 3 parallel agents...
@@ -165,20 +165,20 @@ All commands are also available via **Command Palette** (`Ctrl+Shift+P` → type
 
 | Command | Shortcut | Description |
 |---|---|---|
-| 🚀 **Run Task** | `Ctrl+Shift+K` | Full 13-step dev workflow |
-| 📚 **Generate Knowledge Base** | `Ctrl+Shift+B` | Analyze codebase → build KB |
+| 🚀 **Build Feature** | `Ctrl+Shift+K` | Full 13-step dev pipeline |
+| 📚 **Scan Project** | `Ctrl+Shift+B` | Analyze codebase → generate KB |
 | 🔍 **Review Current File** | *(right-click menu)* | Multi-agent code review |
-| 📚 **Update Knowledge Base** | *(command palette)* | Merge latest changes into KB |
+| 📚 **Rescan Latest Changes** | *(command palette)* | Update KB with new code |
 | 💬 **Ask About Codebase** | *(command palette / explorer right-click)* | Natural language Q&A |
-| 📋 **Generate User Stories** | `Ctrl+Shift+U` | PO/BA: Epic → Stories → Sprint Plan |
-| 🔭 **Visualize Knowledge Graph** | *(command palette)* | D3.js interactive graph |
+| 📋 **Plan User Stories** | `Ctrl+Shift+U` | PO/BA: Epic → Stories → Sprint Plan |
+| 🔭 **Map Codebase** | *(command palette)* | D3.js interactive dependency graph |
 | 🤖 **Select Model** | *(command palette)* | Choose GitHub Copilot model |
 
 ---
 
-## 🔬 Deep Dive: `/run` — 13-Step Pipeline
+## 🔬 Deep Dive: `/build` — 13-Step Pipeline
 
-When you type `@autospec /run Add reset password feature using email OTP, expires after 10 minutes`, this is exactly what happens:
+When you type `@autospec /build Add reset password feature using email OTP, expires after 10 minutes`, this is exactly what happens:
 
 ### Input
 
@@ -302,7 +302,7 @@ Runs your configured `autoSpecKit.testCommand` (e.g., `npx jest --coverage`). Ca
 
 Saved as `evidence.md` in the session folder — ready for code review, sprint review, or audit.
 
-**Step 13 — Update Knowledge Base (2 agents)**
+**Step 13 — Rescan & Update Knowledge Base (2 agents)**
 
 | Agent | Updates |
 |---|---|
@@ -332,9 +332,9 @@ spec-kit-sessions/2026-06-10T14-30-00/
 
 ## 📖 Detailed Workflows
 
-### 1. Generate Knowledge Base
+### 1. Scan Project (Knowledge Base)
 
-**Chat:** `@autospec /kb` | **Shortcut:** `Ctrl+Shift+B` / `Cmd+Shift+B`
+**Chat:** `@autospec /scan` | **Shortcut:** `Ctrl+Shift+B` / `Cmd+Shift+B`
 
 Scans your entire project and generates a comprehensive Knowledge Base — 15 Markdown files covering every aspect of the codebase at **business depth**.
 
@@ -368,11 +368,11 @@ Multi-agent code review with 4 parallel reviewers (Security, Architecture, Perfo
 
 ---
 
-### 3. Update Knowledge Base
+### 3. Rescan Latest Changes
 
-**Chat:** `@autospec /update-kb` | **Access:** Command Palette
+**Chat:** `@autospec /rescan` | **Access:** Command Palette
 
-Merges learnings from manual work back into the KB. Useful when you complete tasks outside the `/run` pipeline.
+Merges learnings from manual work back into the KB. Useful when you complete tasks outside the `/build` pipeline.
 
 ---
 
@@ -387,9 +387,9 @@ Natural language Q&A grounded in the Knowledge Base. Examples:
 
 ---
 
-### 5. Generate User Stories (PO/BA)
+### 5. Plan User Stories (PO/BA)
 
-**Chat:** `@autospec /stories <epic description>` | **Shortcut:** `Ctrl+Shift+U`
+**Chat:** `@autospec /plan <epic description>` | **Shortcut:** `Ctrl+Shift+U`
 
 A 7-step AI pipeline for PO/BA that requires only 2 inputs (Epic title + description):
 
@@ -405,15 +405,15 @@ A 7-step AI pipeline for PO/BA that requires only 2 inputs (Epic title + descrip
 
 **Example:**
 ```
-@autospec /stories User Onboarding Redesign: Simplify registration, add social login 
+@autospec /plan User Onboarding Redesign: Simplify registration, add social login 
 (Google, GitHub), implement email verification with OTP, create guided setup wizard.
 ```
 
 ---
 
-### 6. Visualize Knowledge Graph
+### 6. Map Codebase (Dependency Graph)
 
-**Chat:** `@autospec /graph` | **Access:** Command Palette
+**Chat:** `@autospec /map` | **Access:** Command Palette
 
 Generates an interactive D3.js force-directed graph of your project. Supports **9 programming languages** (TypeScript, JavaScript, Python, Java, Go, Ruby, C#, PHP, Rust).
 
@@ -470,9 +470,9 @@ v1.7.0 introduces **parallel sub-agents** for deeper analysis. Instead of one Co
 
 | Action | Windows / Linux | macOS |
 |---|---|---|
-| Run Task (13-step pipeline) | `Ctrl+Shift+K` | `Cmd+Shift+K` |
-| Generate Knowledge Base | `Ctrl+Shift+B` | `Cmd+Shift+B` |
-| Generate User Stories | `Ctrl+Shift+U` | `Cmd+Shift+U` |
+| Build Feature (13-step pipeline) | `Ctrl+Shift+K` | `Cmd+Shift+K` |
+| Scan Project (generate KB) | `Ctrl+Shift+B` | `Cmd+Shift+B` |
+| Plan User Stories | `Ctrl+Shift+U` | `Cmd+Shift+U` |
 
 All other commands: Command Palette (`Ctrl+Shift+P` → `Auto Spec Kit`) or Copilot Chat (`@autospec`).
 
@@ -619,8 +619,8 @@ Code Review (Step 05) and Review File both load git context:
 
 ## 💡 Tips & Best Practices
 
-- **Be specific** with `/run` — "Add JWT refresh token rotation with 7-day expiry" beats "add auth"
-- **Generate KB first** (`@autospec /kb`) — the pipeline is significantly more accurate with KB context
+- **Be specific** with `/build` — "Add JWT refresh token rotation with 7-day expiry" beats "add auth"
+- **Scan first** (`@autospec /scan`) — the pipeline is significantly more accurate with KB context
 - **Set `autoSpecKit.testCommand`** so Step 11 runs real tests
 - **Use `/review` often** — the 4-agent review catches issues manual review misses
 - For **complex tasks**, use `gpt-5.5` or `claude-opus-4-7`; for **fast iterations**, `o4-mini`
@@ -668,11 +668,11 @@ Code Review (Step 05) and Review File both load git context:
 - ✅ `docs/index.html` — 7-tab documentation with SVG diagrams
 
 ### v1.6.0
-- Added Visualize Knowledge Graph command (D3.js)
+- Added Map Codebase command (D3.js dependency graph)
 - 5 view tabs, node click → open file, real-time search
 
 ### v1.5.3
-- Added Generate User Stories (PO/BA) with HTML sprint board
+- Added Plan User Stories (PO/BA) with HTML sprint board
 - Git diff context in code review
 
 ### v1.5.0
@@ -682,13 +682,13 @@ Code Review (Step 05) and Review File both load git context:
 - Model selection UI with quality ranking
 
 ### v1.3.0
-- Review Current File, review skills system, Update KB
+- Review Current File, review skills system, Rescan KB
 
 ### v1.2.0
-- Generate Knowledge Base, Ask About Codebase
+- Scan Project (Knowledge Base), Ask About Codebase
 
 ### v1.1.0
-- Run Task 13-step pipeline
+- Build Feature 13-step pipeline
 
 ### v1.0.0
 - Initial release
