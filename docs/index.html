@@ -106,6 +106,7 @@
   <div class="tab" onclick="showTab('intel')">🧠 Intelligence</div>
   <div class="tab" onclick="showTab('arch')">Architecture</div>
   <div class="tab" onclick="showTab('config')">Configuration</div>
+  <div class="tab" onclick="showTab('manual')">📦 Manual Setup</div>
 </div>
 
 <!-- ═══════════════════════════════ OVERVIEW ═══════════════════════════════ -->
@@ -1123,6 +1124,50 @@ autoSync:
     <tr><td>7</td><td>o4-mini</td><td>Quick tasks, cost-effective</td></tr>
   </table>
 </div>
+</div>
+
+<!-- ═══════════════════════════════ MANUAL SETUP ═══════════════════════════════ -->
+<div id="manual" class="panel">
+
+<div class="card">
+  <h2>📦 Manual Setup (No Git Clone)</h2>
+  <p>Can't clone the repo? The <strong>Manual Install Guide</strong> lets you create the entire project from scratch — just create files and copy-paste the code.</p>
+
+  <div class="sep"></div>
+
+  <h3>What's Included</h3>
+  <table>
+    <tr><th>Section</th><th>Content</th></tr>
+    <tr><td>Prerequisites</td><td>Node.js, VS Code, GitHub Copilot</td></tr>
+    <tr><td>Folder Structure</td><td>Exact <code>mkdir</code> commands to create all directories</td></tr>
+    <tr><td>Config Files (5)</td><td><code>package.json</code>, <code>tsconfig.json</code>, <code>jest.config.js</code>, <code>.vscodeignore</code>, <code>.gitignore</code></td></tr>
+    <tr><td>Source Files (49)</td><td>Every <code>.ts</code> file + resources, grouped by directory</td></tr>
+    <tr><td>Tests & Mocks (5)</td><td>Unit tests + VS Code mock for development</td></tr>
+    <tr><td>Build & Run</td><td><code>npm run compile</code> → <code>npm run package</code> → install <code>.vsix</code></td></tr>
+  </table>
+
+  <div class="sep"></div>
+
+  <h3>How It Works</h3>
+  <ol class="step-list">
+    <li>Open the guide → create folders with the provided terminal commands</li>
+    <li>For each file: click to expand → click <strong>Copy</strong> → paste into your editor</li>
+    <li class="green">Run <code>npm install</code> to install dependencies</li>
+    <li class="green">Run <code>npm run compile</code> to build</li>
+    <li class="purple">Run <code>npm run package</code> to create <code>.vsix</code></li>
+    <li class="purple">Install: <code>code --install-extension auto-spec-kit-1.8.0.vsix</code></li>
+  </ol>
+
+  <div class="sep"></div>
+
+  <p style="text-align:center;margin-top:16px">
+    <a href="manual-install.html" style="display:inline-block;padding:14px 36px;background:#3b82f6;color:#fff;text-decoration:none;border-radius:8px;font-weight:700;font-size:15px;">
+      Open Manual Install Guide →
+    </a>
+  </p>
+  <p style="text-align:center;font-size:12px;color:#94a3b8;margin-top:8px">59 files • Copy-to-clipboard • Collapsible sections</p>
+</div>
+
 </div>
 
 </div><!-- .container -->
