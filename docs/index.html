@@ -203,7 +203,7 @@
 
   <h3>Option A — From VSIX (recommended)</h3>
   <ol class="step-list">
-    <li>Download <code>auto-spec-kit-1.7.0.vsix</code></li>
+    <li>Download <code>auto-spec-kit-1.8.0.vsix</code></li>
     <li>Open VS Code → Extensions panel (<kbd>Ctrl+Shift+X</kbd>)</li>
     <li>Click <strong>⋯ → Install from VSIX…</strong></li>
     <li>Select the downloaded file</li>
@@ -329,6 +329,7 @@ npx @vscode/vsce package --no-dependencies --allow-missing-repository
   <ol class="step-list">
     <li>You type <code>@autospec /build Add reset password feature</code> in Copilot Chat</li>
     <li>VS Code routes the message to the <code>@autospec</code> Chat Participant (registered in <code>chat-participant.ts</code>)</li>
+    <li class="orange"><strong>GitSyncGuard</strong> runs <code>git fetch --all --prune</code> + <code>git pull --ff-only</code>. If source files changed, the KB is auto-updated. Non-fatal — skipped silently if offline or not a git repo.</li>
     <li class="green"><code>handleBuild()</code> calls <code>resolveModel()</code> to pick the best available Copilot model, then creates a <strong>Progress adapter</strong> that converts <code>vscode.Progress.report()</code> calls into <code>stream.progress()</code> — so every pipeline step updates the chat panel in real-time</li>
     <li class="green"><code>handleBuild()</code> calls <code>runWorkflow()</code> from <code>workflow/run-task.ts</code> — the same function used by the Command Palette command</li>
     <li class="purple"><code>runWorkflow()</code> creates a <code>PipelineRunner</code> and executes <code>ALL_STEPS</code> (13 step classes). Each step spawns sub-agents via <code>AgentOrchestrator</code> with <code>SmartContextLoader</code>-selected context</li>
@@ -641,6 +642,20 @@ Bot:     💬 Searching Knowledge Base...
     <text x="10" y="184" font-size="9" fill="#64748b">01-structure · 02-stack · 03-entry-points · 06-modules · 07-architecture · 08-database</text>
     <text x="10" y="198" font-size="9" fill="#64748b">09-auth-security · 11-api-docs · 12-conventions · 14-integrations · 15-errors · review-skills.md</text>
   </svg>
+
+  <h3>Source-Only KB Scan Mode</h3>
+  <p>When existing documentation (README, <code>docs/</code>, <code>.github/</code>, <code>copilot-instructions.md</code>) is outdated or misleading, you can rebuild the Knowledge Base <strong>purely from source code</strong>.</p>
+  <p>On scan, a QuickPick prompt offers two options:</p>
+  <ul>
+    <li><strong>"Fresh rebuild — source code only"</strong> — excludes all existing docs, generates KB from source files only</li>
+    <li><strong>"Regenerate KB (include existing docs)"</strong> — default behavior, includes documentation in analysis</li>
+  </ul>
+  <p>Configure in <code>.autospec.yml</code>:</p>
+  <pre><code>scan:
+  excludeDocs: true          # skip README, docs/, .github/, copilot-instructions.md
+  exclude:
+    - "generated"            # additional folders to exclude
+    - "vendor"</code></pre>
 </div>
 
 <div class="card">
@@ -833,7 +848,15 @@ knowledgeBasePath: docs/kb
 sessionsDir: .autospec-sessions
 ignore:
   - "*.generated.ts"
-  - "dist/**"</code></pre>
+  - "dist/**"
+scan:
+  excludeDocs: true
+  exclude:
+    - "generated"
+    - "vendor"
+autoSync:
+  enabled: true
+  kbUpdate: true</code></pre>
   <p>Config priority: <code>.autospec.yml</code> &gt; VS Code settings &gt; defaults. Also supports <code>.autospec.json</code> as alternative format.</p>
 </div>
 
@@ -850,6 +873,63 @@ ignore:
     <tr><td>Workspace</td><td>Single / Multi-root / Monorepo type</td></tr>
     <tr><td>Config</td><td>.autospec.yml detected or default</td></tr>
   </table>
+</div>
+
+<div class="card">
+  <h2>🔄 GitSyncGuard — Auto-Sync Before Every Command</h2>
+  <p>Before every command (except <code>/help</code>), GitSyncGuard automatically fetches and fast-forward merges the latest changes from the remote. If source files changed, the Knowledge Base is updated automatically.</p>
+
+  <svg viewBox="0 0 700 100" xmlns="http://www.w3.org/2000/svg">
+    <defs><marker id="ig" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#94a3b8"/></marker></defs>
+
+    <rect x="10" y="30" width="120" height="40" rx="8" fill="#3b82f6" stroke="#2563eb" stroke-width="1.5"/>
+    <text x="70" y="50" fill="white" text-anchor="middle" font-size="10" font-weight="bold">git fetch --all</text>
+    <text x="70" y="62" fill="rgba(255,255,255,.8)" text-anchor="middle" font-size="8">+ --prune</text>
+
+    <line x1="130" y1="50" x2="155" y2="50" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ig)"/>
+
+    <rect x="155" y="30" width="130" height="40" rx="8" fill="#6366f1" stroke="#4f46e5" stroke-width="1.5"/>
+    <text x="220" y="50" fill="white" text-anchor="middle" font-size="10" font-weight="bold">git pull --ff-only</text>
+    <text x="220" y="62" fill="rgba(255,255,255,.8)" text-anchor="middle" font-size="8">safe fast-forward</text>
+
+    <line x1="285" y1="50" x2="310" y2="50" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ig)"/>
+
+    <rect x="310" y="30" width="120" height="40" rx="8" fill="#f59e0b" stroke="#d97706" stroke-width="1.5"/>
+    <text x="370" y="50" fill="white" text-anchor="middle" font-size="10" font-weight="bold">Detect Changes</text>
+    <text x="370" y="62" fill="rgba(255,255,255,.8)" text-anchor="middle" font-size="8">source files diff</text>
+
+    <line x1="430" y1="50" x2="455" y2="50" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ig)"/>
+
+    <rect x="455" y="30" width="120" height="40" rx="8" fill="#10b981" stroke="#059669" stroke-width="1.5"/>
+    <text x="515" y="50" fill="white" text-anchor="middle" font-size="10" font-weight="bold">Auto-Update KB</text>
+    <text x="515" y="62" fill="rgba(255,255,255,.8)" text-anchor="middle" font-size="8">if files changed</text>
+
+    <line x1="575" y1="50" x2="600" y2="50" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ig)"/>
+
+    <rect x="600" y="30" width="90" height="40" rx="8" fill="#1e293b" stroke="#0f172a" stroke-width="1.5"/>
+    <text x="645" y="50" fill="white" text-anchor="middle" font-size="10" font-weight="bold">Run Command</text>
+    <text x="645" y="62" fill="rgba(255,255,255,.8)" text-anchor="middle" font-size="8">proceeds normally</text>
+  </svg>
+
+  <table>
+    <tr><th>What it does</th><th>What it NEVER does</th></tr>
+    <tr><td><code>git fetch --all --prune</code></td><td>Never pushes to remote</td></tr>
+    <tr><td><code>git pull --ff-only</code> (safe fast-forward)</td><td>Never commits changes</td></tr>
+    <tr><td>Detects changed source files after pull</td><td>Never writes to git remote</td></tr>
+    <tr><td>Auto-updates KB when source changed</td><td>Never force-merges or rebases</td></tr>
+    <tr><td>Works silently — non-fatal on errors</td><td>Never blocks a command on failure</td></tr>
+  </table>
+
+  <h3>Configuration</h3>
+  <pre><code>// VS Code Settings
+"autoSpecKit.autoSync": true,         // enable/disable auto-fetch/pull
+"autoSpecKit.autoSyncKBUpdate": true   // auto-update KB after sync
+
+// .autospec.yml
+autoSync:
+  enabled: true
+  kbUpdate: true</code></pre>
+  <p><strong>Offline-safe:</strong> If <code>git fetch</code> fails (no network, no remote, not a git repo), the command proceeds normally. GitSyncGuard never blocks your workflow.</p>
 </div>
 
 </div>
@@ -946,6 +1026,12 @@ ignore:
 │   ├── token-budget.ts             ← token estimation + budget (NEW)
 │   ├── session-store.ts            ← session management (NEW)
 │   ├── graph-enricher.ts           ← AI graph analysis (NEW)
+│   ├── git-sync-guard.ts           ← auto-fetch/pull before commands (NEW)
+│   ├── session-memory.ts           ← cross-turn context (NEW)
+│   ├── requirement-clarifier.ts    ← clarity scoring (NEW)
+│   ├── learning-store.ts           ← reinforcement learning (NEW)
+│   ├── project-profile.ts          ← stack detection (NEW)
+│   ├── workspace-resolver.ts       ← multi-root + .autospec.yml (NEW)
 │   ├── copilot.ts                  ← vscode.lm wrapper + retry
 │   ├── graph-builder.ts            ← universal multi-lang scanner
 │   ├── html-builder.ts             ← HTML report generator
@@ -1010,6 +1096,13 @@ ignore:
     <tr><td><code>autoSpecKit.agents.timeout</code></td><td><code>90000</code></td><td>Per-agent timeout in ms</td></tr>
     <tr><td><code>autoSpecKit.agents.mergeStrategy</code></td><td><code>ai</code></td><td><code>ai</code> = LLM merge, <code>concat</code> = join, <code>structured</code> = sections</td></tr>
     <tr><td><code>autoSpecKit.agents.contextStrategy</code></td><td><code>smart</code></td><td><code>smart</code> = file discovery, <code>full</code> = all KB, <code>minimal</code> = req only</td></tr>
+  </table>
+
+  <h3>Auto-Sync Settings</h3>
+  <table>
+    <tr><th>Setting</th><th>Default</th><th>Description</th></tr>
+    <tr><td><code>autoSpecKit.autoSync</code></td><td><code>true</code></td><td>Run <code>git fetch --all --prune</code> + <code>git pull --ff-only</code> before every command (except /help). Non-fatal — works offline.</td></tr>
+    <tr><td><code>autoSpecKit.autoSyncKBUpdate</code></td><td><code>true</code></td><td>Auto-update Knowledge Base when source files changed after sync. Requires <code>autoSync</code> to be enabled.</td></tr>
   </table>
 </div>
 

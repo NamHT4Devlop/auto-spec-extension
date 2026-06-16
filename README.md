@@ -33,6 +33,7 @@ Auto Spec Kit is a VS Code extension that turns a one-line task description into
 - [Review Skills System](#-review-skills-system)
 - [Model Selection & Priority](#-model-selection--priority)
 - [Git Context Integration](#-git-context-integration)
+- [Git Auto-Sync (GitSyncGuard)](#-git-auto-sync-gitsyncguard)
 - [Supported Languages](#-supported-languages)
 - [Tips & Best Practices](#-tips--best-practices)
 - [Changelog](#-changelog)
@@ -341,6 +342,8 @@ Scans your entire project and generates a comprehensive Knowledge Base — 15 Ma
 
 Uses **batch parallelism** (5 batches × 3 parallel agents). Critical business steps get additional sub-agents for deeper analysis.
 
+**Source-only mode:** If a KB already exists, `/scan` offers a QuickPick choice — rebuild from source code only (skips README, CONTRIBUTING, CHANGELOG, `docs/`, `.github/`, etc.) or regenerate with docs included. Useful when existing documentation is outdated. See [Source-Only KB Scan Mode](#source-only-kb-scan-mode) for details.
+
 | File | Content |
 |---|---|
 | `01-project-overview.md` | Architecture, tech stack, project purpose |
@@ -500,6 +503,51 @@ Handles 4 workspace scenarios automatically:
 | Monorepo (Nx, Turbo, Lerna, pnpm) | Detects packages, lets you scope to one |
 | Folder of repos | Auto-discovers, shows picker |
 
+### GitSyncGuard — Auto-Fetch/Pull Before Every Command
+
+Before every command (except `/help`), the extension automatically syncs your workspace with the remote:
+
+1. Runs `git fetch --all --prune`
+2. Runs `git pull --ff-only` (fast-forward only — never creates merge commits)
+3. Detects if source files changed after pull
+4. If KB exists and source files changed, auto-runs KB update (via `updateKBStandalone`)
+
+**Safety guarantees:**
+- **NEVER** pushes, commits, or writes to the git remote — strictly read-only
+- **Non-fatal** — sync failures do not block commands (works offline, works on non-git projects)
+
+Configure via VS Code settings or `.autospec.yml`:
+
+```jsonc
+{
+  "autoSpecKit.autoSync": true,          // enable/disable auto-fetch/pull
+  "autoSpecKit.autoSyncKBUpdate": true   // auto-update KB when pulled code has source changes
+}
+```
+
+### Source-Only KB Scan Mode
+
+When scanning a project, you can choose to exclude existing documentation and generate the Knowledge Base purely from source code. This is useful when existing docs (README, CONTRIBUTING, CHANGELOG, etc.) are outdated or misleading.
+
+When a KB already exists, `/scan` presents a QuickPick:
+- **Fresh rebuild — source code only** — excludes doc files/dirs, generates KB from code alone
+- **Regenerate KB (include existing docs)** — standard full scan
+
+Excluded in source-only mode:
+- Files: `README.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, `LICENSE.md`, `SECURITY.md`, `copilot-instructions.md`, etc.
+- Directories: `docs/`, `doc/`, `.github/`, `.gitlab/`, `wiki/`
+- Extensions: `.md`, `.mdx`, `.rst`, `.adoc`
+
+Configure additional exclusions in `.autospec.yml`:
+
+```yaml
+scan:
+  excludeDocs: true
+  exclude:
+    - "generated"
+    - "vendor"
+```
+
 ### `.autospec.yml` — Per-Project Config
 
 Drop a `.autospec.yml` in your project root to override settings without touching VS Code config:
@@ -512,6 +560,14 @@ sessionsDir: .autospec-sessions
 ignore:
   - "*.generated.ts"
   - "dist/**"
+autoSync:
+  enabled: true
+  kbUpdate: true
+scan:
+  excludeDocs: true
+  exclude:
+    - "generated"
+    - "vendor"
 ```
 
 Config priority: `.autospec.yml` > VS Code settings > defaults.
@@ -556,6 +612,10 @@ Open VS Code Settings (`Ctrl+,`) → search **Auto Spec Kit**:
 
   // Show model picker on every run
   "autoSpecKit.askModelOnStart": false,
+
+  // Git auto-sync before every command (v1.8.0)
+  "autoSpecKit.autoSync": true,           // fetch + pull (ff-only) before each command
+  "autoSpecKit.autoSyncKBUpdate": true,   // auto-update KB when pulled code has source changes
 
   // Multi-agent settings (v1.7.0)
   "autoSpecKit.agents.maxParallel": 3,
@@ -653,6 +713,46 @@ Code Review (Step 05) and Review File both load git context:
 
 ---
 
+## 🔄 Git Auto-Sync (GitSyncGuard)
+
+Before every command (except `/help`), Auto Spec Kit ensures your workspace is up to date:
+
+```
+@autospec /build ...
+  ├── git fetch --all --prune        ← fetch all remotes
+  ├── git pull --ff-only             ← fast-forward merge only
+  ├── detect changed source files    ← .ts, .py, .java, .go, etc.
+  └── if KB exists + source changed  ← auto-update Knowledge Base
+```
+
+**What it does:**
+- Fetches all remotes and prunes deleted branches
+- Pulls using fast-forward only — never creates merge commits; if the branch has diverged, the pull is skipped
+- Checks if any pulled changes touched source files (filters by extension, ignores `node_modules`, `dist`, etc.)
+- If the Knowledge Base exists and source files changed, automatically triggers a KB update so your AI context stays fresh
+
+**What it never does:**
+- Never runs `git push`, `git commit`, or `git add`
+- Never writes to the remote — all operations are strictly read-only
+- Never blocks your command — sync failures are logged and skipped (works offline)
+
+**Configuration:**
+
+| Setting | Type | Default | Description |
+|---|---|---|---|
+| `autoSpecKit.autoSync` | boolean | `true` | Enable/disable auto-fetch/pull before commands |
+| `autoSpecKit.autoSyncKBUpdate` | boolean | `true` | Auto-update KB when pulled code has source changes |
+
+In `.autospec.yml`:
+
+```yaml
+autoSync:
+  enabled: true
+  kbUpdate: true
+```
+
+---
+
 ## 💻 Supported Languages
 
 | Language | KB Scan | Graph Scanner | Code Gen | Test Gen |
@@ -690,6 +790,9 @@ Code Review (Step 05) and Review File both load git context:
 - ✅ `ProjectProfileDetector` — auto-detect language, framework, build tool, test framework, linter, formatter, database, CI/CD, monorepo tool
 - ✅ `LearningStore` — reinforcement-based learning from past sessions (review fixes, test patterns, conventions, preferences)
 - ✅ `WorkspaceResolver` — multi-root workspace, monorepo (Nx/Turbo/Lerna/pnpm), `.autospec.yml` config
+- ✅ `GitSyncGuard` — auto-fetch/pull (ff-only) before every command; auto-updates KB when source files change; never pushes/commits; non-fatal (works offline)
+- ✅ Source-only KB scan mode — rebuild KB from code only, excluding outdated docs (README, CONTRIBUTING, CHANGELOG, `docs/`, `.github/`, etc.)
+- ✅ `.autospec.yml` expanded with `autoSync` and `scan` config sections
 - ✅ All systems integrated into chat-participant.ts and the build pipeline
 - ✅ Enriched system prompts: project profile + learnings + session context injected into every AI call
 
