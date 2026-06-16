@@ -69,7 +69,9 @@
         "autoSpecKit.agents.maxParallel": { "type": "number", "default": 3, "minimum": 1, "maximum": 6, "description": "Max sub-agents to run in parallel per step. Lower = fewer API calls, higher = faster but may hit rate limits." },
         "autoSpecKit.agents.timeout": { "type": "number", "default": 90000, "description": "Timeout per sub-agent in milliseconds (default: 90s)" },
         "autoSpecKit.agents.mergeStrategy": { "type": "string", "default": "ai", "enum": ["ai", "concat", "structured"], "description": "How to merge sub-agent outputs. 'ai' = LLM merge (best quality), 'concat' = simple join, 'structured' = section-based" },
-        "autoSpecKit.agents.contextStrategy": { "type": "string", "default": "smart", "enum": ["smart", "full", "minimal"], "description": "'smart' = File Discovery Agent selects relevant files, 'full' = load all KB, 'minimal' = requirement only" }
+        "autoSpecKit.agents.contextStrategy": { "type": "string", "default": "smart", "enum": ["smart", "full", "minimal"], "description": "'smart' = File Discovery Agent selects relevant files, 'full' = load all KB, 'minimal' = requirement only" },
+        "autoSpecKit.autoSync": { "type": "boolean", "default": true, "description": "Auto-fetch and pull latest code before every command (read-only — never pushes or commits)" },
+        "autoSpecKit.autoSyncKBUpdate": { "type": "boolean", "default": true, "description": "Auto-update Knowledge Base when pulled code contains source changes" }
       }
     },
     "keybindings": [

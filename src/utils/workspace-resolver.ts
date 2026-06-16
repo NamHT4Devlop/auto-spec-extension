@@ -46,6 +46,12 @@ export interface AutoSpecConfig {
     /** Additional directory names to skip during project scan */
     exclude?: string[];
   };
+  autoSync?: {
+    /** Enable auto-fetch + pull before every command (default: true) */
+    enabled?: boolean;
+    /** Auto-update KB when pulled code has source changes (default: true) */
+    kbUpdate?: boolean;
+  };
 }
 
 export interface MonorepoInfo {

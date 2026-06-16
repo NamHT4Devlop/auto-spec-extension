@@ -36,6 +36,7 @@ import { RequirementClarifier } from './utils/requirement-clarifier';
 import { ProjectProfileDetector } from './utils/project-profile';
 import { LearningStore } from './utils/learning-store';
 import { WorkspaceResolver } from './utils/workspace-resolver';
+import { GitSyncGuard } from './utils/git-sync-guard';
 
 const PARTICIPANT_ID = 'auto-spec-kit.autospec';
 
@@ -80,6 +81,12 @@ async function handleChatRequest(
   }
 
   log(`\n🤖 Chat: @autospec /${command} ${userPrompt}`);
+
+  // ── Auto-sync: fetch + pull latest code before every command ──
+  const autoSyncEnabled = vscode.workspace.getConfiguration('autoSpecKit').get<boolean>('autoSync', true);
+  if (autoSyncEnabled && command !== 'help') {
+    await performAutoSync(root, stream, chatToken, extensionContext);
+  }
 
   try {
     switch (command) {
@@ -497,6 +504,70 @@ function showHelp(stream: vscode.ChatResponseStream, root?: string): vscode.Chat
 **Keyboard shortcuts:** \`Cmd+Shift+K\` (Build) · \`Cmd+Shift+B\` (Scan) · \`Cmd+Shift+U\` (Plan)
 `);
   return { metadata: { command: 'help' } };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// AUTO-SYNC
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function performAutoSync(
+  root: string,
+  stream: vscode.ChatResponseStream,
+  token: vscode.CancellationToken,
+  extContext: vscode.ExtensionContext,
+): Promise<void> {
+  if (!GitSyncGuard.isGitRepo(root)) { return; }
+
+  stream.progress('Syncing latest code...');
+  const syncResult = await GitSyncGuard.sync(root);
+
+  if (syncResult.error) {
+    log(`⚠️ AutoSync: ${syncResult.error}`);
+    // Non-fatal — continue with current code
+  }
+
+  if (syncResult.newCommits > 0) {
+    stream.markdown(`🔄 **Synced:** ${syncResult.newCommits} new commit(s) pulled\n\n`);
+  }
+
+  // ── Auto-update KB if source files changed ──
+  const autoKBUpdate = vscode.workspace.getConfiguration('autoSpecKit').get<boolean>('autoSyncKBUpdate', true);
+  if (!autoKBUpdate) { return; }
+
+  const effectiveConfig = workspaceResolver.getEffectiveConfig(root);
+  const kbRelPath = effectiveConfig.knowledgeBasePath;
+
+  // KB needs update if: new source commits pulled, OR KB is stale vs local files
+  const needsUpdate = syncResult.kbNeedsUpdate || GitSyncGuard.isKBStale(root, kbRelPath);
+
+  if (!needsUpdate) { return; }
+
+  // Check if KB even exists — if not, skip auto-update (user should /scan first)
+  const kbDir = require('path').join(root, kbRelPath);
+  if (!require('fs').existsSync(kbDir)) {
+    log('📚 AutoSync: KB not found — skipping auto-update (run /scan first)');
+    return;
+  }
+
+  if (token.isCancellationRequested) { return; }
+
+  stream.progress('Updating Knowledge Base with latest changes...');
+  stream.markdown('📚 **Auto-updating KB** — source files changed since last scan...\n\n');
+
+  try {
+    const model = await resolveModel();
+    if (model) {
+      const progress: vscode.Progress<{ message?: string; increment?: number }> = {
+        report: (value) => { if (value.message) { stream.progress(value.message); } },
+      };
+      await updateKBStandalone(root, model, token, progress);
+      stream.markdown('✅ **KB updated** — proceeding with command\n\n---\n\n');
+      log('✅ AutoSync: KB updated successfully');
+    }
+  } catch (err: any) {
+    log(`⚠️ AutoSync KB update failed: ${err.message}`);
+    // Non-fatal — continue with potentially stale KB
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
