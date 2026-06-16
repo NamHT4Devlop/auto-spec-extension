@@ -28,6 +28,7 @@ import { log, kbHeader, banner } from '../logger';
 import { callCopilot } from '../utils/copilot';
 import { scanProject, ScanOptions } from '../utils/project-scanner';
 import { AgentOrchestrator, SubAgent } from '../utils/agent-orchestrator';
+import { ProjectProfileDetector } from '../utils/project-profile';
 import { KB_STEPS, KbStep } from '../constants/kb-steps';
 
 // ─── Critical steps that get multi-agent deep analysis ────────────────────────
@@ -71,14 +72,14 @@ function sliceProjectScan(fullScan: string): SourceSlice {
     const block = currentContent.join('\n');
     const lower = currentFile.toLowerCase();
 
-    if (/\.test\.|\.spec\.|__tests__|test_/.test(lower)) {
+    if (/\.test\.|\.spec\.|__tests__|test_|Test\.java|Tests\.java|IT\.java|Spec\.groovy|_test\.go|_test\.py/.test(lower)) {
       tests.push(block);
-    } else if (/service|controller|handler|resolver|route|middleware|guard|interceptor|use-?case|command|query/.test(lower)) {
+    } else if (/service|controller|handler|resolver|route|middleware|guard|interceptor|use-?case|command|query|processor|gateway|adapter|facade|delegate|listener|consumer|producer|endpoint|resource|rest|api|grpc/.test(lower)) {
       services.push(block);
-    } else if (/entity|model|schema|migration|dto|interface|type|enum|prisma|\.sql/.test(lower)) {
+    } else if (/entity|model|schema|migration|dto|interface|type|enum|prisma|\.sql|mapper|repository|dao|domain|pojo|vo|bo|\.properties|\.xml|flyway|liquibase/.test(lower)) {
       models.push(block);
     } else {
-      // Put config/util/other files in services bucket (general context)
+      // Config, util, and unclassified files go to services (general context)
       services.push(block);
     }
   };
@@ -281,11 +282,57 @@ export async function generateKnowledgeBase(
   log(`   Tests/Validators:     ${(slices.tests.length / 1024).toFixed(0)}KB`);
   log(`   Models/Schemas:       ${(slices.models.length / 1024).toFixed(0)}KB`);
 
+  // ── Detect project profile for context-aware prompts ────────────
+  const profileDetector = new ProjectProfileDetector(workspaceRoot);
+  const profile = profileDetector.detect(true); // force-refresh for KB gen
+  const profileSummary = ProjectProfileDetector.toPromptContext(profile);
+  log(`📋 Project Profile: ${profileSummary}`);
+
+  // Build technology-specific hints based on detected stack
+  const techHints: string[] = [];
+  const fw = profile.framework.toLowerCase();
+  if (fw.includes('spring') || fw.includes('java') || fw.includes('kotlin')) {
+    techHints.push('- Look for Spring annotations: @Service, @Controller, @Repository, @Component, @Bean, @Configuration, @Autowired, @Value');
+    techHints.push('- Check application.properties / application.yml for config, datasource, messaging, cloud settings');
+  }
+  if (fw.includes('camel')) {
+    techHints.push('- Analyze Apache Camel routes (RouteBuilder classes, from().to() DSL, XML <route> elements, error handlers, processors)');
+  }
+  if (fw.includes('mybatis')) {
+    techHints.push('- Analyze MyBatis mapper XML files (SQL queries, resultMap, parameterType, dynamic SQL with <if>, <foreach>, <choose>)');
+    techHints.push('- Link mapper XML to Java mapper interfaces (@Mapper, @Select, @Insert, @Update, @Delete annotations)');
+  }
+  if (fw.includes('flyway') || fw.includes('liquibase')) {
+    techHints.push('- Analyze database migration files (Flyway V*.sql / Liquibase changelog) — they reveal schema evolution and business decisions');
+  }
+  if (fw.includes('aws')) {
+    techHints.push('- Analyze AWS SDK usage: SQS queues, S3 buckets, Lambda functions, DynamoDB tables, SNS topics — document integration points');
+  }
+  if (fw.includes('jpa') || fw.includes('hibernate')) {
+    techHints.push('- Analyze JPA entities: @Entity, @Table, @Column, @OneToMany, @ManyToOne, @JoinColumn — document relationships and constraints');
+  }
+  if (fw.includes('kafka')) {
+    techHints.push('- Analyze Kafka producers/consumers: topics, consumer groups, message formats, error handling, dead-letter queues');
+  }
+  if (profile.language === 'kotlin') {
+    techHints.push('- This is a Kotlin project: look for data classes, sealed classes, coroutines, extension functions, companion objects');
+  }
+  if (profile.language === 'groovy' || fw.includes('spock')) {
+    techHints.push('- Look for Groovy/Spock patterns: closures, DSL builders, Spock specifications (given/when/then blocks)');
+  }
+
+  const techHintBlock = techHints.length > 0
+    ? `\n\n=== TECHNOLOGY-SPECIFIC ANALYSIS HINTS ===\n${techHints.join('\n')}`
+    : '';
+
   // ── System context ─────────────────────────────────────────────
   const KB_SYSTEM = `\
 You are a Principal Software Engineer and Business Analyst hired to deeply understand this codebase.
 
 Your mission is NOT just to describe the code — but to understand WHY the code exists and WHAT PROBLEM IT SOLVES.
+
+=== DETECTED PROJECT STACK ===
+${profileSummary}
 
 === PROJECT FILES ===
 ${projectScan}
@@ -295,7 +342,9 @@ ${projectScan}
 2. Do NOT write generic statements — if no evidence found, write "not found in codebase".
 3. Analyze at BUSINESS DEPTH — explain what user problem each feature solves.
 4. Prioritize analysis: test files > service layer > controller > model.
-5. When you see magic numbers → explain their business meaning.`;
+5. When you see magic numbers → explain their business meaning.
+6. Analyze ALL file types: source code, XML config, .properties, SQL migrations, YAML — each carries business context.
+7. For XML-based configurations (Spring, MyBatis, Camel): these are AS IMPORTANT as code — document what they configure and why.${techHintBlock}`;
 
   const total = KB_STEPS.length + 1; // +1 for review-skills
   let completedSteps = 0;

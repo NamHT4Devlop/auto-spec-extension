@@ -55,10 +55,10 @@ For each important technology choice, explain WHY it was selected.
 List dependencies using old versions or deprecated packages.
 
 ## 4. Testing Stack
-Test framework, coverage tool, mocking library.
+Test framework, coverage tool, mocking library — check package.json, pom.xml, build.gradle, Gemfile, go.mod, or equivalent.
 
 ## 5. Build & Deploy Pipeline
-Dockerfile, CI/CD config, scripts in package.json.`,
+Build tool (Maven/Gradle/npm/yarn/make/cargo), Dockerfile, CI/CD config, build scripts. Include plugin configurations (Maven plugins, Gradle tasks, npm scripts).`,
   },
 
   // 03 — ENTRY POINTS & RUNTIME BEHAVIOR
@@ -74,11 +74,13 @@ Trace from the main file to when the app is ready.
 List ALL ways external parties can trigger code.
 
 ## 3. Environment Configuration
-List ALL env variables.
+List ALL env variables, application.properties/yml settings, Spring profiles, .env files, and config classes.
 
 ## 4. Health & Observability
+Health check endpoints, actuator, metrics, tracing, logging configuration.
 
-## 5. Local Setup (Step-by-Step)`,
+## 5. Local Setup (Step-by-Step)
+Prerequisites, DB setup, migrations (Flyway/Liquibase/Prisma), seed data, run commands.`,
   },
 
   // 04 — BUSINESS DOMAIN DEEP ANALYSIS
@@ -98,11 +100,12 @@ List ALL env variables.
   {
     label: '05 — Domain Model & Entity Lifecycle',
     file: '05-domain-model.md',
-    prompt: `Analyze all domain entities/models/schemas in PROJECT FILES.
+    prompt: `Analyze all domain entities/models/schemas in PROJECT FILES. Check ALL sources: JPA @Entity classes, Prisma schema, TypeORM entities, Django models, ActiveRecord, MyBatis mapper XML (resultMap/resultType), SQL CREATE TABLE, Proto messages.
 
 ## 1. Entity Catalog
 ## 2. State Machines
 ## 3. Entity Relationships
+Include ORM-mapped relationships AND MyBatis XML joins/associations.
 ## 4. Aggregate Boundaries
 ## 5. Data Lifecycle`,
   },
@@ -140,11 +143,16 @@ List ALL env variables.
     prompt: `Analyze the database schema from PROJECT FILES.
 
 ## 1. Schema Overview
+Analyze entities/tables from: JPA @Entity, Prisma schema, TypeORM entities, Django models, ActiveRecord, SQL migrations, MyBatis mapper XML resultMaps.
+
 ## 2. Full ERD
 ## 3. Critical Business Columns
 ## 4. Index Strategy
 ## 5. Data Integrity & Constraints
-## 6. Migration History`,
+Include DB-level constraints AND ORM-level validation (Bean Validation @NotNull/@Size, Prisma @unique, Rails validates).
+
+## 6. Migration History
+Analyze Flyway V*.sql, Liquibase changelog, Prisma migrations, Rails db/migrate, Alembic — what business decisions drove each schema change?`,
   },
 
   // 09 — AUTH, SECURITY & PERMISSION MODEL
@@ -219,9 +227,17 @@ Identify all important flows (minimum 3, maximum 7).`,
     prompt: `Find ALL integrations with external systems in PROJECT FILES.
 
 ## 1. Integration Map
+List ALL external systems: REST APIs, SOAP services, message queues (SQS, Kafka, RabbitMQ), cloud services (AWS S3/Lambda/DynamoDB, GCP, Azure), payment gateways, email/SMS providers, search engines (Elasticsearch), caches (Redis).
+
 ## 2. Integration Details
+For each integration: protocol, auth method, retry policy, circuit breaker, timeout config, error handling.
+
 ## 3. Internal Service Communication
+REST, gRPC, message queues, Apache Camel routes, event bus, shared database.
+
 ## 4. Event-Driven Integration
+Kafka topics, SQS queues, SNS topics, RabbitMQ exchanges, Spring Events, domain events — document producers, consumers, message schemas.
+
 ## 5. Integration Risks & Single Points of Failure`,
   },
 
