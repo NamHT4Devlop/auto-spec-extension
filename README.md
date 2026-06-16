@@ -757,15 +757,21 @@ autoSync:
 
 | Language | KB Scan | Graph Scanner | Code Gen | Test Gen |
 |---|---|---|---|---|
-| TypeScript | ✅ | ✅ | ✅ | ✅ |
-| JavaScript | ✅ | ✅ | ✅ | ✅ |
-| Python | ✅ | ✅ | ✅ | ✅ |
+| TypeScript / JavaScript | ✅ | ✅ | ✅ | ✅ |
 | Java | ✅ | ✅ | ✅ | ✅ |
+| Kotlin | ✅ | ✅ | ✅ | ✅ |
+| Python | ✅ | ✅ | ✅ | ✅ |
 | Go | ✅ | ✅ | ✅ | ✅ |
-| Ruby | — | ✅ | — | — |
-| C# | — | ✅ | — | — |
-| PHP | — | ✅ | — | — |
-| Rust | — | ✅ | — | — |
+| C# / .NET | ✅ | ✅ | ✅ | ✅ |
+| Ruby | ✅ | ✅ | ✅ | ✅ |
+| PHP | ✅ | ✅ | ✅ | ✅ |
+| Rust | ✅ | ✅ | ✅ | ✅ |
+| Scala / Groovy | ✅ | ✅ | ✅ | ✅ |
+
+**Java Enterprise — full support for:**
+Apache Camel, MyBatis (XML mappers), Flyway / Liquibase migrations, Spring XML config, AWS SDK (SQS/S3/Lambda), JPA/Hibernate, Kafka, `.properties` files, Gradle (Groovy & Kotlin DSL).
+
+**Also scanned:** `.xml`, `.properties`, `.json`, `.proto`, `.tf/.hcl` (Terraform), `.ftl` (Freemarker), `.jsp`, `.erb`, `.html` templates.
 
 ---
 
@@ -815,7 +821,7 @@ autoSync:
 - ✅ 3 human checkpoints (steps 03, 06, 09)
 
 **Universal Graph Scanner**
-- ✅ 9-language support (TS/JS/Python/Java/Go/Ruby/C#/PHP/Rust)
+- ✅ 12-language support (TS/JS/Python/Java/Kotlin/Scala/Groovy/Go/Ruby/C#/PHP/Rust)
 - ✅ Class/method/route/decorator/field detection per language
 - ✅ Auto architecture layer inference
 - ✅ AI enrichment: Flow Tracer + Entity Mapper + Arch Validator

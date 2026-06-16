@@ -63,12 +63,24 @@ export function scanProject(root: string, options: ScanOptions = {}): string {
   // Config / manifest files always included first
   // In source-only mode, remove README.md from priority list
   const PRIORITY_ALL = [
-    'package.json', 'requirements.txt', 'go.mod', 'pom.xml', 'Gemfile',
-    'tsconfig.json', 'webpack.config.js', 'vite.config.ts', 'vite.config.js',
+    // JS / TS
+    'package.json', 'tsconfig.json', 'webpack.config.js', 'vite.config.ts', 'vite.config.js',
     'babel.config.js', '.babelrc', 'jest.config.ts', 'jest.config.js',
+    // Java / JVM
+    'pom.xml', 'build.gradle', 'build.gradle.kts', 'settings.gradle', 'settings.gradle.kts',
+    'application.properties', 'application.yml', 'application.yaml',
+    'bootstrap.properties', 'bootstrap.yml',
+    // Python
+    'requirements.txt', 'pyproject.toml', 'setup.py', 'setup.cfg',
+    // Go / Rust / Ruby
+    'go.mod', 'Cargo.toml', 'Gemfile',
+    // Infra / Docker
     'docker-compose.yml', 'docker-compose.yaml', 'Dockerfile',
-    '.env.example', '.env.sample', 'README.md', 'Makefile',
-    'pyproject.toml', 'setup.py', 'setup.cfg', 'cargo.toml',
+    '.env.example', '.env.sample',
+    // DB migrations
+    'flyway.conf', 'liquibase.properties',
+    // General
+    'README.md', 'Makefile',
   ];
   const PRIORITY = excludeDocs
     ? PRIORITY_ALL.filter(f => !DOC_FILES.has(f.toLowerCase()))
@@ -111,12 +123,26 @@ export function scanProject(root: string, options: ScanOptions = {}): string {
 
   // ── 3. Source files (walk, depth-limited) ─────────────────────
   const SOURCE_EXTS = new Set([
+    // JS / TS ecosystem
     '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs',
-    '.py', '.go', '.java', '.cs', '.rs', '.rb', '.php',
+    // JVM languages
+    '.java', '.kt', '.kts', '.scala', '.groovy',
+    // Other backend
+    '.py', '.go', '.cs', '.rs', '.rb', '.php',
+    // Frontend frameworks
     '.vue', '.svelte', '.astro',
+    // Data / query
     '.sql', '.graphql', '.gql', '.prisma',
-    '.yaml', '.yml', '.toml', '.env.example',
+    // Config & markup (critical for Java enterprise: Spring XML, MyBatis, Camel, etc.)
+    '.xml', '.json', '.yaml', '.yml', '.toml',
+    '.properties', '.cfg', '.conf', '.ini',
+    // Templates (Thymeleaf, Freemarker, JSP, ERB)
+    '.html', '.ftl', '.jsp', '.erb',
+    // Infrastructure as code
+    '.proto', '.tf', '.hcl',
+    // Shell
     '.sh', '.bash',
+    '.env.example',
   ]);
 
   const walkSrc = (dir: string, depth = 0) => {

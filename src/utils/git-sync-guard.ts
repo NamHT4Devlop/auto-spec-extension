@@ -31,10 +31,14 @@ export class GitSyncGuard {
   /** Source extensions that matter for KB staleness detection */
   private static readonly SOURCE_EXTS = new Set([
     '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs',
-    '.py', '.go', '.java', '.cs', '.rs', '.rb', '.php',
+    '.java', '.kt', '.kts', '.scala', '.groovy',
+    '.py', '.go', '.cs', '.rs', '.rb', '.php',
     '.vue', '.svelte', '.astro',
     '.sql', '.graphql', '.gql', '.prisma',
-    '.yaml', '.yml', '.toml',
+    '.xml', '.json', '.yaml', '.yml', '.toml',
+    '.properties', '.cfg', '.conf',
+    '.html', '.ftl', '.jsp', '.erb',
+    '.proto', '.tf', '.hcl',
     '.sh', '.bash',
   ]);
 

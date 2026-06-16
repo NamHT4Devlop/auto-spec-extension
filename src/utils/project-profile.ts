@@ -124,19 +124,57 @@ export class ProjectProfileDetector {
     let testFramework = 'unknown';
     let packageManager = 'unknown';
 
-    // Java
+    // Java / JVM (Maven)
     if (has('pom.xml')) {
-      language = 'java'; buildTool = 'maven'; packageManager = 'maven';
       const pom = fs.readFileSync(path.join(this.root, 'pom.xml'), 'utf-8');
-      if (pom.includes('spring-boot')) { framework = 'Spring Boot'; }
-      else if (pom.includes('quarkus')) { framework = 'Quarkus'; }
-      else { framework = 'Java (Maven)'; }
-      if (pom.includes('junit')) { testFramework = 'JUnit'; }
+      // Detect JVM language variant
+      if (pom.includes('kotlin') || has('src/main/kotlin')) { language = 'kotlin'; }
+      else if (pom.includes('scala') || has('src/main/scala')) { language = 'scala'; }
+      else { language = 'java'; }
+      buildTool = 'maven'; packageManager = 'maven';
+
+      // Framework detection (order: most specific first)
+      const frameworkParts: string[] = [];
+      if (pom.includes('spring-boot')) { frameworkParts.push('Spring Boot'); }
+      else if (pom.includes('spring')) { frameworkParts.push('Spring'); }
+      else if (pom.includes('quarkus')) { frameworkParts.push('Quarkus'); }
+      else if (pom.includes('micronaut')) { frameworkParts.push('Micronaut'); }
+
+      // Detect enterprise integrations
+      if (pom.includes('camel')) { frameworkParts.push('Apache Camel'); }
+      if (pom.includes('mybatis')) { frameworkParts.push('MyBatis'); }
+      if (pom.includes('flyway')) { frameworkParts.push('Flyway'); }
+      if (pom.includes('liquibase')) { frameworkParts.push('Liquibase'); }
+      if (pom.includes('aws-java-sdk') || pom.includes('software.amazon')) { frameworkParts.push('AWS SDK'); }
+      if (pom.includes('hibernate') || pom.includes('jakarta.persistence')) { frameworkParts.push('JPA/Hibernate'); }
+      if (pom.includes('kafka')) { frameworkParts.push('Kafka'); }
+
+      framework = frameworkParts.length > 0 ? frameworkParts.join(' + ') : `${language} (Maven)`;
+
+      if (pom.includes('junit-jupiter') || pom.includes('junit')) { testFramework = 'JUnit 5'; }
       else if (pom.includes('testng')) { testFramework = 'TestNG'; }
-    } else if (has('build.gradle') || has('build.gradle.kts')) {
-      language = 'java'; buildTool = 'gradle'; packageManager = 'gradle';
-      framework = 'Java (Gradle)';
-      testFramework = 'JUnit';
+      else if (pom.includes('spock')) { testFramework = 'Spock'; }
+    }
+    // Java / JVM (Gradle)
+    else if (has('build.gradle') || has('build.gradle.kts')) {
+      const gradleFile = has('build.gradle.kts') ? 'build.gradle.kts' : 'build.gradle';
+      const gradle = fs.readFileSync(path.join(this.root, gradleFile), 'utf-8');
+
+      if (has('build.gradle.kts') || gradle.includes('kotlin') || has('src/main/kotlin')) { language = 'kotlin'; }
+      else if (gradle.includes('scala') || has('src/main/scala')) { language = 'scala'; }
+      else if (gradle.includes('groovy') || has('src/main/groovy')) { language = 'groovy'; }
+      else { language = 'java'; }
+      buildTool = 'gradle'; packageManager = 'gradle';
+
+      const frameworkParts: string[] = [];
+      if (gradle.includes('spring-boot') || gradle.includes('org.springframework.boot')) { frameworkParts.push('Spring Boot'); }
+      if (gradle.includes('camel')) { frameworkParts.push('Apache Camel'); }
+      if (gradle.includes('mybatis')) { frameworkParts.push('MyBatis'); }
+      if (gradle.includes('flyway')) { frameworkParts.push('Flyway'); }
+      if (gradle.includes('aws')) { frameworkParts.push('AWS SDK'); }
+
+      framework = frameworkParts.length > 0 ? frameworkParts.join(' + ') : `${language} (Gradle)`;
+      testFramework = gradle.includes('spock') ? 'Spock' : 'JUnit 5';
     }
 
     // Node.js / TypeScript
@@ -237,6 +275,19 @@ export class ProjectProfileDetector {
     else if (this.grepFile('package.json', 'mongoose') || this.grepFile('package.json', 'mongodb')) { database = 'MongoDB'; }
     else if (this.grepFile('package.json', 'mysql2')) { database = 'MySQL'; }
     else if (has('config/database.yml')) { database = 'PostgreSQL (Rails)'; }
+    // Java enterprise DB detection
+    else if (has('application.properties') || has('application.yml')) {
+      const appConfig = has('application.properties')
+        ? fs.readFileSync(path.join(this.root, 'application.properties'), 'utf-8')
+        : fs.readFileSync(path.join(this.root, 'application.yml'), 'utf-8');
+      if (appConfig.includes('postgresql') || appConfig.includes('postgres')) { database = 'PostgreSQL'; }
+      else if (appConfig.includes('mysql')) { database = 'MySQL'; }
+      else if (appConfig.includes('oracle')) { database = 'Oracle'; }
+      else if (appConfig.includes('sqlserver') || appConfig.includes('mssql')) { database = 'SQL Server'; }
+      else if (appConfig.includes('h2')) { database = 'H2 (embedded)'; }
+      else if (appConfig.includes('mongodb')) { database = 'MongoDB'; }
+      else if (appConfig.includes('redis')) { database = 'Redis'; }
+    }
 
     // ── Docker & CI/CD ──
     const hasDocker = has('Dockerfile') || has('docker-compose.yml') || has('docker-compose.yaml');
@@ -304,6 +355,10 @@ export class ProjectProfileDetector {
     check('app/controllers', 'Rails MVC');
     check('app/models', 'Rails models');
     check('src/main/java', 'Maven standard');
+    check('src/main/kotlin', 'Kotlin source');
+    check('src/main/resources', 'Java resources');
+    check('src/main/resources/mapper', 'MyBatis mappers');
+    check('src/main/resources/db/migration', 'Flyway migrations');
     check('cmd', 'Go cmd pattern');
     check('internal', 'Go internal pattern');
     check('pkg', 'Go pkg pattern');
@@ -360,6 +415,11 @@ export class ProjectProfileDetector {
     check('main.go');
     check('cmd/main.go');
     check('Program.cs');
+    // Java / JVM entry points
+    check('src/main/resources/application.properties');
+    check('src/main/resources/application.yml');
+    check('src/main/resources/application.yaml');
+    check('src/main/resources/bootstrap.yml');
 
     return entries.slice(0, 5);
   }

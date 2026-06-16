@@ -664,7 +664,7 @@ Bot:     💬 Searching Knowledge Base...
   <p>Command Palette → <strong>Map Codebase</strong> or <code>@autospec /map</code>. Universal multi-language scanner + optional AI enrichment.</p>
 
   <ol class="step-list">
-    <li><strong>Static Scan</strong> — Multi-language parser (TS/JS/Python/Java/Go/Ruby/C#/PHP/Rust). Detects: file imports, class hierarchy, method declarations, API routes, decorators.</li>
+    <li><strong>Static Scan</strong> — Multi-language parser (TS/JS/Python/Java/Kotlin/Scala/Groovy/Go/Ruby/C#/PHP/Rust). Detects: file imports, class hierarchy, method declarations, API routes, decorators, XML config.</li>
     <li class="green"><strong>Deep Analysis</strong> — Method-to-method call tracing across files. Class <code>extends</code>/<code>implements</code> relationships. Entity field extraction.</li>
     <li class="purple"><strong>AI Enrichment</strong> (optional — user chooses):
       <br>🔄 Flow Tracer Agent — maps business flows through the graph
@@ -680,11 +680,15 @@ Bot:     💬 Searching Knowledge Base...
     <tr><td>Python</td><td>✅ import/from</td><td>✅ class(Base)</td><td>✅ def/async def</td><td>✅ Flask/FastAPI</td></tr>
     <tr><td>Java/Kotlin</td><td>✅ import</td><td>✅ class/extends/implements</td><td>✅ methods</td><td>✅ Spring @Mapping</td></tr>
     <tr><td>Go</td><td>✅ import</td><td>✅ struct</td><td>✅ func</td><td>✅ r.GET/POST</td></tr>
+    <tr><td>Kotlin</td><td>✅ import</td><td>✅ class/data class</td><td>✅ fun</td><td>✅ Spring @Mapping</td></tr>
+    <tr><td>Scala</td><td>✅ import</td><td>✅ class/trait/object</td><td>✅ def</td><td>—</td></tr>
+    <tr><td>Groovy</td><td>✅ import</td><td>✅ class/extends</td><td>✅ def</td><td>✅ Spock spec</td></tr>
     <tr><td>Ruby</td><td>✅ require</td><td>✅ class < Base</td><td>✅ def</td><td>✅ Rails routes</td></tr>
     <tr><td>C#</td><td>✅ using</td><td>✅ class : Base</td><td>✅ methods</td><td>—</td></tr>
     <tr><td>PHP</td><td>✅ use/require</td><td>✅ class/extends</td><td>✅ function</td><td>—</td></tr>
     <tr><td>Rust</td><td>✅ use/mod</td><td>✅ struct</td><td>✅ fn</td><td>—</td></tr>
   </table>
+  <p style="margin-top:8px;font-size:13px;color:#94a3b8"><strong>Also scanned for KB:</strong> <code>.xml</code> (MyBatis mappers, Spring config, Camel), <code>.properties</code>, <code>.json</code>, <code>.proto</code>, <code>.tf/.hcl</code>, <code>.ftl</code>, <code>.jsp</code>, <code>.erb</code> templates</p>
 </div>
 </div>
 
@@ -803,9 +807,9 @@ Bot:     💬 Searching Knowledge Base...
   <p>Auto-detects your project stack by scanning marker files. Cached in <code>.autospec/profile.json</code> for 24h.</p>
   <table>
     <tr><th>Category</th><th>Detected Values</th></tr>
-    <tr><td>Languages</td><td>Java, TypeScript, JavaScript, Python, Ruby, Go, C#</td></tr>
-    <tr><td>Frameworks</td><td>Spring Boot, Next.js, Angular, React, NestJS, Express, Rails, Django, FastAPI, Gin, .NET, and 10+ more</td></tr>
-    <tr><td>Build tools</td><td>Maven, Gradle, npm, yarn, pnpm, vite, webpack, bundler, poetry, pip</td></tr>
+    <tr><td>Languages</td><td>Java, Kotlin, Scala, Groovy, TypeScript, JavaScript, Python, Ruby, Go, C#, PHP, Rust</td></tr>
+    <tr><td>Frameworks</td><td>Spring Boot, Apache Camel, MyBatis, Next.js, Angular, React, NestJS, Express, Rails, Django, FastAPI, Gin, Quarkus, Micronaut, .NET, and more</td></tr>
+    <tr><td>Build tools</td><td>Maven, Gradle (Groovy + Kotlin DSL), npm, yarn, pnpm, vite, webpack, bundler, poetry, pip</td></tr>
     <tr><td>Test frameworks</td><td>Jest, Vitest, JUnit, RSpec, pytest, go test, xUnit, Mocha, Playwright, Cypress</td></tr>
     <tr><td>Linters</td><td>ESLint, RuboCop, golangci-lint, Flake8</td></tr>
     <tr><td>Formatters</td><td>Prettier, Black, gofmt</td></tr>
