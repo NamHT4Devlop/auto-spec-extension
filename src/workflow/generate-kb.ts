@@ -26,7 +26,7 @@ import * as fs from 'fs';
 
 import { log, kbHeader, banner } from '../logger';
 import { callCopilot } from '../utils/copilot';
-import { scanProject } from '../utils/project-scanner';
+import { scanProject, ScanOptions } from '../utils/project-scanner';
 import { AgentOrchestrator, SubAgent } from '../utils/agent-orchestrator';
 import { KB_STEPS, KbStep } from '../constants/kb-steps';
 
@@ -174,7 +174,8 @@ export async function generateKnowledgeBase(
   model: vscode.LanguageModelChat,
   token: vscode.CancellationToken,
   progress: vscode.Progress<{ message?: string; increment?: number }>,
-  extensionPath: string
+  extensionPath: string,
+  scanOptions?: ScanOptions,
 ): Promise<void> {
 
   const cfg = vscode.workspace.getConfiguration('autoSpecKit');
@@ -182,23 +183,70 @@ export async function generateKnowledgeBase(
   const maxParallel = cfg.get<number>('agents.maxParallel', 3);
   const kbPath = path.join(workspaceRoot, kbRelPath);
 
+  // ── Determine scan mode ───────────────────────────────────────
+  let effectiveScanOptions: ScanOptions = scanOptions ?? {};
+
   // ── Check existing KB ──────────────────────────────────────────
   if (fs.existsSync(kbPath)) {
     const existingFiles = fs.readdirSync(kbPath).filter(f => f.endsWith('.md'));
     if (existingFiles.length > 0) {
       const choice = await vscode.window.showQuickPick(
         [
-          { label: `🔄 Regenerate KB (overwrite ${existingFiles.length} existing files)`, overwrite: true },
-          { label: '❌ Cancel — Keep existing KB', overwrite: false },
+          {
+            label: '🧹 Fresh rebuild — source code only',
+            description: 'Ignore ALL existing docs (README, copilot-instructions, docs/, etc.)',
+            mode: 'source-only' as const,
+          },
+          {
+            label: `🔄 Regenerate KB (include existing docs)`,
+            description: `Overwrite ${existingFiles.length} KB files, but still read README/docs as context`,
+            mode: 'include-docs' as const,
+          },
+          {
+            label: '❌ Cancel — Keep existing KB',
+            description: 'No changes',
+            mode: 'cancel' as const,
+          },
         ],
         {
           title: '⚠️ Knowledge Base already exists!',
-          placeHolder: `${kbRelPath}/ already has ${existingFiles.length} files. Regenerate from scratch?`,
+          placeHolder: `${kbRelPath}/ has ${existingFiles.length} files. How do you want to regenerate?`,
         }
       );
-      if (!choice?.overwrite) {
+      if (!choice || choice.mode === 'cancel') {
         log('⏭  KB generation cancelled.');
         return;
+      }
+      if (choice.mode === 'source-only') {
+        effectiveScanOptions = { ...effectiveScanOptions, excludeDocs: true };
+      }
+    }
+  } else {
+    // No existing KB — still offer source-only if project has docs that might be stale
+    const hasDocFiles = ['README.md', 'docs', '.github'].some(
+      f => fs.existsSync(path.join(workspaceRoot, f))
+    );
+    if (hasDocFiles && !effectiveScanOptions.excludeDocs) {
+      const choice = await vscode.window.showQuickPick(
+        [
+          {
+            label: '📦 Include project docs (README, docs/, .github/)',
+            description: 'Use existing documentation as additional context',
+            sourceOnly: false,
+          },
+          {
+            label: '🧹 Source code only — skip all docs',
+            description: 'Recommended if docs are outdated or inaccurate',
+            sourceOnly: true,
+          },
+        ],
+        {
+          title: 'Documentation files detected',
+          placeHolder: 'Should the KB generator use existing documentation as context?',
+        }
+      );
+      if (choice?.sourceOnly) {
+        effectiveScanOptions = { ...effectiveScanOptions, excludeDocs: true };
       }
     }
   }
@@ -214,9 +262,10 @@ export async function generateKnowledgeBase(
   log(`Model     : ${model.name}\n`);
 
   // ── Scan project ───────────────────────────────────────────────
-  log('📂 Scanning project files...');
-  progress.report({ message: 'Scanning project...', increment: 3 });
-  const projectScan = scanProject(workspaceRoot);
+  const modeLabel = effectiveScanOptions.excludeDocs ? 'source-only' : 'full (with docs)';
+  log(`📂 Scanning project files... [${modeLabel}]`);
+  progress.report({ message: `Scanning project (${modeLabel})...`, increment: 3 });
+  const projectScan = scanProject(workspaceRoot, effectiveScanOptions);
 
   fs.writeFileSync(
     path.join(kbPath, '_project-scan.md'),

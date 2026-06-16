@@ -211,6 +211,13 @@ async function handleScan(
   const profile = profileDetector.detect(true); // force refresh on scan
   log(`📋 Scan: detected ${profile.language} / ${profile.framework}`);
 
+  // Get scan options from .autospec.yml (if scan.excludeDocs is set, pass through)
+  const effectiveConfig = workspaceResolver.getEffectiveConfig(root);
+  const scanOptions = {
+    excludeDocs: effectiveConfig.scan.excludeDocs,
+    excludeExtra: effectiveConfig.scan.exclude,
+  };
+
   stream.progress('Scanning project...');
   stream.markdown(`📚 **Scanning Project** — ${profile.language} / ${profile.framework}\n\nAnalyzing your codebase with multi-agent batch parallelism (5 batches × 3 agents)...\n\n`);
 
@@ -220,7 +227,7 @@ async function handleScan(
     },
   };
 
-  await generateKnowledgeBase(root, model, token, progress, extContext.extensionPath);
+  await generateKnowledgeBase(root, model, token, progress, extContext.extensionPath, scanOptions);
 
   stream.markdown('\n\n✅ **Scan complete!** Knowledge Base generated in `knowledge-base/` — 15 markdown files covering architecture, APIs, business logic, and more.');
 

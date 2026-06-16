@@ -45,6 +45,7 @@ export interface EnrichmentContext {
     knowledgeBasePath: string;
     sessionsDir: string;
     ignore: string[];
+    scan: { excludeDocs: boolean; exclude: string[] };
   };
 }
 

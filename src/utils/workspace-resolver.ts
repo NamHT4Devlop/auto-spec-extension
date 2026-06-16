@@ -40,6 +40,12 @@ export interface AutoSpecConfig {
     packages?: string[];
     sharedKB?: boolean;
   };
+  scan?: {
+    /** Always use source-only mode — skip README, docs/, .github/, copilot-instructions, etc. */
+    excludeDocs?: boolean;
+    /** Additional directory names to skip during project scan */
+    exclude?: string[];
+  };
 }
 
 export interface MonorepoInfo {
@@ -193,6 +199,7 @@ export class WorkspaceResolver {
     knowledgeBasePath: string;
     sessionsDir: string;
     ignore: string[];
+    scan: { excludeDocs: boolean; exclude: string[] };
   } {
     const overrides = this.loadConfig(root);
     const cfg = vscode.workspace.getConfiguration('autoSpecKit');
@@ -203,6 +210,10 @@ export class WorkspaceResolver {
       knowledgeBasePath: overrides.knowledgeBasePath ?? cfg.get<string>('knowledgeBasePath', 'knowledge-base'),
       sessionsDir: overrides.sessionsDir ?? cfg.get<string>('sessionsDir', 'spec-kit-sessions'),
       ignore: overrides.ignore ?? [],
+      scan: {
+        excludeDocs: overrides.scan?.excludeDocs ?? false,
+        exclude: overrides.scan?.exclude ?? [],
+      },
     };
   }
 
