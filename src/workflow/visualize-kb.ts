@@ -76,17 +76,31 @@ export async function visualizeKnowledgeBase(
     'autoSpecKitGraph',
     '🔭 Knowledge Graph — ' + graphData.metadata.projectName,
     vscode.ViewColumn.One,
-    { enableScripts: true, retainContextWhenHidden: true }
+    {
+      enableScripts: true,
+      retainContextWhenHidden: true,
+      // No local resources are loaded via webview URIs — lock the root list down.
+      localResourceRoots: [],
+    }
   );
 
   panel.webview.html = html;
 
   // Handle messages from webview (node clicks → open file)
+  const rootResolved = path.resolve(rootDir);
   panel.webview.onDidReceiveMessage(
     (msg: { command: string; filePath?: string }) => {
       if (msg.command === 'openFile' && msg.filePath) {
-        const abs = path.join(rootDir, msg.filePath);
-        if (fs.existsSync(abs)) {
+        // Containment guard: reject absolute paths or any traversal that would
+        // resolve outside the workspace root before touching the filesystem.
+        const rel = String(msg.filePath);
+        if (path.isAbsolute(rel)) { log(`⛔ Ignored openFile (absolute path): ${rel}`); return; }
+        const abs = path.resolve(rootResolved, rel);
+        if (abs !== rootResolved && !abs.startsWith(rootResolved + path.sep)) {
+          log(`⛔ Ignored openFile outside workspace: ${rel}`);
+          return;
+        }
+        if (fs.existsSync(abs) && fs.statSync(abs).isFile()) {
           vscode.workspace.openTextDocument(abs).then(doc => {
             vscode.window.showTextDocument(doc, vscode.ViewColumn.Two);
           });

@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { extractFiles, saveFile } from '../utils/file-utils';
+import { extractFiles, saveFile, safeResolve, isSafeRelativePath } from '../utils/file-utils';
 
 describe('extractFiles', () => {
   it('should extract files from markdown code blocks', () => {
@@ -38,6 +38,51 @@ export interface User { id: string; name: string; }
     const files = extractFiles(content);
     expect(files).toHaveLength(1);
     expect(files[0].filePath).toBe('config.json');
+  });
+
+  it('should drop path-traversal and absolute paths (security)', () => {
+    const content = `
+### FILE: ../../etc/passwd
+\`\`\`
+pwned
+\`\`\`
+
+### FILE: /tmp/evil.sh
+\`\`\`
+pwned
+\`\`\`
+
+### FILE: src/safe.ts
+\`\`\`
+export const ok = true;
+\`\`\`
+`;
+    const files = extractFiles(content);
+    expect(files).toHaveLength(1);
+    expect(files[0].filePath).toBe('src/safe.ts');
+  });
+});
+
+describe('safeResolve (path traversal guard)', () => {
+  const root = path.join(os.tmpdir(), 'ask-root');
+
+  it('resolves in-tree relative paths', () => {
+    expect(safeResolve(root, 'a/b/c.ts')).toBe(path.resolve(root, 'a/b/c.ts'));
+  });
+
+  it('rejects parent-directory traversal', () => {
+    expect(() => safeResolve(root, '../escape.ts')).toThrow();
+    expect(() => safeResolve(root, 'a/../../escape.ts')).toThrow();
+  });
+
+  it('rejects absolute paths', () => {
+    expect(() => safeResolve(root, '/etc/passwd')).toThrow();
+  });
+
+  it('isSafeRelativePath reflects the guard', () => {
+    expect(isSafeRelativePath(root, 'ok/file.ts')).toBe(true);
+    expect(isSafeRelativePath(root, '../nope.ts')).toBe(false);
+    expect(isSafeRelativePath(root, '/abs.ts')).toBe(false);
   });
 });
 

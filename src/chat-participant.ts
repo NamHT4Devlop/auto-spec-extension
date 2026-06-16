@@ -83,9 +83,13 @@ async function handleChatRequest(
   log(`\n🤖 Chat: @autospec /${command} ${userPrompt}`);
 
   // ── Auto-sync: fetch + pull latest code before every command ──
+  // Gated on workspace trust: auto-sync runs git against the project remote, which
+  // we do not perform in untrusted workspaces.
   const autoSyncEnabled = vscode.workspace.getConfiguration('autoSpecKit').get<boolean>('autoSync', true);
-  if (autoSyncEnabled && command !== 'help') {
+  if (autoSyncEnabled && command !== 'help' && vscode.workspace.isTrusted) {
     await performAutoSync(root, stream, chatToken, extensionContext);
+  } else if (autoSyncEnabled && command !== 'help' && !vscode.workspace.isTrusted) {
+    log('🔒 Workspace is not trusted — skipping git auto-sync.');
   }
 
   try {

@@ -15,11 +15,14 @@ export function getChannel(): vscode.OutputChannel {
 }
 
 export function log(msg: string): void {
-  getChannel().appendLine(msg);
+  // No-op if the channel isn't initialized (e.g. unit tests, early calls)
+  if (!_channel) { return; }
+  _channel.appendLine(msg);
 }
 
 export function logRaw(text: string): void {
-  getChannel().append(text);
+  if (!_channel) { return; }
+  _channel.append(text);
 }
 
 export function stepHeader(n: number, total: number, title: string): void {

@@ -12,10 +12,18 @@
  */
 
 import * as vscode from 'vscode';
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 import { log } from '../logger';
+
+/**
+ * Run `git` with an explicit argument array (no shell) and return stdout.
+ * Throws on non-zero exit, like execSync did, so existing try/catch logic holds.
+ */
+function gitExec(args: string[], cwd: string, timeout: number): string {
+  return execFileSync('git', args, { cwd, stdio: 'pipe', timeout, encoding: 'utf-8' });
+}
 
 export interface SyncResult {
   fetched: boolean;
@@ -54,11 +62,7 @@ export class GitSyncGuard {
    */
   static isGitRepo(root: string): boolean {
     try {
-      execSync('git rev-parse --is-inside-work-tree', {
-        cwd: root,
-        stdio: 'pipe',
-        timeout: 5000,
-      });
+      gitExec(['rev-parse', '--is-inside-work-tree'], root, 5000);
       return true;
     } catch {
       return false;
@@ -88,11 +92,7 @@ export class GitSyncGuard {
 
     // ── 2. Fetch all remotes ──
     try {
-      execSync('git fetch --all --prune', {
-        cwd: root,
-        stdio: 'pipe',
-        timeout: 30_000,
-      });
+      gitExec(['fetch', '--all', '--prune'], root, 30_000);
       result.fetched = true;
       log('🔄 GitSync: fetch --all --prune done');
     } catch (err: any) {
@@ -104,11 +104,7 @@ export class GitSyncGuard {
 
     // ── 3. Pull with fast-forward only ──
     try {
-      const pullOutput = execSync('git pull --ff-only', {
-        cwd: root,
-        stdio: 'pipe',
-        timeout: 30_000,
-      }).toString().trim();
+      const pullOutput = gitExec(['pull', '--ff-only'], root, 30_000).toString().trim();
 
       result.pulled = true;
 
@@ -134,9 +130,9 @@ export class GitSyncGuard {
 
     if (headBefore && headAfter && headBefore !== headAfter) {
       try {
-        const diffOutput = execSync(
-          `git diff --name-only ${headBefore}..${headAfter}`,
-          { cwd: root, stdio: 'pipe', timeout: 10_000 },
+        const diffOutput = gitExec(
+          ['diff', '--name-only', `${headBefore}..${headAfter}`],
+          root, 10_000,
         ).toString().trim();
 
         if (diffOutput) {
@@ -162,17 +158,11 @@ export class GitSyncGuard {
    */
   static hasRemoteChanges(root: string): boolean {
     try {
-      const branch = execSync('git rev-parse --abbrev-ref HEAD', {
-        cwd: root, stdio: 'pipe', timeout: 5000,
-      }).toString().trim();
+      const branch = gitExec(['rev-parse', '--abbrev-ref', 'HEAD'], root, 5000).toString().trim();
 
-      const local = execSync(`git rev-parse ${branch}`, {
-        cwd: root, stdio: 'pipe', timeout: 5000,
-      }).toString().trim();
+      const local = gitExec(['rev-parse', branch], root, 5000).toString().trim();
 
-      const remote = execSync(`git rev-parse origin/${branch}`, {
-        cwd: root, stdio: 'pipe', timeout: 5000,
-      }).toString().trim();
+      const remote = gitExec(['rev-parse', `origin/${branch}`], root, 5000).toString().trim();
 
       return local !== remote;
     } catch {
@@ -204,9 +194,7 @@ export class GitSyncGuard {
 
   private static getHead(root: string): string | null {
     try {
-      return execSync('git rev-parse HEAD', {
-        cwd: root, stdio: 'pipe', timeout: 5000,
-      }).toString().trim();
+      return gitExec(['rev-parse', 'HEAD'], root, 5000).toString().trim();
     } catch {
       return null;
     }
@@ -214,9 +202,7 @@ export class GitSyncGuard {
 
   private static countCommits(root: string, from: string, to: string): number {
     try {
-      const output = execSync(`git rev-list --count ${from}..${to}`, {
-        cwd: root, stdio: 'pipe', timeout: 5000,
-      }).toString().trim();
+      const output = gitExec(['rev-list', '--count', `${from}..${to}`], root, 5000).toString().trim();
       return parseInt(output, 10) || 0;
     } catch {
       return 0;

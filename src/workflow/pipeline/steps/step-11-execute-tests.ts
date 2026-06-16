@@ -1,6 +1,6 @@
+import * as vscode from 'vscode';
 import { promisify } from 'util';
 import { exec } from 'child_process';
-import * as path from 'path';
 import { log } from '../../../logger';
 import { parseCoverage } from '../../../utils/coverage';
 import { PipelineContext, PipelineStep, StepResult } from '../types';
@@ -23,6 +23,25 @@ export class Step11ExecuteTests implements PipelineStep {
         coverage: null,
         durationMs: 0,
         command: '',
+      };
+      return {
+        output: result.output,
+        data: { testResult: result },
+      };
+    }
+
+    // Security gate: the test command runs an arbitrary shell command that can be
+    // supplied by the project itself (.autospec.yml / .vscode settings). Never run
+    // it in an untrusted workspace.
+    if (!vscode.workspace.isTrusted) {
+      log(`🔒 Workspace is not trusted — skipping test command for safety: ${ctx.testCmd}`);
+      const result: TestResult = {
+        passed: true,
+        skipped: true,
+        output: 'Test command skipped — workspace is not trusted. Trust the workspace to run tests.',
+        coverage: null,
+        durationMs: 0,
+        command: ctx.testCmd,
       };
       return {
         output: result.output,

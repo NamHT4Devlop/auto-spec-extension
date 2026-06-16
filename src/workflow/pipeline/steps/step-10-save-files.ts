@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { log } from '../../../logger';
-import { extractFiles } from '../../../utils/file-utils';
+import { extractFiles, safeResolve } from '../../../utils/file-utils';
 import { PipelineContext, PipelineStep, StepResult } from '../types';
 import { ExtractedFile } from '../../../types';
 
@@ -28,7 +28,13 @@ export class Step10SaveFiles implements PipelineStep {
     fs.mkdirSync(filesDir, { recursive: true });
 
     for (const file of allFiles) {
-      const destPath = path.join(filesDir, file.filePath);
+      let destPath: string;
+      try {
+        destPath = safeResolve(filesDir, file.filePath); // path traversal guard
+      } catch (err: any) {
+        log(`   ⛔ Skipped unsafe path: ${file.filePath} (${err?.message ?? err})`);
+        continue;
+      }
       fs.mkdirSync(path.dirname(destPath), { recursive: true });
       fs.writeFileSync(destPath, file.code, 'utf-8');
       log(`   💾 ${file.filePath}`);
@@ -52,13 +58,21 @@ export class Step10SaveFiles implements PipelineStep {
     }
 
     if (applyToProject) {
+      let appliedCount = 0;
       for (const file of allFiles) {
-        const destPath = path.join(ctx.workspaceRoot, file.filePath);
+        let destPath: string;
+        try {
+          destPath = safeResolve(ctx.workspaceRoot, file.filePath); // path traversal guard
+        } catch (err: any) {
+          log(`   ⛔ Skipped unsafe path (not applied): ${file.filePath} (${err?.message ?? err})`);
+          continue;
+        }
         fs.mkdirSync(path.dirname(destPath), { recursive: true });
         fs.writeFileSync(destPath, file.code, 'utf-8');
+        appliedCount++;
         log(`   📂 Applied: ${file.filePath}`);
       }
-      log(`✅ ${allFiles.length} file(s) applied to project`);
+      log(`✅ ${appliedCount} file(s) applied to project`);
     } else {
       log(`📁 Files saved in session directory only`);
     }

@@ -543,18 +543,36 @@ document.addEventListener('keydown', e => {
 // ═══════════════════════════════════════════════════════════════════════════
 
 import type { GraphData } from './graph-builder';
+import * as crypto from 'crypto';
+
+/** Cryptographically-random nonce for the webview Content-Security-Policy. */
+function randomNonce(): string {
+  return crypto.randomBytes(16).toString('base64').replace(/[^A-Za-z0-9]/g, '');
+}
 
 export function buildKnowledgeGraphHtml(graph: GraphData): string {
-  const graphJson = JSON.stringify(graph);
+  // Neutralise "</script>" / "<!--" breakout from any string embedded in the JSON
+  // (node labels, descriptions and AI-enriched text are untrusted content).
+  const graphJson = JSON.stringify(graph)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
   const { projectName, generatedAt, nodeCount, edgeCount } = graph.metadata;
+  const safeProjectName = esc(projectName);
+
+  // Per-render nonce so the Content-Security-Policy can whitelist only our own
+  // inline scripts and block any injected <script> from graph content.
+  const nonce = randomNonce();
 
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data: https:; style-src 'unsafe-inline'; font-src data:; connect-src 'none'; script-src 'nonce-${nonce}' https://cdnjs.cloudflare.com;">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🔭 Knowledge Graph — ${projectName}</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<title>🔭 Knowledge Graph — ${safeProjectName}</title>
+<script nonce="${nonce}" src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -671,7 +689,7 @@ export function buildKnowledgeGraphHtml(graph: GraphData): string {
   </div>
 </div>
 
-<script>
+<script nonce="${nonce}">
 const RAW_GRAPH = ${graphJson};
 
 // ── Colour map ───────────────────────────────────────────────────────────────
@@ -683,6 +701,11 @@ const vscode = (typeof acquireVsCodeApi !== 'undefined') ? acquireVsCodeApi() : 
 function openFile(filePath) {
   if (vscode) { vscode.postMessage({ command: 'openFile', filePath }); }
 }
+// Delegated handler (CSP-safe — no inline onclick) for dynamically-rendered "Open File" buttons.
+document.getElementById('detailContent').addEventListener('click', e => {
+  const btn = e.target.closest('.open-file');
+  if (btn && btn.dataset.file) { openFile(btn.dataset.file); }
+});
 
 // ── View filter ──────────────────────────────────────────────────────────────
 let currentView = 'all';
@@ -852,7 +875,7 @@ function selectNode(id, simNodes, simEdges) {
 
   const color = LAYER_COLORS[node.layer] || '#555';
   const fileHtml = node.file
-    ? '<button class="open-file" onclick="openFile(' + JSON.stringify(node.file) + ')">📂 Open File</button>'
+    ? '<button class="open-file" data-file="' + esc(node.file) + '">📂 Open File</button>'
     : '';
 
   const inHtml = incoming.slice(0, 8).map(c =>

@@ -4,7 +4,7 @@
  * All functions are safe — they return empty strings on failure (git not available, not a repo, etc.)
  */
 
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 import { log } from '../logger';
@@ -36,9 +36,14 @@ export interface GitContext {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function run(cmd: string, cwd: string): string {
+/**
+ * Run `git` with an explicit argument array (no shell).
+ * Using execFileSync prevents shell interpretation of branch names / file paths,
+ * eliminating command-injection via untrusted ref or path values.
+ */
+function git(args: string[], cwd: string): string {
   try {
-    return execSync(cmd, {
+    return execFileSync('git', args, {
       cwd,
       encoding: 'utf-8',
       timeout: 8000,
@@ -52,11 +57,11 @@ function run(cmd: string, cwd: string): string {
 // ─── Exported functions ───────────────────────────────────────────────────────
 
 export function isGitRepo(workspaceRoot: string): boolean {
-  return run('git rev-parse --is-inside-work-tree', workspaceRoot) === 'true';
+  return git(['rev-parse', '--is-inside-work-tree'], workspaceRoot) === 'true';
 }
 
 export function getCurrentBranch(workspaceRoot: string): string {
-  return run('git branch --show-current', workspaceRoot) || 'unknown';
+  return git(['branch', '--show-current'], workspaceRoot) || 'unknown';
 }
 
 /**
@@ -65,40 +70,40 @@ export function getCurrentBranch(workspaceRoot: string): string {
  */
 export function getDefaultBranch(workspaceRoot: string): string {
   for (const branch of ['main', 'master', 'develop']) {
-    const exists = run(`git rev-parse --verify ${branch}`, workspaceRoot);
+    const exists = git(['rev-parse', '--verify', branch], workspaceRoot);
     if (exists) { return branch; }
   }
   // If no named default branch, use parent commit
-  const parentExists = run('git rev-parse --verify HEAD~1', workspaceRoot);
+  const parentExists = git(['rev-parse', '--verify', 'HEAD~1'], workspaceRoot);
   return parentExists ? 'HEAD~1' : 'HEAD';
 }
 
 /** Last N commit subjects */
 export function getRecentLog(workspaceRoot: string, n = 10): string {
-  return run(`git log --oneline -${n}`, workspaceRoot);
+  return git(['log', '--oneline', `-${n}`], workspaceRoot);
 }
 
 /** git diff between defaultBranch and HEAD for a specific file (or all files if relPath omitted) */
 export function getDiffVsDefault(workspaceRoot: string, defaultBranch: string, relPath?: string): string {
-  const pathArg = relPath ? `-- "${relPath}"` : '';
+  const pathArgs = relPath ? ['--', relPath] : [];
   // Try three-dot diff (changes on current branch only)
-  const diff = run(`git diff ${defaultBranch}...HEAD ${pathArg}`, workspaceRoot);
+  const diff = git(['diff', `${defaultBranch}...HEAD`, ...pathArgs], workspaceRoot);
   if (diff) { return diff; }
   // Fallback: two-dot diff
-  return run(`git diff ${defaultBranch} HEAD ${pathArg}`, workspaceRoot);
+  return git(['diff', defaultBranch, 'HEAD', ...pathArgs], workspaceRoot);
 }
 
 /** git diff between HEAD commit and working tree (uncommitted changes) */
 export function getDiffWorkingTree(workspaceRoot: string, relPath?: string): string {
-  const pathArg = relPath ? `-- "${relPath}"` : '';
-  const staged   = run(`git diff --cached ${pathArg}`, workspaceRoot);
-  const unstaged = run(`git diff ${pathArg}`, workspaceRoot);
+  const pathArgs = relPath ? ['--', relPath] : [];
+  const staged   = git(['diff', '--cached', ...pathArgs], workspaceRoot);
+  const unstaged = git(['diff', ...pathArgs], workspaceRoot);
   return [staged, unstaged].filter(Boolean).join('\n');
 }
 
 /** List files changed between defaultBranch and HEAD */
 export function getChangedFiles(workspaceRoot: string, defaultBranch: string): string[] {
-  const output = run(`git diff --name-only ${defaultBranch}...HEAD`, workspaceRoot);
+  const output = git(['diff', '--name-only', `${defaultBranch}...HEAD`], workspaceRoot);
   if (!output) { return []; }
   return output.split('\n').filter(Boolean);
 }

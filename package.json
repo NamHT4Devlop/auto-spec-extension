@@ -2,7 +2,7 @@
   "name": "auto-spec-kit",
   "displayName": "Auto Spec Kit",
   "description": "Automate the full development workflow: Requirement → Plan → Code → Review → Test → Evidence, powered by GitHub Copilot",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "publisher": "auto-spec-kit",
   "author": {
     "name": "nam.hotrung190920",
@@ -26,6 +26,12 @@
   "categories": ["Other", "Machine Learning", "Programming Languages"],
   "activationEvents": [],
   "main": "./out/extension.js",
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "In untrusted workspaces, Auto Spec Kit will not run the configured test command or auto-sync git, because these execute project-controlled shell/git operations. Trust the workspace to enable them."
+    }
+  },
   "contributes": {
     "chatParticipants": [
       {

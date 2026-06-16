@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Auto Spec Kit v1.8.0 — Manual Install Guide</title>
+<title>Auto Spec Kit v1.8.1 — Manual Install Guide</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #1e293b; min-height: 100vh; line-height: 1.6; }
@@ -78,7 +78,7 @@
   <h1>Manual Install Guide</h1>
   <p class="subtitle">Create the project from scratch on any machine — no git clone needed</p>
   <div style="margin-top:10px">
-    <span class="badge badge-blue">v1.8.0</span>
+    <span class="badge badge-blue">v1.8.1</span>
     <span class="badge badge-green">59 files</span>
     <span class="badge badge-orange">Copy & Paste</span>
   </div>
@@ -122,7 +122,7 @@ mkdir -p docs</code></pre>
   <div class="file-header" onclick="toggleFile('package-json')">
     <span class="file-name">package.json</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">7,248 bytes</span>
+      <span class="file-size">7,622 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('package-json',this)">Copy</button>
     </div>
   </div>
@@ -131,7 +131,7 @@ mkdir -p docs</code></pre>
   &quot;name&quot;: &quot;auto-spec-kit&quot;,
   &quot;displayName&quot;: &quot;Auto Spec Kit&quot;,
   &quot;description&quot;: &quot;Automate the full development workflow: Requirement → Plan → Code → Review → Test → Evidence, powered by GitHub Copilot&quot;,
-  &quot;version&quot;: &quot;1.8.0&quot;,
+  &quot;version&quot;: &quot;1.8.1&quot;,
   &quot;publisher&quot;: &quot;auto-spec-kit&quot;,
   &quot;author&quot;: {
     &quot;name&quot;: &quot;nam.hotrung190920&quot;,
@@ -155,6 +155,12 @@ mkdir -p docs</code></pre>
   &quot;categories&quot;: [&quot;Other&quot;, &quot;Machine Learning&quot;, &quot;Programming Languages&quot;],
   &quot;activationEvents&quot;: [],
   &quot;main&quot;: &quot;./out/extension.js&quot;,
+  &quot;capabilities&quot;: {
+    &quot;untrustedWorkspaces&quot;: {
+      &quot;supported&quot;: &quot;limited&quot;,
+      &quot;description&quot;: &quot;In untrusted workspaces, Auto Spec Kit will not run the configured test command or auto-sync git, because these execute project-controlled shell/git operations. Trust the workspace to enable them.&quot;
+    }
+  },
   &quot;contributes&quot;: {
     &quot;chatParticipants&quot;: [
       {
@@ -439,7 +445,7 @@ npm-debug.log*
   <div class="file-header" onclick="toggleFile('src-chat-participant-ts')">
     <span class="file-name">src/chat-participant.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">22,464 bytes</span>
+      <span class="file-size">24,745 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-chat-participant-ts',this)">Copy</button>
     </div>
   </div>
@@ -529,9 +535,13 @@ async function handleChatRequest(
   log(`\n🤖 Chat: @autospec /${command} ${userPrompt}`);
 
   // ── Auto-sync: fetch + pull latest code before every command ──
+  // Gated on workspace trust: auto-sync runs git against the project remote, which
+  // we do not perform in untrusted workspaces.
   const autoSyncEnabled = vscode.workspace.getConfiguration(&#x27;autoSpecKit&#x27;).get&lt;boolean&gt;(&#x27;autoSync&#x27;, true);
-  if (autoSyncEnabled &amp;&amp; command !== &#x27;help&#x27;) {
+  if (autoSyncEnabled &amp;&amp; command !== &#x27;help&#x27; &amp;&amp; vscode.workspace.isTrusted) {
     await performAutoSync(root, stream, chatToken, extensionContext);
+  } else if (autoSyncEnabled &amp;&amp; command !== &#x27;help&#x27; &amp;&amp; !vscode.workspace.isTrusted) {
+    log(&#x27;🔒 Workspace is not trusted — skipping git auto-sync.&#x27;);
   }
 
   try {
@@ -1282,7 +1292,7 @@ export function deactivate(): void {
   <div class="file-header" onclick="toggleFile('src-logger-ts')">
     <span class="file-name">src/logger.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">1,477 bytes</span>
+      <span class="file-size">1,635 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-logger-ts',this)">Copy</button>
     </div>
   </div>
@@ -1304,11 +1314,14 @@ export function getChannel(): vscode.OutputChannel {
 }
 
 export function log(msg: string): void {
-  getChannel().appendLine(msg);
+  // No-op if the channel isn&#x27;t initialized (e.g. unit tests, early calls)
+  if (!_channel) { return; }
+  _channel.appendLine(msg);
 }
 
 export function logRaw(text: string): void {
-  getChannel().append(text);
+  if (!_channel) { return; }
+  _channel.append(text);
 }
 
 export function stepHeader(n: number, total: number, title: string): void {
@@ -2105,7 +2118,7 @@ export async function callCopilot(
   <div class="file-header" onclick="toggleFile('src-utils-file-utils-ts')">
     <span class="file-name">src/utils/file-utils.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">1,745 bytes</span>
+      <span class="file-size">3,322 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-utils-file-utils-ts',this)">Copy</button>
     </div>
   </div>
@@ -2145,19 +2158,59 @@ export function loadKnowledgeBase(root: string, kbRelPath: string): string {
   return parts.join(&#x27;\n\n---\n\n&#x27;);
 }
 
+/**
+ * Resolve `rel` against `root` and guarantee the result stays inside `root`.
+ * Rejects absolute paths and any `..` traversal that would escape the root.
+ * Throws on violation — callers must treat this as a hard security boundary.
+ */
+export function safeResolve(root: string, rel: string): string {
+  const cleaned = rel.replace(/\\/g, &#x27;/&#x27;).trim();
+  if (!cleaned || cleaned.includes(&#x27;\0&#x27;)) {
+    throw new Error(`Invalid file path: ${JSON.stringify(rel)}`);
+  }
+  if (path.isAbsolute(cleaned)) {
+    throw new Error(`Refusing absolute file path: ${cleaned}`);
+  }
+  const rootResolved = path.resolve(root);
+  const dest = path.resolve(rootResolved, cleaned);
+  // Ensure dest is rootResolved itself or strictly underneath it.
+  if (dest !== rootResolved &amp;&amp; !dest.startsWith(rootResolved + path.sep)) {
+    throw new Error(`Refusing to write outside workspace: ${cleaned}`);
+  }
+  return dest;
+}
+
+/** True if `rel` is a safe, in-tree relative path (no throw). */
+export function isSafeRelativePath(root: string, rel: string): boolean {
+  try {
+    safeResolve(root, rel);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function extractFiles(content: string): ExtractedFile[] {
   const files: ExtractedFile[] = [];
   // Match: ### FILE: &lt;path&gt;\n```&lt;lang?&gt;\n&lt;code&gt;\n```
   const re = /###\s*FILE:\s*([^\n]+)\n```[^\n]*\n([\s\S]*?)```/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(content)) !== null) {
-    files.push({ filePath: m[1].trim(), code: m[2].trim() });
+    const filePath = m[1].trim();
+    const code = m[2].trim();
+    // Drop any path that is absolute or escapes the tree (path traversal guard).
+    // Validated relative to a virtual root so &quot;../&quot; / &quot;/etc/...&quot; are rejected here.
+    if (!filePath || path.isAbsolute(filePath) || /(^|[\\/])\.\.([\\/]|$)/.test(filePath.replace(/\\/g, &#x27;/&#x27;))) {
+      log(`⚠  Skipping unsafe file path from model output: ${JSON.stringify(filePath)}`);
+      continue;
+    }
+    files.push({ filePath, code });
   }
   return files;
 }
 
 export function saveFile(sessionDir: string, rel: string, content: string): string {
-  const full = path.join(sessionDir, rel);
+  const full = safeResolve(sessionDir, rel);
   fs.mkdirSync(path.dirname(full), { recursive: true });
   fs.writeFileSync(full, content, &#x27;utf-8&#x27;);
   return full;
@@ -2170,7 +2223,7 @@ export function saveFile(sessionDir: string, rel: string, content: string): stri
   <div class="file-header" onclick="toggleFile('src-utils-git-sync-guard-ts')">
     <span class="file-name">src/utils/git-sync-guard.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">8,102 bytes</span>
+      <span class="file-size">8,162 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-utils-git-sync-guard-ts',this)">Copy</button>
     </div>
   </div>
@@ -2189,10 +2242,18 @@ export function saveFile(sessionDir: string, rel: string, content: string): stri
  */
 
 import * as vscode from &#x27;vscode&#x27;;
-import { execSync } from &#x27;child_process&#x27;;
+import { execFileSync } from &#x27;child_process&#x27;;
 import * as path from &#x27;path&#x27;;
 import * as fs from &#x27;fs&#x27;;
 import { log } from &#x27;../logger&#x27;;
+
+/**
+ * Run `git` with an explicit argument array (no shell) and return stdout.
+ * Throws on non-zero exit, like execSync did, so existing try/catch logic holds.
+ */
+function gitExec(args: string[], cwd: string, timeout: number): string {
+  return execFileSync(&#x27;git&#x27;, args, { cwd, stdio: &#x27;pipe&#x27;, timeout, encoding: &#x27;utf-8&#x27; });
+}
 
 export interface SyncResult {
   fetched: boolean;
@@ -2231,11 +2292,7 @@ export class GitSyncGuard {
    */
   static isGitRepo(root: string): boolean {
     try {
-      execSync(&#x27;git rev-parse --is-inside-work-tree&#x27;, {
-        cwd: root,
-        stdio: &#x27;pipe&#x27;,
-        timeout: 5000,
-      });
+      gitExec([&#x27;rev-parse&#x27;, &#x27;--is-inside-work-tree&#x27;], root, 5000);
       return true;
     } catch {
       return false;
@@ -2265,11 +2322,7 @@ export class GitSyncGuard {
 
     // ── 2. Fetch all remotes ──
     try {
-      execSync(&#x27;git fetch --all --prune&#x27;, {
-        cwd: root,
-        stdio: &#x27;pipe&#x27;,
-        timeout: 30_000,
-      });
+      gitExec([&#x27;fetch&#x27;, &#x27;--all&#x27;, &#x27;--prune&#x27;], root, 30_000);
       result.fetched = true;
       log(&#x27;🔄 GitSync: fetch --all --prune done&#x27;);
     } catch (err: any) {
@@ -2281,11 +2334,7 @@ export class GitSyncGuard {
 
     // ── 3. Pull with fast-forward only ──
     try {
-      const pullOutput = execSync(&#x27;git pull --ff-only&#x27;, {
-        cwd: root,
-        stdio: &#x27;pipe&#x27;,
-        timeout: 30_000,
-      }).toString().trim();
+      const pullOutput = gitExec([&#x27;pull&#x27;, &#x27;--ff-only&#x27;], root, 30_000).toString().trim();
 
       result.pulled = true;
 
@@ -2311,9 +2360,9 @@ export class GitSyncGuard {
 
     if (headBefore &amp;&amp; headAfter &amp;&amp; headBefore !== headAfter) {
       try {
-        const diffOutput = execSync(
-          `git diff --name-only ${headBefore}..${headAfter}`,
-          { cwd: root, stdio: &#x27;pipe&#x27;, timeout: 10_000 },
+        const diffOutput = gitExec(
+          [&#x27;diff&#x27;, &#x27;--name-only&#x27;, `${headBefore}..${headAfter}`],
+          root, 10_000,
         ).toString().trim();
 
         if (diffOutput) {
@@ -2339,17 +2388,11 @@ export class GitSyncGuard {
    */
   static hasRemoteChanges(root: string): boolean {
     try {
-      const branch = execSync(&#x27;git rev-parse --abbrev-ref HEAD&#x27;, {
-        cwd: root, stdio: &#x27;pipe&#x27;, timeout: 5000,
-      }).toString().trim();
+      const branch = gitExec([&#x27;rev-parse&#x27;, &#x27;--abbrev-ref&#x27;, &#x27;HEAD&#x27;], root, 5000).toString().trim();
 
-      const local = execSync(`git rev-parse ${branch}`, {
-        cwd: root, stdio: &#x27;pipe&#x27;, timeout: 5000,
-      }).toString().trim();
+      const local = gitExec([&#x27;rev-parse&#x27;, branch], root, 5000).toString().trim();
 
-      const remote = execSync(`git rev-parse origin/${branch}`, {
-        cwd: root, stdio: &#x27;pipe&#x27;, timeout: 5000,
-      }).toString().trim();
+      const remote = gitExec([&#x27;rev-parse&#x27;, `origin/${branch}`], root, 5000).toString().trim();
 
       return local !== remote;
     } catch {
@@ -2381,9 +2424,7 @@ export class GitSyncGuard {
 
   private static getHead(root: string): string | null {
     try {
-      return execSync(&#x27;git rev-parse HEAD&#x27;, {
-        cwd: root, stdio: &#x27;pipe&#x27;, timeout: 5000,
-      }).toString().trim();
+      return gitExec([&#x27;rev-parse&#x27;, &#x27;HEAD&#x27;], root, 5000).toString().trim();
     } catch {
       return null;
     }
@@ -2391,9 +2432,7 @@ export class GitSyncGuard {
 
   private static countCommits(root: string, from: string, to: string): number {
     try {
-      const output = execSync(`git rev-list --count ${from}..${to}`, {
-        cwd: root, stdio: &#x27;pipe&#x27;, timeout: 5000,
-      }).toString().trim();
+      const output = gitExec([&#x27;rev-list&#x27;, &#x27;--count&#x27;, `${from}..${to}`], root, 5000).toString().trim();
       return parseInt(output, 10) || 0;
     } catch {
       return 0;
@@ -2454,7 +2493,7 @@ export class GitSyncGuard {
   <div class="file-header" onclick="toggleFile('src-utils-git-utils-ts')">
     <span class="file-name">src/utils/git-utils.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">7,786 bytes</span>
+      <span class="file-size">8,449 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-utils-git-utils-ts',this)">Copy</button>
     </div>
   </div>
@@ -2465,7 +2504,7 @@ export class GitSyncGuard {
  * All functions are safe — they return empty strings on failure (git not available, not a repo, etc.)
  */
 
-import { execSync } from &#x27;child_process&#x27;;
+import { execFileSync } from &#x27;child_process&#x27;;
 import * as path from &#x27;path&#x27;;
 import * as fs from &#x27;fs&#x27;;
 import { log } from &#x27;../logger&#x27;;
@@ -2497,9 +2536,14 @@ export interface GitContext {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function run(cmd: string, cwd: string): string {
+/**
+ * Run `git` with an explicit argument array (no shell).
+ * Using execFileSync prevents shell interpretation of branch names / file paths,
+ * eliminating command-injection via untrusted ref or path values.
+ */
+function git(args: string[], cwd: string): string {
   try {
-    return execSync(cmd, {
+    return execFileSync(&#x27;git&#x27;, args, {
       cwd,
       encoding: &#x27;utf-8&#x27;,
       timeout: 8000,
@@ -2513,11 +2557,11 @@ function run(cmd: string, cwd: string): string {
 // ─── Exported functions ───────────────────────────────────────────────────────
 
 export function isGitRepo(workspaceRoot: string): boolean {
-  return run(&#x27;git rev-parse --is-inside-work-tree&#x27;, workspaceRoot) === &#x27;true&#x27;;
+  return git([&#x27;rev-parse&#x27;, &#x27;--is-inside-work-tree&#x27;], workspaceRoot) === &#x27;true&#x27;;
 }
 
 export function getCurrentBranch(workspaceRoot: string): string {
-  return run(&#x27;git branch --show-current&#x27;, workspaceRoot) || &#x27;unknown&#x27;;
+  return git([&#x27;branch&#x27;, &#x27;--show-current&#x27;], workspaceRoot) || &#x27;unknown&#x27;;
 }
 
 /**
@@ -2526,40 +2570,40 @@ export function getCurrentBranch(workspaceRoot: string): string {
  */
 export function getDefaultBranch(workspaceRoot: string): string {
   for (const branch of [&#x27;main&#x27;, &#x27;master&#x27;, &#x27;develop&#x27;]) {
-    const exists = run(`git rev-parse --verify ${branch}`, workspaceRoot);
+    const exists = git([&#x27;rev-parse&#x27;, &#x27;--verify&#x27;, branch], workspaceRoot);
     if (exists) { return branch; }
   }
   // If no named default branch, use parent commit
-  const parentExists = run(&#x27;git rev-parse --verify HEAD~1&#x27;, workspaceRoot);
+  const parentExists = git([&#x27;rev-parse&#x27;, &#x27;--verify&#x27;, &#x27;HEAD~1&#x27;], workspaceRoot);
   return parentExists ? &#x27;HEAD~1&#x27; : &#x27;HEAD&#x27;;
 }
 
 /** Last N commit subjects */
 export function getRecentLog(workspaceRoot: string, n = 10): string {
-  return run(`git log --oneline -${n}`, workspaceRoot);
+  return git([&#x27;log&#x27;, &#x27;--oneline&#x27;, `-${n}`], workspaceRoot);
 }
 
 /** git diff between defaultBranch and HEAD for a specific file (or all files if relPath omitted) */
 export function getDiffVsDefault(workspaceRoot: string, defaultBranch: string, relPath?: string): string {
-  const pathArg = relPath ? `-- &quot;${relPath}&quot;` : &#x27;&#x27;;
+  const pathArgs = relPath ? [&#x27;--&#x27;, relPath] : [];
   // Try three-dot diff (changes on current branch only)
-  const diff = run(`git diff ${defaultBranch}...HEAD ${pathArg}`, workspaceRoot);
+  const diff = git([&#x27;diff&#x27;, `${defaultBranch}...HEAD`, ...pathArgs], workspaceRoot);
   if (diff) { return diff; }
   // Fallback: two-dot diff
-  return run(`git diff ${defaultBranch} HEAD ${pathArg}`, workspaceRoot);
+  return git([&#x27;diff&#x27;, defaultBranch, &#x27;HEAD&#x27;, ...pathArgs], workspaceRoot);
 }
 
 /** git diff between HEAD commit and working tree (uncommitted changes) */
 export function getDiffWorkingTree(workspaceRoot: string, relPath?: string): string {
-  const pathArg = relPath ? `-- &quot;${relPath}&quot;` : &#x27;&#x27;;
-  const staged   = run(`git diff --cached ${pathArg}`, workspaceRoot);
-  const unstaged = run(`git diff ${pathArg}`, workspaceRoot);
+  const pathArgs = relPath ? [&#x27;--&#x27;, relPath] : [];
+  const staged   = git([&#x27;diff&#x27;, &#x27;--cached&#x27;, ...pathArgs], workspaceRoot);
+  const unstaged = git([&#x27;diff&#x27;, ...pathArgs], workspaceRoot);
   return [staged, unstaged].filter(Boolean).join(&#x27;\n&#x27;);
 }
 
 /** List files changed between defaultBranch and HEAD */
 export function getChangedFiles(workspaceRoot: string, defaultBranch: string): string[] {
-  const output = run(`git diff --name-only ${defaultBranch}...HEAD`, workspaceRoot);
+  const output = git([&#x27;diff&#x27;, &#x27;--name-only&#x27;, `${defaultBranch}...HEAD`], workspaceRoot);
   if (!output) { return []; }
   return output.split(&#x27;\n&#x27;).filter(Boolean);
 }
@@ -3972,7 +4016,7 @@ interface ArchData {
   <div class="file-header" onclick="toggleFile('src-utils-html-builder-ts')">
     <span class="file-name">src/utils/html-builder.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">41,822 bytes</span>
+      <span class="file-size">45,289 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-utils-html-builder-ts',this)">Copy</button>
     </div>
   </div>
@@ -4522,18 +4566,36 @@ document.addEventListener(&#x27;keydown&#x27;, e =&gt; {
 // ═══════════════════════════════════════════════════════════════════════════
 
 import type { GraphData } from &#x27;./graph-builder&#x27;;
+import * as crypto from &#x27;crypto&#x27;;
+
+/** Cryptographically-random nonce for the webview Content-Security-Policy. */
+function randomNonce(): string {
+  return crypto.randomBytes(16).toString(&#x27;base64&#x27;).replace(/[^A-Za-z0-9]/g, &#x27;&#x27;);
+}
 
 export function buildKnowledgeGraphHtml(graph: GraphData): string {
-  const graphJson = JSON.stringify(graph);
+  // Neutralise &quot;&lt;/script&gt;&quot; / &quot;&lt;!--&quot; breakout from any string embedded in the JSON
+  // (node labels, descriptions and AI-enriched text are untrusted content).
+  const graphJson = JSON.stringify(graph)
+    .replace(/&lt;/g, &#x27;\\u003c&#x27;)
+    .replace(/&gt;/g, &#x27;\\u003e&#x27;)
+    .replace(/\u2028/g, &#x27;\\u2028&#x27;)
+    .replace(/\u2029/g, &#x27;\\u2029&#x27;);
   const { projectName, generatedAt, nodeCount, edgeCount } = graph.metadata;
+  const safeProjectName = esc(projectName);
+
+  // Per-render nonce so the Content-Security-Policy can whitelist only our own
+  // inline scripts and block any injected &lt;script&gt; from graph content.
+  const nonce = randomNonce();
 
   return `&lt;!DOCTYPE html&gt;
 &lt;html lang=&quot;en&quot;&gt;
 &lt;head&gt;
 &lt;meta charset=&quot;UTF-8&quot;&gt;
+&lt;meta http-equiv=&quot;Content-Security-Policy&quot; content=&quot;default-src &#x27;none&#x27;; img-src data: https:; style-src &#x27;unsafe-inline&#x27;; font-src data:; connect-src &#x27;none&#x27;; script-src &#x27;nonce-${nonce}&#x27; https://cdnjs.cloudflare.com;&quot;&gt;
 &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
-&lt;title&gt;🔭 Knowledge Graph — ${projectName}&lt;/title&gt;
-&lt;script src=&quot;https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js&quot;&gt;&lt;/script&gt;
+&lt;title&gt;🔭 Knowledge Graph — ${safeProjectName}&lt;/title&gt;
+&lt;script nonce=&quot;${nonce}&quot; src=&quot;https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js&quot;&gt;&lt;/script&gt;
 &lt;style&gt;
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -4650,7 +4712,7 @@ export function buildKnowledgeGraphHtml(graph: GraphData): string {
   &lt;/div&gt;
 &lt;/div&gt;
 
-&lt;script&gt;
+&lt;script nonce=&quot;${nonce}&quot;&gt;
 const RAW_GRAPH = ${graphJson};
 
 // ── Colour map ───────────────────────────────────────────────────────────────
@@ -4662,6 +4724,11 @@ const vscode = (typeof acquireVsCodeApi !== &#x27;undefined&#x27;) ? acquireVsCo
 function openFile(filePath) {
   if (vscode) { vscode.postMessage({ command: &#x27;openFile&#x27;, filePath }); }
 }
+// Delegated handler (CSP-safe — no inline onclick) for dynamically-rendered &quot;Open File&quot; buttons.
+document.getElementById(&#x27;detailContent&#x27;).addEventListener(&#x27;click&#x27;, e =&gt; {
+  const btn = e.target.closest(&#x27;.open-file&#x27;);
+  if (btn &amp;&amp; btn.dataset.file) { openFile(btn.dataset.file); }
+});
 
 // ── View filter ──────────────────────────────────────────────────────────────
 let currentView = &#x27;all&#x27;;
@@ -4831,7 +4898,7 @@ function selectNode(id, simNodes, simEdges) {
 
   const color = LAYER_COLORS[node.layer] || &#x27;#555&#x27;;
   const fileHtml = node.file
-    ? &#x27;&lt;button class=&quot;open-file&quot; onclick=&quot;openFile(&#x27; + JSON.stringify(node.file) + &#x27;)&quot;&gt;📂 Open File&lt;/button&gt;&#x27;
+    ? &#x27;&lt;button class=&quot;open-file&quot; data-file=&quot;&#x27; + esc(node.file) + &#x27;&quot;&gt;📂 Open File&lt;/button&gt;&#x27;
     : &#x27;&#x27;;
 
   const inHtml = incoming.slice(0, 8).map(c =&gt;
@@ -9009,7 +9076,7 @@ Files that may need updating: 04-business-overview.md, 05-domain-model.md, 06-mo
   <div class="file-header" onclick="toggleFile('src-workflow-visualize-kb-ts')">
     <span class="file-name">src/workflow/visualize-kb.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">4,409 bytes</span>
+      <span class="file-size">5,625 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-workflow-visualize-kb-ts',this)">Copy</button>
     </div>
   </div>
@@ -9092,17 +9159,31 @@ export async function visualizeKnowledgeBase(
     &#x27;autoSpecKitGraph&#x27;,
     &#x27;🔭 Knowledge Graph — &#x27; + graphData.metadata.projectName,
     vscode.ViewColumn.One,
-    { enableScripts: true, retainContextWhenHidden: true }
+    {
+      enableScripts: true,
+      retainContextWhenHidden: true,
+      // No local resources are loaded via webview URIs — lock the root list down.
+      localResourceRoots: [],
+    }
   );
 
   panel.webview.html = html;
 
   // Handle messages from webview (node clicks → open file)
+  const rootResolved = path.resolve(rootDir);
   panel.webview.onDidReceiveMessage(
     (msg: { command: string; filePath?: string }) =&gt; {
       if (msg.command === &#x27;openFile&#x27; &amp;&amp; msg.filePath) {
-        const abs = path.join(rootDir, msg.filePath);
-        if (fs.existsSync(abs)) {
+        // Containment guard: reject absolute paths or any traversal that would
+        // resolve outside the workspace root before touching the filesystem.
+        const rel = String(msg.filePath);
+        if (path.isAbsolute(rel)) { log(`⛔ Ignored openFile (absolute path): ${rel}`); return; }
+        const abs = path.resolve(rootResolved, rel);
+        if (abs !== rootResolved &amp;&amp; !abs.startsWith(rootResolved + path.sep)) {
+          log(`⛔ Ignored openFile outside workspace: ${rel}`);
+          return;
+        }
+        if (fs.existsSync(abs) &amp;&amp; fs.statSync(abs).isFile()) {
           vscode.workspace.openTextDocument(abs).then(doc =&gt; {
             vscode.window.showTextDocument(doc, vscode.ViewColumn.Two);
           });
@@ -10740,7 +10821,7 @@ ${feedback || &#x27;(No user feedback)&#x27;}
   <div class="file-header" onclick="toggleFile('src-workflow-pipeline-steps-step-10-save-files-ts')">
     <span class="file-name">src/workflow/pipeline/steps/step-10-save-files.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">2,916 bytes</span>
+      <span class="file-size">3,425 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-workflow-pipeline-steps-step-10-save-files-ts',this)">Copy</button>
     </div>
   </div>
@@ -10749,7 +10830,7 @@ ${feedback || &#x27;(No user feedback)&#x27;}
 import * as fs from &#x27;fs&#x27;;
 import * as path from &#x27;path&#x27;;
 import { log } from &#x27;../../../logger&#x27;;
-import { extractFiles } from &#x27;../../../utils/file-utils&#x27;;
+import { extractFiles, safeResolve } from &#x27;../../../utils/file-utils&#x27;;
 import { PipelineContext, PipelineStep, StepResult } from &#x27;../types&#x27;;
 import { ExtractedFile } from &#x27;../../../types&#x27;;
 
@@ -10775,7 +10856,13 @@ export class Step10SaveFiles implements PipelineStep {
     fs.mkdirSync(filesDir, { recursive: true });
 
     for (const file of allFiles) {
-      const destPath = path.join(filesDir, file.filePath);
+      let destPath: string;
+      try {
+        destPath = safeResolve(filesDir, file.filePath); // path traversal guard
+      } catch (err: any) {
+        log(`   ⛔ Skipped unsafe path: ${file.filePath} (${err?.message ?? err})`);
+        continue;
+      }
       fs.mkdirSync(path.dirname(destPath), { recursive: true });
       fs.writeFileSync(destPath, file.code, &#x27;utf-8&#x27;);
       log(`   💾 ${file.filePath}`);
@@ -10799,13 +10886,21 @@ export class Step10SaveFiles implements PipelineStep {
     }
 
     if (applyToProject) {
+      let appliedCount = 0;
       for (const file of allFiles) {
-        const destPath = path.join(ctx.workspaceRoot, file.filePath);
+        let destPath: string;
+        try {
+          destPath = safeResolve(ctx.workspaceRoot, file.filePath); // path traversal guard
+        } catch (err: any) {
+          log(`   ⛔ Skipped unsafe path (not applied): ${file.filePath} (${err?.message ?? err})`);
+          continue;
+        }
         fs.mkdirSync(path.dirname(destPath), { recursive: true });
         fs.writeFileSync(destPath, file.code, &#x27;utf-8&#x27;);
+        appliedCount++;
         log(`   📂 Applied: ${file.filePath}`);
       }
-      log(`✅ ${allFiles.length} file(s) applied to project`);
+      log(`✅ ${appliedCount} file(s) applied to project`);
     } else {
       log(`📁 Files saved in session directory only`);
     }
@@ -10832,14 +10927,14 @@ export class Step10SaveFiles implements PipelineStep {
   <div class="file-header" onclick="toggleFile('src-workflow-pipeline-steps-step-11-execute-tests-ts')">
     <span class="file-name">src/workflow/pipeline/steps/step-11-execute-tests.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">2,172 bytes</span>
+      <span class="file-size">2,900 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-workflow-pipeline-steps-step-11-execute-tests-ts',this)">Copy</button>
     </div>
   </div>
   <div class="file-body" id="body-src-workflow-pipeline-steps-step-11-execute-tests-ts">
-    <pre><code id="code-src-workflow-pipeline-steps-step-11-execute-tests-ts">import { promisify } from &#x27;util&#x27;;
+    <pre><code id="code-src-workflow-pipeline-steps-step-11-execute-tests-ts">import * as vscode from &#x27;vscode&#x27;;
+import { promisify } from &#x27;util&#x27;;
 import { exec } from &#x27;child_process&#x27;;
-import * as path from &#x27;path&#x27;;
 import { log } from &#x27;../../../logger&#x27;;
 import { parseCoverage } from &#x27;../../../utils/coverage&#x27;;
 import { PipelineContext, PipelineStep, StepResult } from &#x27;../types&#x27;;
@@ -10862,6 +10957,25 @@ export class Step11ExecuteTests implements PipelineStep {
         coverage: null,
         durationMs: 0,
         command: &#x27;&#x27;,
+      };
+      return {
+        output: result.output,
+        data: { testResult: result },
+      };
+    }
+
+    // Security gate: the test command runs an arbitrary shell command that can be
+    // supplied by the project itself (.autospec.yml / .vscode settings). Never run
+    // it in an untrusted workspace.
+    if (!vscode.workspace.isTrusted) {
+      log(`🔒 Workspace is not trusted — skipping test command for safety: ${ctx.testCmd}`);
+      const result: TestResult = {
+        passed: true,
+        skipped: true,
+        output: &#x27;Test command skipped — workspace is not trusted. Trust the workspace to run tests.&#x27;,
+        coverage: null,
+        durationMs: 0,
+        command: ctx.testCmd,
       };
       return {
         output: result.output,
@@ -11940,7 +12054,7 @@ TOTAL                        25      2    92%`;
   <div class="file-header" onclick="toggleFile('src-__tests__-file-utils-test-ts')">
     <span class="file-name">src/__tests__/file-utils.test.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">1,811 bytes</span>
+      <span class="file-size">3,020 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-__tests__-file-utils-test-ts',this)">Copy</button>
     </div>
   </div>
@@ -11948,7 +12062,7 @@ TOTAL                        25      2    92%`;
     <pre><code id="code-src-__tests__-file-utils-test-ts">import * as fs from &#x27;fs&#x27;;
 import * as path from &#x27;path&#x27;;
 import * as os from &#x27;os&#x27;;
-import { extractFiles, saveFile } from &#x27;../utils/file-utils&#x27;;
+import { extractFiles, saveFile, safeResolve, isSafeRelativePath } from &#x27;../utils/file-utils&#x27;;
 
 describe(&#x27;extractFiles&#x27;, () =&gt; {
   it(&#x27;should extract files from markdown code blocks&#x27;, () =&gt; {
@@ -11985,6 +12099,51 @@ export interface User { id: string; name: string; }
     const files = extractFiles(content);
     expect(files).toHaveLength(1);
     expect(files[0].filePath).toBe(&#x27;config.json&#x27;);
+  });
+
+  it(&#x27;should drop path-traversal and absolute paths (security)&#x27;, () =&gt; {
+    const content = `
+### FILE: ../../etc/passwd
+\`\`\`
+pwned
+\`\`\`
+
+### FILE: /tmp/evil.sh
+\`\`\`
+pwned
+\`\`\`
+
+### FILE: src/safe.ts
+\`\`\`
+export const ok = true;
+\`\`\`
+`;
+    const files = extractFiles(content);
+    expect(files).toHaveLength(1);
+    expect(files[0].filePath).toBe(&#x27;src/safe.ts&#x27;);
+  });
+});
+
+describe(&#x27;safeResolve (path traversal guard)&#x27;, () =&gt; {
+  const root = path.join(os.tmpdir(), &#x27;ask-root&#x27;);
+
+  it(&#x27;resolves in-tree relative paths&#x27;, () =&gt; {
+    expect(safeResolve(root, &#x27;a/b/c.ts&#x27;)).toBe(path.resolve(root, &#x27;a/b/c.ts&#x27;));
+  });
+
+  it(&#x27;rejects parent-directory traversal&#x27;, () =&gt; {
+    expect(() =&gt; safeResolve(root, &#x27;../escape.ts&#x27;)).toThrow();
+    expect(() =&gt; safeResolve(root, &#x27;a/../../escape.ts&#x27;)).toThrow();
+  });
+
+  it(&#x27;rejects absolute paths&#x27;, () =&gt; {
+    expect(() =&gt; safeResolve(root, &#x27;/etc/passwd&#x27;)).toThrow();
+  });
+
+  it(&#x27;isSafeRelativePath reflects the guard&#x27;, () =&gt; {
+    expect(isSafeRelativePath(root, &#x27;ok/file.ts&#x27;)).toBe(true);
+    expect(isSafeRelativePath(root, &#x27;../nope.ts&#x27;)).toBe(false);
+    expect(isSafeRelativePath(root, &#x27;/abs.ts&#x27;)).toBe(false);
   });
 });
 
