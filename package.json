@@ -2,7 +2,7 @@
   "name": "auto-spec-kit",
   "displayName": "Auto Spec Kit",
   "description": "Automate the full development workflow: Requirement → Plan → Code → Review → Test → Evidence, powered by GitHub Copilot",
-  "version": "1.8.1",
+  "version": "1.8.2",
   "publisher": "auto-spec-kit",
   "author": {
     "name": "nam.hotrung190920",
@@ -71,7 +71,7 @@
         "autoSpecKit.autoApplyCode": { "type": "boolean", "default": false, "description": "Automatically apply generated code without asking" },
         "autoSpecKit.sessionsDir": { "type": "string", "default": "spec-kit-sessions", "description": "Folder where session outputs are saved" },
         "autoSpecKit.model": { "type": "string", "default": "", "description": "Preferred model ID for GitHub Copilot." },
-        "autoSpecKit.askModelOnStart": { "type": "boolean", "default": false, "description": "Show model Quick Pick on every command run" },
+        "autoSpecKit.askModelOnStart": { "type": "boolean", "default": true, "description": "Show model Quick Pick before every command run so you can choose the model each time. Set to false to skip and use autoSpecKit.model (or auto-select the best available)." },
         "autoSpecKit.agents.maxParallel": { "type": "number", "default": 3, "minimum": 1, "maximum": 6, "description": "Max sub-agents to run in parallel per step. Lower = fewer API calls, higher = faster but may hit rate limits." },
         "autoSpecKit.agents.timeout": { "type": "number", "default": 90000, "description": "Timeout per sub-agent in milliseconds (default: 90s)" },
         "autoSpecKit.agents.mergeStrategy": { "type": "string", "default": "ai", "enum": ["ai", "concat", "structured"], "description": "How to merge sub-agent outputs. 'ai' = LLM merge (best quality), 'concat' = simple join, 'structured' = section-based" },

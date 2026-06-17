@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Auto Spec Kit v1.8.1 — Manual Install Guide</title>
+<title>Auto Spec Kit v1.8.2 — Manual Install Guide</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #1e293b; min-height: 100vh; line-height: 1.6; }
@@ -78,7 +78,7 @@
   <h1>Manual Install Guide</h1>
   <p class="subtitle">Create the project from scratch on any machine — no git clone needed</p>
   <div style="margin-top:10px">
-    <span class="badge badge-blue">v1.8.1</span>
+    <span class="badge badge-blue">v1.8.2</span>
     <span class="badge badge-green">59 files</span>
     <span class="badge badge-orange">Copy & Paste</span>
   </div>
@@ -122,7 +122,7 @@ mkdir -p docs</code></pre>
   <div class="file-header" onclick="toggleFile('package-json')">
     <span class="file-name">package.json</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">7,622 bytes</span>
+      <span class="file-size">7,748 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('package-json',this)">Copy</button>
     </div>
   </div>
@@ -131,7 +131,7 @@ mkdir -p docs</code></pre>
   &quot;name&quot;: &quot;auto-spec-kit&quot;,
   &quot;displayName&quot;: &quot;Auto Spec Kit&quot;,
   &quot;description&quot;: &quot;Automate the full development workflow: Requirement → Plan → Code → Review → Test → Evidence, powered by GitHub Copilot&quot;,
-  &quot;version&quot;: &quot;1.8.1&quot;,
+  &quot;version&quot;: &quot;1.8.2&quot;,
   &quot;publisher&quot;: &quot;auto-spec-kit&quot;,
   &quot;author&quot;: {
     &quot;name&quot;: &quot;nam.hotrung190920&quot;,
@@ -200,7 +200,7 @@ mkdir -p docs</code></pre>
         &quot;autoSpecKit.autoApplyCode&quot;: { &quot;type&quot;: &quot;boolean&quot;, &quot;default&quot;: false, &quot;description&quot;: &quot;Automatically apply generated code without asking&quot; },
         &quot;autoSpecKit.sessionsDir&quot;: { &quot;type&quot;: &quot;string&quot;, &quot;default&quot;: &quot;spec-kit-sessions&quot;, &quot;description&quot;: &quot;Folder where session outputs are saved&quot; },
         &quot;autoSpecKit.model&quot;: { &quot;type&quot;: &quot;string&quot;, &quot;default&quot;: &quot;&quot;, &quot;description&quot;: &quot;Preferred model ID for GitHub Copilot.&quot; },
-        &quot;autoSpecKit.askModelOnStart&quot;: { &quot;type&quot;: &quot;boolean&quot;, &quot;default&quot;: false, &quot;description&quot;: &quot;Show model Quick Pick on every command run&quot; },
+        &quot;autoSpecKit.askModelOnStart&quot;: { &quot;type&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;description&quot;: &quot;Show model Quick Pick before every command run so you can choose the model each time. Set to false to skip and use autoSpecKit.model (or auto-select the best available).&quot; },
         &quot;autoSpecKit.agents.maxParallel&quot;: { &quot;type&quot;: &quot;number&quot;, &quot;default&quot;: 3, &quot;minimum&quot;: 1, &quot;maximum&quot;: 6, &quot;description&quot;: &quot;Max sub-agents to run in parallel per step. Lower = fewer API calls, higher = faster but may hit rate limits.&quot; },
         &quot;autoSpecKit.agents.timeout&quot;: { &quot;type&quot;: &quot;number&quot;, &quot;default&quot;: 90000, &quot;description&quot;: &quot;Timeout per sub-agent in milliseconds (default: 90s)&quot; },
         &quot;autoSpecKit.agents.mergeStrategy&quot;: { &quot;type&quot;: &quot;string&quot;, &quot;default&quot;: &quot;ai&quot;, &quot;enum&quot;: [&quot;ai&quot;, &quot;concat&quot;, &quot;structured&quot;], &quot;description&quot;: &quot;How to merge sub-agent outputs. &#x27;ai&#x27; = LLM merge (best quality), &#x27;concat&#x27; = simple join, &#x27;structured&#x27; = section-based&quot; },
@@ -11928,7 +11928,7 @@ npm run compile
 npm run package
 
 # Install in VS Code
-code --install-extension auto-spec-kit-1.8.1.vsix</code></pre>
+code --install-extension auto-spec-kit-1.8.2.vsix</code></pre>
   <p>Or press <strong>F5</strong> in VS Code to launch the Extension Development Host for testing.</p>
 </div>
 
