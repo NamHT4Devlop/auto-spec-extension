@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Auto Spec Kit v1.8.2 — Manual Install Guide</title>
+<title>Auto Spec Kit v1.8.3 — Manual Install Guide</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #1e293b; min-height: 100vh; line-height: 1.6; }
@@ -78,7 +78,7 @@
   <h1>Manual Install Guide</h1>
   <p class="subtitle">Create the project from scratch on any machine — no git clone needed</p>
   <div style="margin-top:10px">
-    <span class="badge badge-blue">v1.8.2</span>
+    <span class="badge badge-blue">v1.8.3</span>
     <span class="badge badge-green">59 files</span>
     <span class="badge badge-orange">Copy & Paste</span>
   </div>
@@ -122,7 +122,7 @@ mkdir -p docs</code></pre>
   <div class="file-header" onclick="toggleFile('package-json')">
     <span class="file-name">package.json</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">7,748 bytes</span>
+      <span class="file-size">8,485 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('package-json',this)">Copy</button>
     </div>
   </div>
@@ -131,7 +131,7 @@ mkdir -p docs</code></pre>
   &quot;name&quot;: &quot;auto-spec-kit&quot;,
   &quot;displayName&quot;: &quot;Auto Spec Kit&quot;,
   &quot;description&quot;: &quot;Automate the full development workflow: Requirement → Plan → Code → Review → Test → Evidence, powered by GitHub Copilot&quot;,
-  &quot;version&quot;: &quot;1.8.2&quot;,
+  &quot;version&quot;: &quot;1.8.3&quot;,
   &quot;publisher&quot;: &quot;auto-spec-kit&quot;,
   &quot;author&quot;: {
     &quot;name&quot;: &quot;nam.hotrung190920&quot;,
@@ -203,8 +203,10 @@ mkdir -p docs</code></pre>
         &quot;autoSpecKit.askModelOnStart&quot;: { &quot;type&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;description&quot;: &quot;Show model Quick Pick before every command run so you can choose the model each time. Set to false to skip and use autoSpecKit.model (or auto-select the best available).&quot; },
         &quot;autoSpecKit.agents.maxParallel&quot;: { &quot;type&quot;: &quot;number&quot;, &quot;default&quot;: 3, &quot;minimum&quot;: 1, &quot;maximum&quot;: 6, &quot;description&quot;: &quot;Max sub-agents to run in parallel per step. Lower = fewer API calls, higher = faster but may hit rate limits.&quot; },
         &quot;autoSpecKit.agents.timeout&quot;: { &quot;type&quot;: &quot;number&quot;, &quot;default&quot;: 90000, &quot;description&quot;: &quot;Timeout per sub-agent in milliseconds (default: 90s)&quot; },
-        &quot;autoSpecKit.agents.mergeStrategy&quot;: { &quot;type&quot;: &quot;string&quot;, &quot;default&quot;: &quot;ai&quot;, &quot;enum&quot;: [&quot;ai&quot;, &quot;concat&quot;, &quot;structured&quot;], &quot;description&quot;: &quot;How to merge sub-agent outputs. &#x27;ai&#x27; = LLM merge (best quality), &#x27;concat&#x27; = simple join, &#x27;structured&#x27; = section-based&quot; },
-        &quot;autoSpecKit.agents.contextStrategy&quot;: { &quot;type&quot;: &quot;string&quot;, &quot;default&quot;: &quot;smart&quot;, &quot;enum&quot;: [&quot;smart&quot;, &quot;full&quot;, &quot;minimal&quot;], &quot;description&quot;: &quot;&#x27;smart&#x27; = File Discovery Agent selects relevant files, &#x27;full&#x27; = load all KB, &#x27;minimal&#x27; = requirement only&quot; },
+        &quot;autoSpecKit.agents.mergeStrategy&quot;: { &quot;type&quot;: &quot;string&quot;, &quot;default&quot;: &quot;auto&quot;, &quot;enum&quot;: [&quot;auto&quot;, &quot;ai&quot;, &quot;concat&quot;, &quot;structured&quot;], &quot;description&quot;: &quot;How to merge sub-agent outputs. &#x27;auto&#x27; (recommended) = review steps use deterministic merge (no extra model call), generative steps use AI merge. &#x27;ai&#x27; = always LLM merge (most tokens), &#x27;concat&#x27; = simple join (cheapest), &#x27;structured&#x27; = section-based join.&quot; },
+        &quot;autoSpecKit.agents.contextStrategy&quot;: { &quot;type&quot;: &quot;string&quot;, &quot;default&quot;: &quot;smart&quot;, &quot;enum&quot;: [&quot;smart&quot;, &quot;full&quot;, &quot;minimal&quot;], &quot;description&quot;: &quot;Build context size. &#x27;smart&#x27; (recommended) = discover relevant files + cap the knowledge base in the system prompt, &#x27;full&#x27; = inject the entire KB (most tokens), &#x27;minimal&#x27; = requirement only, no file discovery (fewest tokens).&quot; },
+        &quot;autoSpecKit.agents.systemKbTokens&quot;: { &quot;type&quot;: &quot;number&quot;, &quot;default&quot;: 10000, &quot;description&quot;: &quot;Token budget for the knowledge base embedded in the build system prompt when contextStrategy = &#x27;smart&#x27;. Lower = cheaper builds.&quot; },
+        &quot;autoSpecKit.ask.maxContextTokens&quot;: { &quot;type&quot;: &quot;number&quot;, &quot;default&quot;: 24000, &quot;description&quot;: &quot;Max tokens of knowledge base context loaded per &#x27;Ask About Codebase&#x27; question. Only relevant KB topics are loaded, capped to this budget.&quot; },
         &quot;autoSpecKit.autoSync&quot;: { &quot;type&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;description&quot;: &quot;Auto-fetch and pull latest code before every command (read-only — never pushes or commits)&quot; },
         &quot;autoSpecKit.autoSyncKBUpdate&quot;: { &quot;type&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;description&quot;: &quot;Auto-update Knowledge Base when pulled code contains source changes&quot; }
       }
@@ -1662,7 +1664,7 @@ Kafka topics, SQS queues, SNS topics, RabbitMQ exchanges, Spring Events, domain 
   <div class="file-header" onclick="toggleFile('src-utils-agent-orchestrator-ts')">
     <span class="file-name">src/utils/agent-orchestrator.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">7,818 bytes</span>
+      <span class="file-size">9,332 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-utils-agent-orchestrator-ts',this)">Copy</button>
     </div>
   </div>
@@ -1727,6 +1729,31 @@ const DEFAULT_CONFIG: OrchestratorConfig = {
   agentTimeout: 90_000,
   mergeStrategy: &#x27;ai&#x27;,
 };
+
+/** Whether a step&#x27;s sub-agents synthesize new content or just aggregate findings. */
+export type StepKind = &#x27;review&#x27; | &#x27;generative&#x27;;
+
+/**
+ * Resolve per-step orchestrator config from the pipeline&#x27;s tuning fields.
+ *
+ * Token optimization: with mergeStrategy=&#x27;auto&#x27; (default), review/aggregation steps
+ * use deterministic &#x27;structured&#x27; merge (NO extra model call), while generative steps
+ * keep &#x27;ai&#x27; merge for coherent synthesis. Users can force a global strategy.
+ */
+export function orchestratorConfigFor(
+  tuning: { mergeStrategy: &#x27;auto&#x27; | &#x27;ai&#x27; | &#x27;concat&#x27; | &#x27;structured&#x27;; maxParallelAgents: number },
+  kind: StepKind,
+  stepMaxParallel: number,
+): Partial&lt;OrchestratorConfig&gt; {
+  const mergeStrategy: &#x27;ai&#x27; | &#x27;concat&#x27; | &#x27;structured&#x27; =
+    tuning.mergeStrategy === &#x27;auto&#x27;
+      ? (kind === &#x27;review&#x27; ? &#x27;structured&#x27; : &#x27;ai&#x27;)
+      : tuning.mergeStrategy;
+  return {
+    maxParallel: Math.max(1, Math.min(stepMaxParallel, tuning.maxParallelAgents || stepMaxParallel)),
+    mergeStrategy,
+  };
+}
 
 // ─── Orchestrator ─────────────────────────────────────────────────────────────
 
@@ -6668,7 +6695,7 @@ export function createSessionDir(
   <div class="file-header" onclick="toggleFile('src-utils-smart-context-ts')">
     <span class="file-name">src/utils/smart-context.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">10,013 bytes</span>
+      <span class="file-size">13,415 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-utils-smart-context-ts',this)">Copy</button>
     </div>
   </div>
@@ -6726,6 +6753,59 @@ const KB_TOPIC_MAP: Record&lt;string, string[]&gt; = {
   &#x27;modules&#x27;:        [&#x27;06-modules.md&#x27;],
   &#x27;entry-points&#x27;:   [&#x27;03-entry-points.md&#x27;],
 };
+
+// ─── Keyword → topic map (no-LLM relevance for Q&amp;A / investigate) ───────────────
+// Lets `ask` pick only the relevant KB topics from a question without spending an
+// extra model call. Matching is substring-based and intentionally generous.
+const TOPIC_KEYWORDS: Record&lt;string, string[]&gt; = {
+  &#x27;architecture&#x27;:   [&#x27;architecture&#x27;, &#x27;structure&#x27;, &#x27;layer&#x27;, &#x27;folder&#x27;, &#x27;design&#x27;, &#x27;tech stack&#x27;, &#x27;framework&#x27;, &#x27;overview&#x27;],
+  &#x27;domain&#x27;:         [&#x27;domain&#x27;, &#x27;entity&#x27;, &#x27;model&#x27;, &#x27;aggregate&#x27;, &#x27;business object&#x27;],
+  &#x27;business-rules&#x27;: [&#x27;rule&#x27;, &#x27;validation&#x27;, &#x27;policy&#x27;, &#x27;flow&#x27;, &#x27;logic&#x27;, &#x27;workflow&#x27;, &#x27;calculate&#x27;, &#x27;process&#x27;],
+  &#x27;api&#x27;:            [&#x27;api&#x27;, &#x27;endpoint&#x27;, &#x27;route&#x27;, &#x27;controller&#x27;, &#x27;request&#x27;, &#x27;response&#x27;, &#x27;rest&#x27;, &#x27;graphql&#x27;, &#x27;http&#x27;],
+  &#x27;security&#x27;:       [&#x27;auth&#x27;, &#x27;security&#x27;, &#x27;login&#x27;, &#x27;token&#x27;, &#x27;permission&#x27;, &#x27;role&#x27;, &#x27;jwt&#x27;, &#x27;password&#x27;, &#x27;oauth&#x27;, &#x27;session&#x27;, &#x27;access&#x27;],
+  &#x27;database&#x27;:       [&#x27;database&#x27;, &#x27;schema&#x27;, &#x27;table&#x27;, &#x27;migration&#x27;, &#x27;sql&#x27;, &#x27;query&#x27;, &#x27;db&#x27;, &#x27;column&#x27;, &#x27;index&#x27;, &#x27;orm&#x27;],
+  &#x27;integrations&#x27;:   [&#x27;integration&#x27;, &#x27;external&#x27;, &#x27;third party&#x27;, &#x27;third-party&#x27;, &#x27;webhook&#x27;, &#x27;queue&#x27;, &#x27;kafka&#x27;, &#x27;s3&#x27;, &#x27;message&#x27;],
+  &#x27;conventions&#x27;:    [&#x27;convention&#x27;, &#x27;style&#x27;, &#x27;naming&#x27;, &#x27;lint&#x27;, &#x27;format&#x27;, &#x27;standard&#x27;, &#x27;pattern&#x27;, &#x27;guideline&#x27;],
+  &#x27;errors&#x27;:         [&#x27;error&#x27;, &#x27;exception&#x27;, &#x27;failure&#x27;, &#x27;fail&#x27;, &#x27;bug&#x27;, &#x27;crash&#x27;, &#x27;retry&#x27;, &#x27;handling&#x27;, &#x27;investigate&#x27;, &#x27;issue&#x27;, &#x27;debug&#x27;, &#x27;stack trace&#x27;, &#x27;throw&#x27;],
+  &#x27;modules&#x27;:        [&#x27;module&#x27;, &#x27;package&#x27;, &#x27;component&#x27;, &#x27;service&#x27;, &#x27;feature&#x27;],
+  &#x27;entry-points&#x27;:   [&#x27;entry&#x27;, &#x27;main&#x27;, &#x27;bootstrap&#x27;, &#x27;startup&#x27;, &#x27;index&#x27;, &#x27;cli&#x27;, &#x27;command&#x27;, &#x27;trigger&#x27;],
+};
+
+/**
+ * Pick the KB topics most relevant to a free-text question — no LLM call.
+ * Always includes a light base (architecture + conventions) so answers stay grounded.
+ * Returns all topics if nothing matches, so the caller can fall back safely.
+ */
+export function selectKBTopicsForQuestion(question: string): string[] {
+  const q = question.toLowerCase();
+  const matched = Object.entries(TOPIC_KEYWORDS)
+    .filter(([, kws]) =&gt; kws.some(kw =&gt; q.includes(kw)))
+    .map(([topic]) =&gt; topic);
+
+  if (matched.length === 0) {
+    // Nothing matched — let the caller decide (it will load a broad, capped set).
+    return Object.keys(KB_TOPIC_MAP);
+  }
+  return [...new Set([...matched, &#x27;architecture&#x27;, &#x27;conventions&#x27;])];
+}
+
+/**
+ * Build a KB context string limited to the given topics and a token budget.
+ * Used by `ask` to avoid dumping the entire knowledge base into every question.
+ */
+export function loadKBForTopics(
+  workspaceRoot: string,
+  kbRelPath: string,
+  topics: string[],
+  maxTokens = 24_000,
+): string {
+  const loader = new SmartContextLoader();
+  const { chunks } = loader.loadContext(workspaceRoot, kbRelPath, [], topics, maxTokens);
+  return chunks
+    .filter(c =&gt; c.source === &#x27;kb&#x27;)
+    .map(c =&gt; `### [${c.label.replace(/^KB:\s*/, &#x27;&#x27;)}]\n${c.content}`)
+    .join(&#x27;\n\n---\n\n&#x27;);
+}
 
 // ─── Smart Context Loader ─────────────────────────────────────────────────────
 
@@ -7531,7 +7611,7 @@ export class WorkspaceResolver {
   <div class="file-header" onclick="toggleFile('src-workflow-ask-kb-ts')">
     <span class="file-name">src/workflow/ask-kb.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">1,265 bytes</span>
+      <span class="file-size">2,404 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-workflow-ask-kb-ts',this)">Copy</button>
     </div>
   </div>
@@ -7541,6 +7621,8 @@ export class WorkspaceResolver {
 import { log, banner } from &#x27;../logger&#x27;;
 import { callCopilot } from &#x27;../utils/copilot&#x27;;
 import { loadKnowledgeBase } from &#x27;../utils/file-utils&#x27;;
+import { selectKBTopicsForQuestion, loadKBForTopics } from &#x27;../utils/smart-context&#x27;;
+import { estimateTokens, truncateToTokens } from &#x27;../utils/token-budget&#x27;;
 
 export async function askAboutCodebase(
   question: string,
@@ -7551,10 +7633,26 @@ export async function askAboutCodebase(
 
   const cfg       = vscode.workspace.getConfiguration(&#x27;autoSpecKit&#x27;);
   const kbRelPath = cfg.get&lt;string&gt;(&#x27;knowledgeBasePath&#x27;, &#x27;knowledge-base&#x27;);
+  // Token budget for the KB context injected into a single question.
+  const maxKbTokens = cfg.get&lt;number&gt;(&#x27;ask.maxContextTokens&#x27;, 24_000);
 
-  const kb = loadKnowledgeBase(workspaceRoot, kbRelPath);
+  // Token optimization: load only KB topics relevant to the question (no extra
+  // model call) instead of dumping the entire knowledge base every time.
+  const topics = selectKBTopicsForQuestion(question);
+  let kb = loadKBForTopics(workspaceRoot, kbRelPath, topics, maxKbTokens);
 
-  const SYSTEM = `You are an expert on this codebase. Answer questions based ONLY on the knowledge base below.\n\n=== KNOWLEDGE BASE ===\n${kb}`;
+  // Fallback — if topic selection produced nothing (e.g. non-standard KB layout),
+  // load the full KB but cap it to the same budget so we never blow up token usage.
+  if (!kb.trim()) {
+    const fullKb = loadKnowledgeBase(workspaceRoot, kbRelPath);
+    kb = estimateTokens(fullKb) &gt; maxKbTokens
+      ? truncateToTokens(fullKb, maxKbTokens, &#x27;knowledge-base&#x27;)
+      : fullKb;
+  }
+
+  log(`ℹ  KB context: topics [${topics.join(&#x27;, &#x27;)}] (~${estimateTokens(kb).toLocaleString()} tokens)`);
+
+  const SYSTEM = `You are an expert on this codebase. Answer questions based ONLY on the knowledge base below. If the answer is not covered by the provided context, say so explicitly rather than guessing.\n\n=== KNOWLEDGE BASE (relevant subset) ===\n${kb}`;
 
   banner([&#x27;💬 ASK ABOUT CODEBASE&#x27;, `Q: ${question.slice(0, 60)}`]);
   log(`ℹ  Question: ${question}\n`);
@@ -8737,7 +8835,7 @@ ${reviewResult}
   <div class="file-header" onclick="toggleFile('src-workflow-run-task-ts')">
     <span class="file-name">src/workflow/run-task.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">6,715 bytes</span>
+      <span class="file-size">9,008 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-workflow-run-task-ts',this)">Copy</button>
     </div>
   </div>
@@ -8755,6 +8853,7 @@ import * as path from &#x27;path&#x27;;
 import * as fs from &#x27;fs&#x27;;
 import { log } from &#x27;../logger&#x27;;
 import { loadKnowledgeBase } from &#x27;../utils/file-utils&#x27;;
+import { estimateTokens, truncateToTokens } from &#x27;../utils/token-budget&#x27;;
 import { PipelineRunner, PipelineContext, ALL_STEPS } from &#x27;./pipeline&#x27;;
 
 /** Load review-skills.md from KB (preferred) or fallback to universal template */
@@ -8811,6 +8910,14 @@ export async function runWorkflow(
   const autoApply = cfg.get&lt;boolean&gt;(&#x27;autoApplyCode&#x27;, false);
   const sessionsDir = enrichment?.effectiveConfig?.sessionsDir ?? cfg.get&lt;string&gt;(&#x27;sessionsDir&#x27;, &#x27;spec-kit-sessions&#x27;);
 
+  // ── Token / agent tuning ────────────────────────────────────────
+  const contextStrategy = cfg.get&lt;&#x27;minimal&#x27; | &#x27;smart&#x27; | &#x27;full&#x27;&gt;(&#x27;agents.contextStrategy&#x27;, &#x27;smart&#x27;);
+  const mergeStrategy   = cfg.get&lt;&#x27;auto&#x27; | &#x27;ai&#x27; | &#x27;concat&#x27; | &#x27;structured&#x27;&gt;(&#x27;agents.mergeStrategy&#x27;, &#x27;auto&#x27;);
+  const maxParallelAgents = cfg.get&lt;number&gt;(&#x27;agents.maxParallel&#x27;, 3);
+  // System-prompt KB budget for the &#x27;smart&#x27; strategy (per-call savings: the system
+  // prompt is reused across every step, so capping it cuts tokens dramatically).
+  const systemKbTokenBudget = cfg.get&lt;number&gt;(&#x27;agents.systemKbTokens&#x27;, 10_000);
+
   // ── Session directory ───────────────────────────────────────────
   const ts = new Date().toISOString().replace(/[:.]/g, &#x27;-&#x27;).slice(0, 19);
   const slug = requirement.slice(0, 40).toLowerCase().replace(/[^a-z0-9]+/g, &#x27;-&#x27;).replace(/-$/, &#x27;&#x27;);
@@ -8854,11 +8961,28 @@ export async function runWorkflow(
     enrichmentSections.push(enrichment.sessionContext);
   }
 
+  // Token optimization: the system prompt is reused on every model call across all
+  // steps, so its KB footprint is multiplied ~30×. Size it by contextStrategy.
+  let systemKb: string;
+  if (!kb) {
+    systemKb = &#x27;(No knowledge base found. Use general best practices.)&#x27;;
+  } else if (contextStrategy === &#x27;minimal&#x27;) {
+    systemKb = &#x27;(Knowledge base omitted to save tokens — relevant context is loaded on demand per step.)&#x27;;
+  } else if (contextStrategy === &#x27;full&#x27;) {
+    systemKb = kb;
+  } else {
+    // &#x27;smart&#x27; (default) — cap the KB to a budget; steps still load relevant detail on demand.
+    systemKb = estimateTokens(kb) &gt; systemKbTokenBudget
+      ? truncateToTokens(kb, systemKbTokenBudget, &#x27;knowledge-base&#x27;)
+      : kb;
+  }
+  log(`ℹ  Context strategy: ${contextStrategy} | system KB ~${estimateTokens(systemKb).toLocaleString()} tokens | merge: ${mergeStrategy}`);
+
   const systemPrompt = `\
 You are a senior software engineer implementing tasks inside a real codebase.
 
 === PROJECT KNOWLEDGE BASE ===
-${kb || &#x27;(No knowledge base found. Use general best practices.)&#x27;}
+${systemKb}
 
 ${enrichmentSections.join(&#x27;\n\n&#x27;)}
 
@@ -8875,6 +8999,7 @@ ${enrichmentSections.join(&#x27;\n\n&#x27;)}
   const ctx: PipelineContext = {
     requirement, workspaceRoot, model, token, progress, extensionPath,
     lang, kbRelPath, testCmd, autoApply, sessionsDir,
+    contextStrategy, mergeStrategy, maxParallelAgents,
     sessionDir, kb, reviewSkills, systemPrompt,
     stepOutputs: new Map(),
   };
@@ -9420,7 +9545,7 @@ export class PipelineRunner {
   <div class="file-header" onclick="toggleFile('src-workflow-pipeline-types-ts')">
     <span class="file-name">src/workflow/pipeline/types.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">1,162 bytes</span>
+      <span class="file-size">1,564 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-workflow-pipeline-types-ts',this)">Copy</button>
     </div>
   </div>
@@ -9449,6 +9574,14 @@ export interface PipelineContext {
   testCmd: string;
   autoApply: boolean;
   sessionsDir: string;
+
+  // Token / agent tuning
+  /** &#x27;minimal&#x27; = requirement only | &#x27;smart&#x27; = relevant + capped KB | &#x27;full&#x27; = whole KB */
+  contextStrategy: &#x27;minimal&#x27; | &#x27;smart&#x27; | &#x27;full&#x27;;
+  /** Merge strategy override: &#x27;auto&#x27; lets each step pick (review=structured, generative=ai) */
+  mergeStrategy: &#x27;auto&#x27; | &#x27;ai&#x27; | &#x27;concat&#x27; | &#x27;structured&#x27;;
+  /** Max sub-agents to run in parallel per step */
+  maxParallelAgents: number;
 
   // Runtime state
   sessionDir: string;
@@ -9484,7 +9617,7 @@ export interface SessionState {
   <div class="file-header" onclick="toggleFile('src-workflow-pipeline-steps-step-01-planning-ts')">
     <span class="file-name">src/workflow/pipeline/steps/step-01-planning.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">7,872 bytes</span>
+      <span class="file-size">8,643 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-workflow-pipeline-steps-step-01-planning-ts',this)">Copy</button>
     </div>
   </div>
@@ -9504,7 +9637,7 @@ export interface SessionState {
 import { log } from &#x27;../../../logger&#x27;;
 import { callCopilot } from &#x27;../../../utils/copilot&#x27;;
 import { saveFile } from &#x27;../../../utils/file-utils&#x27;;
-import { AgentOrchestrator, SubAgent } from &#x27;../../../utils/agent-orchestrator&#x27;;
+import { AgentOrchestrator, SubAgent, orchestratorConfigFor } from &#x27;../../../utils/agent-orchestrator&#x27;;
 import { SmartContextLoader } from &#x27;../../../utils/smart-context&#x27;;
 import { PipelineContext, PipelineStep, StepResult } from &#x27;../types&#x27;;
 
@@ -9517,16 +9650,25 @@ export class Step01Planning implements PipelineStep {
     // ── Phase 1: Smart Context Discovery ─────────────────────────
     const loader = new SmartContextLoader();
 
-    const { files, kbTopics } = await loader.discoverRelevantContext(
-      ctx.requirement, ctx.workspaceRoot, ctx.kbRelPath, ctx.model, ctx.token,
-    );
+    // Token optimization: &#x27;minimal&#x27; skips the File Discovery model call and loads
+    // only lightweight convention context; &#x27;full&#x27; loads all KB topics.
+    let files: string[] = [];
+    let kbTopics: string[] = [];
+    if (ctx.contextStrategy === &#x27;minimal&#x27;) {
+      kbTopics = [&#x27;conventions&#x27;];
+      log(`ℹ  Context strategy &#x27;minimal&#x27; — skipping file discovery to save tokens`);
+    } else {
+      ({ files, kbTopics } = await loader.discoverRelevantContext(
+        ctx.requirement, ctx.workspaceRoot, ctx.kbRelPath, ctx.model, ctx.token,
+      ));
+    }
 
     const smartCtx = loader.loadContext(
       ctx.workspaceRoot, ctx.kbRelPath, files, kbTopics,
     );
 
     // ── Phase 2: Parallel Sub-Agents ─────────────────────────────
-    const orchestrator = new AgentOrchestrator({ maxParallel: 3 });
+    const orchestrator = new AgentOrchestrator(orchestratorConfigFor(ctx, &#x27;generative&#x27;, 3));
 
     const codebaseContext = loader.buildAgentContext(
       smartCtx.chunks, [&#x27;source&#x27;, &#x27;config&#x27;], undefined, 25_000,
@@ -9695,7 +9837,7 @@ Include: requirement analysis, technical design, implementation steps, risks.
   <div class="file-header" onclick="toggleFile('src-workflow-pipeline-steps-step-02-plan-review-ts')">
     <span class="file-name">src/workflow/pipeline/steps/step-02-plan-review.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">4,981 bytes</span>
+      <span class="file-size">5,125 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-workflow-pipeline-steps-step-02-plan-review-ts',this)">Copy</button>
     </div>
   </div>
@@ -9713,7 +9855,7 @@ Include: requirement analysis, technical design, implementation steps, risks.
 import { log } from &#x27;../../../logger&#x27;;
 import { callCopilot } from &#x27;../../../utils/copilot&#x27;;
 import { saveFile } from &#x27;../../../utils/file-utils&#x27;;
-import { AgentOrchestrator, SubAgent } from &#x27;../../../utils/agent-orchestrator&#x27;;
+import { AgentOrchestrator, SubAgent, orchestratorConfigFor } from &#x27;../../../utils/agent-orchestrator&#x27;;
 import { PipelineContext, PipelineStep, StepResult } from &#x27;../types&#x27;;
 
 export class Step02PlanReview implements PipelineStep {
@@ -9724,7 +9866,7 @@ export class Step02PlanReview implements PipelineStep {
   async execute(ctx: PipelineContext): Promise&lt;StepResult&gt; {
     const plan = ctx.stepOutputs.get(&#x27;step-01&#x27;)?.output ?? &#x27;&#x27;;
 
-    const orchestrator = new AgentOrchestrator({ maxParallel: 2 });
+    const orchestrator = new AgentOrchestrator(orchestratorConfigFor(ctx, &#x27;review&#x27;, 2));
 
     const agents: SubAgent[] = [
       {
@@ -9904,7 +10046,7 @@ ${feedback}
   <div class="file-header" onclick="toggleFile('src-workflow-pipeline-steps-step-04-code-generation-ts')">
     <span class="file-name">src/workflow/pipeline/steps/step-04-code-generation.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">6,673 bytes</span>
+      <span class="file-size">6,861 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-workflow-pipeline-steps-step-04-code-generation-ts',this)">Copy</button>
     </div>
   </div>
@@ -9923,7 +10065,7 @@ ${feedback}
 import { log } from &#x27;../../../logger&#x27;;
 import { callCopilot } from &#x27;../../../utils/copilot&#x27;;
 import { saveFile } from &#x27;../../../utils/file-utils&#x27;;
-import { AgentOrchestrator, SubAgent } from &#x27;../../../utils/agent-orchestrator&#x27;;
+import { AgentOrchestrator, SubAgent, orchestratorConfigFor } from &#x27;../../../utils/agent-orchestrator&#x27;;
 import { SmartContextLoader } from &#x27;../../../utils/smart-context&#x27;;
 import { PipelineContext, PipelineStep, StepResult } from &#x27;../types&#x27;;
 
@@ -9950,7 +10092,7 @@ export class Step04CodeGeneration implements PipelineStep {
     const referenceCode = loader.buildAgentContext(smartCtx.chunks, [&#x27;source&#x27;, &#x27;kb&#x27;], [&#x27;conventions&#x27;], 15_000);
 
     // Spawn parallel code generators
-    const orchestrator = new AgentOrchestrator({ maxParallel: 3 });
+    const orchestrator = new AgentOrchestrator(orchestratorConfigFor(ctx, &#x27;generative&#x27;, 3));
 
     const agents: SubAgent[] = workUnits.map((unit, i) =&gt; ({
       id: `codegen-${i}`,
@@ -10107,7 +10249,7 @@ interface WorkUnit {
   <div class="file-header" onclick="toggleFile('src-workflow-pipeline-steps-step-05-code-review-ts')">
     <span class="file-name">src/workflow/pipeline/steps/step-05-code-review.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">8,114 bytes</span>
+      <span class="file-size">8,285 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-workflow-pipeline-steps-step-05-code-review-ts',this)">Copy</button>
     </div>
   </div>
@@ -10128,7 +10270,7 @@ import { log } from &#x27;../../../logger&#x27;;
 import { callCopilot } from &#x27;../../../utils/copilot&#x27;;
 import { saveFile, extractFiles } from &#x27;../../../utils/file-utils&#x27;;
 import { loadGitContext, formatGitContextForPrompt } from &#x27;../../../utils/git-utils&#x27;;
-import { AgentOrchestrator, SubAgent } from &#x27;../../../utils/agent-orchestrator&#x27;;
+import { AgentOrchestrator, SubAgent, orchestratorConfigFor } from &#x27;../../../utils/agent-orchestrator&#x27;;
 import { PipelineContext, PipelineStep, StepResult } from &#x27;../types&#x27;;
 
 export class Step05CodeReview implements PipelineStep {
@@ -10155,7 +10297,7 @@ ${code}
 ## GIT CONTEXT:
 ${gitBlock}`;
 
-    const orchestrator = new AgentOrchestrator({ maxParallel: 4 });
+    const orchestrator = new AgentOrchestrator(orchestratorConfigFor(ctx, &#x27;review&#x27;, 4));
 
     const agents: SubAgent[] = [
       {
@@ -10417,7 +10559,7 @@ ${feedback || &#x27;(No user feedback)&#x27;}
   <div class="file-header" onclick="toggleFile('src-workflow-pipeline-steps-step-07-write-tests-ts')">
     <span class="file-name">src/workflow/pipeline/steps/step-07-write-tests.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">5,984 bytes</span>
+      <span class="file-size">6,092 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-workflow-pipeline-steps-step-07-write-tests-ts',this)">Copy</button>
     </div>
   </div>
@@ -10436,7 +10578,7 @@ ${feedback || &#x27;(No user feedback)&#x27;}
 import { log } from &#x27;../../../logger&#x27;;
 import { callCopilot } from &#x27;../../../utils/copilot&#x27;;
 import { saveFile } from &#x27;../../../utils/file-utils&#x27;;
-import { AgentOrchestrator, SubAgent } from &#x27;../../../utils/agent-orchestrator&#x27;;
+import { AgentOrchestrator, SubAgent, orchestratorConfigFor } from &#x27;../../../utils/agent-orchestrator&#x27;;
 import { PipelineContext, PipelineStep, StepResult } from &#x27;../types&#x27;;
 
 export class Step07WriteTests implements PipelineStep {
@@ -10472,7 +10614,7 @@ ${signatures}
 Language: ${ctx.lang}
 Format each test file as: ### FILE: &lt;path&gt;`;
 
-    const orchestrator = new AgentOrchestrator({ maxParallel: 3 });
+    const orchestrator = new AgentOrchestrator(orchestratorConfigFor(ctx, &#x27;generative&#x27;, 3));
 
     const agents: SubAgent[] = [
       {
@@ -10588,7 +10730,7 @@ Then output all test files.`;
   <div class="file-header" onclick="toggleFile('src-workflow-pipeline-steps-step-08-test-review-ts')">
     <span class="file-name">src/workflow/pipeline/steps/step-08-test-review.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">4,805 bytes</span>
+      <span class="file-size">4,923 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-workflow-pipeline-steps-step-08-test-review-ts',this)">Copy</button>
     </div>
   </div>
@@ -10606,7 +10748,7 @@ Then output all test files.`;
 import { log } from &#x27;../../../logger&#x27;;
 import { callCopilot } from &#x27;../../../utils/copilot&#x27;;
 import { saveFile } from &#x27;../../../utils/file-utils&#x27;;
-import { AgentOrchestrator, SubAgent } from &#x27;../../../utils/agent-orchestrator&#x27;;
+import { AgentOrchestrator, SubAgent, orchestratorConfigFor } from &#x27;../../../utils/agent-orchestrator&#x27;;
 import { PipelineContext, PipelineStep, StepResult } from &#x27;../types&#x27;;
 
 export class Step08TestReview implements PipelineStep {
@@ -10634,7 +10776,7 @@ ${codeFinal.slice(0, 15000)}
 ## TEST SUITE TO REVIEW:
 ${tests}`;
 
-    const orchestrator = new AgentOrchestrator({ maxParallel: 2 });
+    const orchestrator = new AgentOrchestrator(orchestratorConfigFor(ctx, &#x27;review&#x27;, 2));
 
     const agents: SubAgent[] = [
       {
@@ -11038,7 +11180,7 @@ export class Step11ExecuteTests implements PipelineStep {
   <div class="file-header" onclick="toggleFile('src-workflow-pipeline-steps-step-12-evidence-ts')">
     <span class="file-name">src/workflow/pipeline/steps/step-12-evidence.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">6,686 bytes</span>
+      <span class="file-size">6,787 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-workflow-pipeline-steps-step-12-evidence-ts',this)">Copy</button>
     </div>
   </div>
@@ -11056,7 +11198,7 @@ export class Step11ExecuteTests implements PipelineStep {
 import { log } from &#x27;../../../logger&#x27;;
 import { callCopilot } from &#x27;../../../utils/copilot&#x27;;
 import { saveFile } from &#x27;../../../utils/file-utils&#x27;;
-import { AgentOrchestrator, SubAgent } from &#x27;../../../utils/agent-orchestrator&#x27;;
+import { AgentOrchestrator, SubAgent, orchestratorConfigFor } from &#x27;../../../utils/agent-orchestrator&#x27;;
 import { PipelineContext, PipelineStep, StepResult } from &#x27;../types&#x27;;
 import { TestResult } from &#x27;../../../types&#x27;;
 
@@ -11085,7 +11227,7 @@ export class Step12Evidence implements PipelineStep {
       ? &#x27;Tests not executed (no testCommand configured).&#x27;
       : `Command: ${testResult.command}\nResult: ${testResult.passed ? &#x27;PASSED&#x27; : &#x27;FAILED&#x27;}\nDuration: ${(testResult.durationMs / 1000).toFixed(1)}s\nCoverage: ${testResult.coverage !== null ? testResult.coverage + &#x27;%&#x27; : &#x27;N/A&#x27;}\n\nOutput (last 2000 chars):\n${testResult.output.slice(-2000)}`;
 
-    const orchestrator = new AgentOrchestrator({ maxParallel: 2 });
+    const orchestrator = new AgentOrchestrator(orchestratorConfigFor(ctx, &#x27;review&#x27;, 2));
 
     const agents: SubAgent[] = [
       {
@@ -11213,7 +11355,7 @@ Then merge both agents&#x27; outputs into these sections:
   <div class="file-header" onclick="toggleFile('src-workflow-pipeline-steps-step-13-update-kb-ts')">
     <span class="file-name">src/workflow/pipeline/steps/step-13-update-kb.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">7,193 bytes</span>
+      <span class="file-size">7,321 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-workflow-pipeline-steps-step-13-update-kb-ts',this)">Copy</button>
     </div>
   </div>
@@ -11234,7 +11376,7 @@ import * as path from &#x27;path&#x27;;
 import { log } from &#x27;../../../logger&#x27;;
 import { callCopilot } from &#x27;../../../utils/copilot&#x27;;
 import { saveFile } from &#x27;../../../utils/file-utils&#x27;;
-import { AgentOrchestrator, SubAgent } from &#x27;../../../utils/agent-orchestrator&#x27;;
+import { AgentOrchestrator, SubAgent, orchestratorConfigFor } from &#x27;../../../utils/agent-orchestrator&#x27;;
 import { PipelineContext, PipelineStep, StepResult } from &#x27;../types&#x27;;
 
 export class Step13UpdateKB implements PipelineStep {
@@ -11270,7 +11412,7 @@ export class Step13UpdateKB implements PipelineStep {
 
     const today = new Date().toISOString().slice(0, 10);
 
-    const orchestrator = new AgentOrchestrator({ maxParallel: 2 });
+    const orchestrator = new AgentOrchestrator(orchestratorConfigFor(ctx, &#x27;generative&#x27;, 2));
 
     const agents: SubAgent[] = [
       {
@@ -11928,7 +12070,7 @@ npm run compile
 npm run package
 
 # Install in VS Code
-code --install-extension auto-spec-kit-1.8.2.vsix</code></pre>
+code --install-extension auto-spec-kit-1.8.3.vsix</code></pre>
   <p>Or press <strong>F5</strong> in VS Code to launch the Extension Development Host for testing.</p>
 </div>
 

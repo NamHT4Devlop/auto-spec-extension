@@ -12,7 +12,7 @@
 import { log } from '../../../logger';
 import { callCopilot } from '../../../utils/copilot';
 import { saveFile } from '../../../utils/file-utils';
-import { AgentOrchestrator, SubAgent } from '../../../utils/agent-orchestrator';
+import { AgentOrchestrator, SubAgent, orchestratorConfigFor } from '../../../utils/agent-orchestrator';
 import { SmartContextLoader } from '../../../utils/smart-context';
 import { PipelineContext, PipelineStep, StepResult } from '../types';
 
@@ -39,7 +39,7 @@ export class Step04CodeGeneration implements PipelineStep {
     const referenceCode = loader.buildAgentContext(smartCtx.chunks, ['source', 'kb'], ['conventions'], 15_000);
 
     // Spawn parallel code generators
-    const orchestrator = new AgentOrchestrator({ maxParallel: 3 });
+    const orchestrator = new AgentOrchestrator(orchestratorConfigFor(ctx, 'generative', 3));
 
     const agents: SubAgent[] = workUnits.map((unit, i) => ({
       id: `codegen-${i}`,

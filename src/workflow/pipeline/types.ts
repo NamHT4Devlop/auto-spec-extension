@@ -23,6 +23,14 @@ export interface PipelineContext {
   autoApply: boolean;
   sessionsDir: string;
 
+  // Token / agent tuning
+  /** 'minimal' = requirement only | 'smart' = relevant + capped KB | 'full' = whole KB */
+  contextStrategy: 'minimal' | 'smart' | 'full';
+  /** Merge strategy override: 'auto' lets each step pick (review=structured, generative=ai) */
+  mergeStrategy: 'auto' | 'ai' | 'concat' | 'structured';
+  /** Max sub-agents to run in parallel per step */
+  maxParallelAgents: number;
+
   // Runtime state
   sessionDir: string;
   kb: string;

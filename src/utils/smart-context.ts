@@ -52,6 +52,59 @@ const KB_TOPIC_MAP: Record<string, string[]> = {
   'entry-points':   ['03-entry-points.md'],
 };
 
+// ─── Keyword → topic map (no-LLM relevance for Q&A / investigate) ───────────────
+// Lets `ask` pick only the relevant KB topics from a question without spending an
+// extra model call. Matching is substring-based and intentionally generous.
+const TOPIC_KEYWORDS: Record<string, string[]> = {
+  'architecture':   ['architecture', 'structure', 'layer', 'folder', 'design', 'tech stack', 'framework', 'overview'],
+  'domain':         ['domain', 'entity', 'model', 'aggregate', 'business object'],
+  'business-rules': ['rule', 'validation', 'policy', 'flow', 'logic', 'workflow', 'calculate', 'process'],
+  'api':            ['api', 'endpoint', 'route', 'controller', 'request', 'response', 'rest', 'graphql', 'http'],
+  'security':       ['auth', 'security', 'login', 'token', 'permission', 'role', 'jwt', 'password', 'oauth', 'session', 'access'],
+  'database':       ['database', 'schema', 'table', 'migration', 'sql', 'query', 'db', 'column', 'index', 'orm'],
+  'integrations':   ['integration', 'external', 'third party', 'third-party', 'webhook', 'queue', 'kafka', 's3', 'message'],
+  'conventions':    ['convention', 'style', 'naming', 'lint', 'format', 'standard', 'pattern', 'guideline'],
+  'errors':         ['error', 'exception', 'failure', 'fail', 'bug', 'crash', 'retry', 'handling', 'investigate', 'issue', 'debug', 'stack trace', 'throw'],
+  'modules':        ['module', 'package', 'component', 'service', 'feature'],
+  'entry-points':   ['entry', 'main', 'bootstrap', 'startup', 'index', 'cli', 'command', 'trigger'],
+};
+
+/**
+ * Pick the KB topics most relevant to a free-text question — no LLM call.
+ * Always includes a light base (architecture + conventions) so answers stay grounded.
+ * Returns all topics if nothing matches, so the caller can fall back safely.
+ */
+export function selectKBTopicsForQuestion(question: string): string[] {
+  const q = question.toLowerCase();
+  const matched = Object.entries(TOPIC_KEYWORDS)
+    .filter(([, kws]) => kws.some(kw => q.includes(kw)))
+    .map(([topic]) => topic);
+
+  if (matched.length === 0) {
+    // Nothing matched — let the caller decide (it will load a broad, capped set).
+    return Object.keys(KB_TOPIC_MAP);
+  }
+  return [...new Set([...matched, 'architecture', 'conventions'])];
+}
+
+/**
+ * Build a KB context string limited to the given topics and a token budget.
+ * Used by `ask` to avoid dumping the entire knowledge base into every question.
+ */
+export function loadKBForTopics(
+  workspaceRoot: string,
+  kbRelPath: string,
+  topics: string[],
+  maxTokens = 24_000,
+): string {
+  const loader = new SmartContextLoader();
+  const { chunks } = loader.loadContext(workspaceRoot, kbRelPath, [], topics, maxTokens);
+  return chunks
+    .filter(c => c.source === 'kb')
+    .map(c => `### [${c.label.replace(/^KB:\s*/, '')}]\n${c.content}`)
+    .join('\n\n---\n\n');
+}
+
 // ─── Smart Context Loader ─────────────────────────────────────────────────────
 
 export class SmartContextLoader {

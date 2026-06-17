@@ -59,6 +59,31 @@ const DEFAULT_CONFIG: OrchestratorConfig = {
   mergeStrategy: 'ai',
 };
 
+/** Whether a step's sub-agents synthesize new content or just aggregate findings. */
+export type StepKind = 'review' | 'generative';
+
+/**
+ * Resolve per-step orchestrator config from the pipeline's tuning fields.
+ *
+ * Token optimization: with mergeStrategy='auto' (default), review/aggregation steps
+ * use deterministic 'structured' merge (NO extra model call), while generative steps
+ * keep 'ai' merge for coherent synthesis. Users can force a global strategy.
+ */
+export function orchestratorConfigFor(
+  tuning: { mergeStrategy: 'auto' | 'ai' | 'concat' | 'structured'; maxParallelAgents: number },
+  kind: StepKind,
+  stepMaxParallel: number,
+): Partial<OrchestratorConfig> {
+  const mergeStrategy: 'ai' | 'concat' | 'structured' =
+    tuning.mergeStrategy === 'auto'
+      ? (kind === 'review' ? 'structured' : 'ai')
+      : tuning.mergeStrategy;
+  return {
+    maxParallel: Math.max(1, Math.min(stepMaxParallel, tuning.maxParallelAgents || stepMaxParallel)),
+    mergeStrategy,
+  };
+}
+
 // ─── Orchestrator ─────────────────────────────────────────────────────────────
 
 export class AgentOrchestrator {

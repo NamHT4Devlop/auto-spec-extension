@@ -14,7 +14,7 @@ import { log } from '../../../logger';
 import { callCopilot } from '../../../utils/copilot';
 import { saveFile, extractFiles } from '../../../utils/file-utils';
 import { loadGitContext, formatGitContextForPrompt } from '../../../utils/git-utils';
-import { AgentOrchestrator, SubAgent } from '../../../utils/agent-orchestrator';
+import { AgentOrchestrator, SubAgent, orchestratorConfigFor } from '../../../utils/agent-orchestrator';
 import { PipelineContext, PipelineStep, StepResult } from '../types';
 
 export class Step05CodeReview implements PipelineStep {
@@ -41,7 +41,7 @@ ${code}
 ## GIT CONTEXT:
 ${gitBlock}`;
 
-    const orchestrator = new AgentOrchestrator({ maxParallel: 4 });
+    const orchestrator = new AgentOrchestrator(orchestratorConfigFor(ctx, 'review', 4));
 
     const agents: SubAgent[] = [
       {

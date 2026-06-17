@@ -11,6 +11,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { log } from '../logger';
 import { loadKnowledgeBase } from '../utils/file-utils';
+import { estimateTokens, truncateToTokens } from '../utils/token-budget';
 import { PipelineRunner, PipelineContext, ALL_STEPS } from './pipeline';
 
 /** Load review-skills.md from KB (preferred) or fallback to universal template */
@@ -67,6 +68,14 @@ export async function runWorkflow(
   const autoApply = cfg.get<boolean>('autoApplyCode', false);
   const sessionsDir = enrichment?.effectiveConfig?.sessionsDir ?? cfg.get<string>('sessionsDir', 'spec-kit-sessions');
 
+  // ── Token / agent tuning ────────────────────────────────────────
+  const contextStrategy = cfg.get<'minimal' | 'smart' | 'full'>('agents.contextStrategy', 'smart');
+  const mergeStrategy   = cfg.get<'auto' | 'ai' | 'concat' | 'structured'>('agents.mergeStrategy', 'auto');
+  const maxParallelAgents = cfg.get<number>('agents.maxParallel', 3);
+  // System-prompt KB budget for the 'smart' strategy (per-call savings: the system
+  // prompt is reused across every step, so capping it cuts tokens dramatically).
+  const systemKbTokenBudget = cfg.get<number>('agents.systemKbTokens', 10_000);
+
   // ── Session directory ───────────────────────────────────────────
   const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
   const slug = requirement.slice(0, 40).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-$/, '');
@@ -110,11 +119,28 @@ export async function runWorkflow(
     enrichmentSections.push(enrichment.sessionContext);
   }
 
+  // Token optimization: the system prompt is reused on every model call across all
+  // steps, so its KB footprint is multiplied ~30×. Size it by contextStrategy.
+  let systemKb: string;
+  if (!kb) {
+    systemKb = '(No knowledge base found. Use general best practices.)';
+  } else if (contextStrategy === 'minimal') {
+    systemKb = '(Knowledge base omitted to save tokens — relevant context is loaded on demand per step.)';
+  } else if (contextStrategy === 'full') {
+    systemKb = kb;
+  } else {
+    // 'smart' (default) — cap the KB to a budget; steps still load relevant detail on demand.
+    systemKb = estimateTokens(kb) > systemKbTokenBudget
+      ? truncateToTokens(kb, systemKbTokenBudget, 'knowledge-base')
+      : kb;
+  }
+  log(`ℹ  Context strategy: ${contextStrategy} | system KB ~${estimateTokens(systemKb).toLocaleString()} tokens | merge: ${mergeStrategy}`);
+
   const systemPrompt = `\
 You are a senior software engineer implementing tasks inside a real codebase.
 
 === PROJECT KNOWLEDGE BASE ===
-${kb || '(No knowledge base found. Use general best practices.)'}
+${systemKb}
 
 ${enrichmentSections.join('\n\n')}
 
@@ -131,6 +157,7 @@ ${enrichmentSections.join('\n\n')}
   const ctx: PipelineContext = {
     requirement, workspaceRoot, model, token, progress, extensionPath,
     lang, kbRelPath, testCmd, autoApply, sessionsDir,
+    contextStrategy, mergeStrategy, maxParallelAgents,
     sessionDir, kb, reviewSkills, systemPrompt,
     stepOutputs: new Map(),
   };

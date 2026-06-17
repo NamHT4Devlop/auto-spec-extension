@@ -14,7 +14,7 @@ import * as path from 'path';
 import { log } from '../../../logger';
 import { callCopilot } from '../../../utils/copilot';
 import { saveFile } from '../../../utils/file-utils';
-import { AgentOrchestrator, SubAgent } from '../../../utils/agent-orchestrator';
+import { AgentOrchestrator, SubAgent, orchestratorConfigFor } from '../../../utils/agent-orchestrator';
 import { PipelineContext, PipelineStep, StepResult } from '../types';
 
 export class Step13UpdateKB implements PipelineStep {
@@ -50,7 +50,7 @@ export class Step13UpdateKB implements PipelineStep {
 
     const today = new Date().toISOString().slice(0, 10);
 
-    const orchestrator = new AgentOrchestrator({ maxParallel: 2 });
+    const orchestrator = new AgentOrchestrator(orchestratorConfigFor(ctx, 'generative', 2));
 
     const agents: SubAgent[] = [
       {

@@ -11,7 +11,7 @@
 import { log } from '../../../logger';
 import { callCopilot } from '../../../utils/copilot';
 import { saveFile } from '../../../utils/file-utils';
-import { AgentOrchestrator, SubAgent } from '../../../utils/agent-orchestrator';
+import { AgentOrchestrator, SubAgent, orchestratorConfigFor } from '../../../utils/agent-orchestrator';
 import { PipelineContext, PipelineStep, StepResult } from '../types';
 import { TestResult } from '../../../types';
 
@@ -40,7 +40,7 @@ export class Step12Evidence implements PipelineStep {
       ? 'Tests not executed (no testCommand configured).'
       : `Command: ${testResult.command}\nResult: ${testResult.passed ? 'PASSED' : 'FAILED'}\nDuration: ${(testResult.durationMs / 1000).toFixed(1)}s\nCoverage: ${testResult.coverage !== null ? testResult.coverage + '%' : 'N/A'}\n\nOutput (last 2000 chars):\n${testResult.output.slice(-2000)}`;
 
-    const orchestrator = new AgentOrchestrator({ maxParallel: 2 });
+    const orchestrator = new AgentOrchestrator(orchestratorConfigFor(ctx, 'review', 2));
 
     const agents: SubAgent[] = [
       {

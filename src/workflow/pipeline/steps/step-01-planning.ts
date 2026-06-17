@@ -13,7 +13,7 @@
 import { log } from '../../../logger';
 import { callCopilot } from '../../../utils/copilot';
 import { saveFile } from '../../../utils/file-utils';
-import { AgentOrchestrator, SubAgent } from '../../../utils/agent-orchestrator';
+import { AgentOrchestrator, SubAgent, orchestratorConfigFor } from '../../../utils/agent-orchestrator';
 import { SmartContextLoader } from '../../../utils/smart-context';
 import { PipelineContext, PipelineStep, StepResult } from '../types';
 
@@ -26,16 +26,25 @@ export class Step01Planning implements PipelineStep {
     // ── Phase 1: Smart Context Discovery ─────────────────────────
     const loader = new SmartContextLoader();
 
-    const { files, kbTopics } = await loader.discoverRelevantContext(
-      ctx.requirement, ctx.workspaceRoot, ctx.kbRelPath, ctx.model, ctx.token,
-    );
+    // Token optimization: 'minimal' skips the File Discovery model call and loads
+    // only lightweight convention context; 'full' loads all KB topics.
+    let files: string[] = [];
+    let kbTopics: string[] = [];
+    if (ctx.contextStrategy === 'minimal') {
+      kbTopics = ['conventions'];
+      log(`ℹ  Context strategy 'minimal' — skipping file discovery to save tokens`);
+    } else {
+      ({ files, kbTopics } = await loader.discoverRelevantContext(
+        ctx.requirement, ctx.workspaceRoot, ctx.kbRelPath, ctx.model, ctx.token,
+      ));
+    }
 
     const smartCtx = loader.loadContext(
       ctx.workspaceRoot, ctx.kbRelPath, files, kbTopics,
     );
 
     // ── Phase 2: Parallel Sub-Agents ─────────────────────────────
-    const orchestrator = new AgentOrchestrator({ maxParallel: 3 });
+    const orchestrator = new AgentOrchestrator(orchestratorConfigFor(ctx, 'generative', 3));
 
     const codebaseContext = loader.buildAgentContext(
       smartCtx.chunks, ['source', 'config'], undefined, 25_000,

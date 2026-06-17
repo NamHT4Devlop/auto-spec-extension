@@ -12,7 +12,7 @@
 import { log } from '../../../logger';
 import { callCopilot } from '../../../utils/copilot';
 import { saveFile } from '../../../utils/file-utils';
-import { AgentOrchestrator, SubAgent } from '../../../utils/agent-orchestrator';
+import { AgentOrchestrator, SubAgent, orchestratorConfigFor } from '../../../utils/agent-orchestrator';
 import { PipelineContext, PipelineStep, StepResult } from '../types';
 
 export class Step07WriteTests implements PipelineStep {
@@ -48,7 +48,7 @@ ${signatures}
 Language: ${ctx.lang}
 Format each test file as: ### FILE: <path>`;
 
-    const orchestrator = new AgentOrchestrator({ maxParallel: 3 });
+    const orchestrator = new AgentOrchestrator(orchestratorConfigFor(ctx, 'generative', 3));
 
     const agents: SubAgent[] = [
       {

@@ -11,7 +11,7 @@
 import { log } from '../../../logger';
 import { callCopilot } from '../../../utils/copilot';
 import { saveFile } from '../../../utils/file-utils';
-import { AgentOrchestrator, SubAgent } from '../../../utils/agent-orchestrator';
+import { AgentOrchestrator, SubAgent, orchestratorConfigFor } from '../../../utils/agent-orchestrator';
 import { PipelineContext, PipelineStep, StepResult } from '../types';
 
 export class Step02PlanReview implements PipelineStep {
@@ -22,7 +22,7 @@ export class Step02PlanReview implements PipelineStep {
   async execute(ctx: PipelineContext): Promise<StepResult> {
     const plan = ctx.stepOutputs.get('step-01')?.output ?? '';
 
-    const orchestrator = new AgentOrchestrator({ maxParallel: 2 });
+    const orchestrator = new AgentOrchestrator(orchestratorConfigFor(ctx, 'review', 2));
 
     const agents: SubAgent[] = [
       {
