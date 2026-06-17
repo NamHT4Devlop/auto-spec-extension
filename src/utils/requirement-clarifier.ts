@@ -31,15 +31,30 @@ export interface ClarityAssessment {
   enrichedRequirement?: string;
 }
 
-const CLARITY_THRESHOLD = 60;
+/** Outcome of a clarification pass. */
+export interface ClarifyResult {
+  /** false = caller should NOT run the (expensive) pipeline — user was asked to refine. */
+  proceed: boolean;
+  /** Requirement to use if proceeding (possibly enriched). */
+  requirement: string;
+}
+
+const DEFAULT_CLARITY_THRESHOLD = 60;
+/** Requirements with at least this many words skip the (cheap) assessment call. */
+const SKIP_ASSESSMENT_WORDS = 30;
 
 // ─── RequirementClarifier ─────────────────────────────────────────────────────
 
 export class RequirementClarifier {
 
   /**
-   * Main entry point. Returns the original requirement if clear enough,
-   * or an enriched version after clarification.
+   * Main entry point. Decides whether the requirement is clear enough to build.
+   *
+   * - Clear enough → { proceed: true, requirement } (possibly enriched).
+   * - Vague + chat stream → asks targeted questions and HALTS
+   *   ({ proceed: false }) so we don't burn a full pipeline on a vague spec.
+   * - Vague + no stream (Command Palette) → asks via input boxes and enriches,
+   *   then proceeds (never blocks the user outright).
    */
   async clarifyIfNeeded(
     requirement: string,
@@ -47,39 +62,58 @@ export class RequirementClarifier {
     model: vscode.LanguageModelChat,
     token: vscode.CancellationToken,
     stream?: vscode.ChatResponseStream,
-  ): Promise<string> {
-    // Very short requirements are almost always vague
-    if (requirement.split(/\s+/).length >= 15) {
+  ): Promise<ClarifyResult> {
+    const cfg = vscode.workspace.getConfiguration('autoSpecKit');
+    if (!cfg.get<boolean>('clarify.enabled', true)) {
+      return { proceed: true, requirement };
+    }
+    const threshold = cfg.get<number>('clarify.threshold', DEFAULT_CLARITY_THRESHOLD);
+
+    // Long, detailed requirements skip the assessment call to save tokens.
+    if (requirement.split(/\s+/).filter(Boolean).length >= SKIP_ASSESSMENT_WORDS) {
       log('📝 RequirementClarifier: requirement looks detailed enough, skipping');
-      return requirement;
+      return { proceed: true, requirement };
     }
 
-    const assessment = await this.assess(requirement, workspaceRoot, model, token);
+    const assessment = await this.assess(requirement, workspaceRoot, model, token, threshold);
 
     if (assessment.isReady) {
       log(`📝 RequirementClarifier: score=${assessment.score}/100 — clear enough`);
-      return assessment.enrichedRequirement ?? requirement;
+      return { proceed: true, requirement: assessment.enrichedRequirement ?? requirement };
     }
 
-    log(`📝 RequirementClarifier: score=${assessment.score}/100 — needs clarification`);
+    log(`📝 RequirementClarifier: score=${assessment.score}/100 (threshold ${threshold}) — needs clarification`);
 
-    // Ask user for clarification
-    const answers = await this.askClarifyingQuestions(
-      requirement,
-      assessment.suggestedQuestions,
-      stream,
-    );
-
-    if (!answers || answers.length === 0) {
-      // User skipped — proceed with original
-      log('📝 RequirementClarifier: user skipped clarification');
-      return requirement;
+    // ── Chat mode: show questions and HALT (do not run the pipeline) ──
+    if (stream) {
+      stream.markdown(
+        `\n\n⚠️ **Your requirement is a bit vague** (clarity ${assessment.score}/100). ` +
+        `To avoid building the wrong thing, please answer these and re-run \`/build\`:\n\n`
+      );
+      const qs = assessment.suggestedQuestions.length
+        ? assessment.suggestedQuestions
+        : ['What exactly should change (entities, endpoints, UI)?',
+           'What is in scope and out of scope?',
+           'What does "done" look like (acceptance criteria)?'];
+      qs.forEach((q, i) => stream.markdown(`${i + 1}. ${q}\n`));
+      if (assessment.missingAspects.length) {
+        stream.markdown(`\n_Missing: ${assessment.missingAspects.join(', ')}._\n`);
+      }
+      stream.markdown(
+        `\n💡 Re-run with detail, e.g.: \`@autospec /build ${requirement} — <add specifics from above>\`\n`
+      );
+      return { proceed: false, requirement };
     }
 
-    // Merge answers into enriched requirement
+    // ── Command Palette mode: ask via input boxes, then enrich ──
+    const answers = await this.askClarifyingQuestions(assessment.suggestedQuestions);
+    if (!answers.length) {
+      log('📝 RequirementClarifier: user skipped clarification — proceeding with original');
+      return { proceed: true, requirement };
+    }
     const enriched = await this.enrichRequirement(requirement, answers, model, token);
     log(`📝 RequirementClarifier: enriched from ${requirement.length} → ${enriched.length} chars`);
-    return enriched;
+    return { proceed: true, requirement: enriched };
   }
 
   /**
@@ -90,6 +124,7 @@ export class RequirementClarifier {
     workspaceRoot: string,
     model: vscode.LanguageModelChat,
     token: vscode.CancellationToken,
+    threshold: number = DEFAULT_CLARITY_THRESHOLD,
   ): Promise<ClarityAssessment> {
     const cfg = vscode.workspace.getConfiguration('autoSpecKit');
     const kbRelPath = cfg.get<string>('knowledgeBasePath', 'knowledge-base');
@@ -142,7 +177,7 @@ ${kbContext ? `## PROJECT KNOWLEDGE BASE (file summaries)\n${kbContext}` : ''}
         const score = parsed.totalScore ?? 0;
         return {
           score,
-          isReady: score >= CLARITY_THRESHOLD,
+          isReady: score >= threshold,
           missingAspects: parsed.missingAspects ?? [],
           suggestedQuestions: (parsed.suggestedQuestions ?? []).slice(0, 3),
         };
@@ -156,35 +191,25 @@ ${kbContext ? `## PROJECT KNOWLEDGE BASE (file summaries)\n${kbContext}` : ''}
   }
 
   /**
-   * Ask clarifying questions via VS Code Quick Pick or chat stream.
+   * Ask clarifying questions via VS Code input boxes (Command Palette mode).
+   * Returns the collected Q&A pairs (empty if the user skipped everything).
    */
-  private async askClarifyingQuestions(
-    requirement: string,
-    questions: string[],
-    stream?: vscode.ChatResponseStream,
-  ): Promise<string[]> {
-    if (questions.length === 0) { return []; }
+  private async askClarifyingQuestions(questions: string[]): Promise<string[]> {
+    const qs = questions.length ? questions : [
+      'What exactly should change (entities, endpoints, UI)?',
+      'What is in scope and what is out of scope?',
+      'What does "done" look like (acceptance criteria)?',
+    ];
 
-    // If we have a chat stream, ask via chat (non-blocking UX)
-    if (stream) {
-      stream.markdown(`\n\n💡 **Your requirement could be more specific.** I have a few quick questions:\n\n`);
-      questions.forEach((q, i) => {
-        stream.markdown(`${i + 1}. ${q}\n`);
-      });
-      stream.markdown(`\n*Tip: Re-run \`/build\` with more detail, or add answers after your requirement.*\n`);
-      // Return empty — user will re-submit with more detail
-      return [];
-    }
-
-    // Fallback: use Quick Pick dialog
     const answers: string[] = [];
-    for (const question of questions) {
+    for (const question of qs) {
       const answer = await vscode.window.showInputBox({
         title: '📝 Clarify Requirement',
         prompt: question,
         placeHolder: 'Type your answer or press Escape to skip',
+        ignoreFocusOut: true,
       });
-      if (answer) { answers.push(`Q: ${question}\nA: ${answer}`); }
+      if (answer && answer.trim()) { answers.push(`Q: ${question}\nA: ${answer.trim()}`); }
     }
 
     return answers;

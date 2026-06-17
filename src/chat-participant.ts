@@ -157,10 +157,15 @@ async function handleBuild(
     return { metadata: { command: 'build' } };
   }
 
-  // ── Clarify vague requirements ──
-  const enrichedRequirement = await requirementClarifier.clarifyIfNeeded(
+  // ── Clarify vague requirements (halt instead of building the wrong thing) ──
+  const clarity = await requirementClarifier.clarifyIfNeeded(
     requirement, root, model, token, stream,
   );
+  if (!clarity.proceed) {
+    // Questions were streamed to the user; do not run the expensive pipeline.
+    return { metadata: { command: 'build', halted: 'needs-clarification' } };
+  }
+  const enrichedRequirement = clarity.requirement;
 
   // ── Auto-detect project profile ──
   const profileDetector = new ProjectProfileDetector(root);

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Auto Spec Kit v1.8.3 — Documentation</title>
+<title>Auto Spec Kit v1.8.4 — Documentation</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #1e293b; min-height: 100vh; }
@@ -88,7 +88,7 @@
   <h1>Auto Spec Kit</h1>
   <p class="subtitle">Automate the full development workflow: Requirement → Plan → Code → Review → Test → Evidence</p>
   <div style="margin-top:10px">
-    <span class="badge badge-blue">v1.8.3</span>
+    <span class="badge badge-blue">v1.8.4</span>
     <span class="badge badge-green">Multi-Agent</span>
     <span class="badge badge-purple">Adaptive Intelligence</span>
     <span class="badge badge-orange">No API Key</span>
@@ -111,6 +111,18 @@
 
 <!-- ═══════════════════════════════ OVERVIEW ═══════════════════════════════ -->
 <div id="overview" class="panel active">
+
+<div class="card">
+  <h2>🧭 Clarity &amp; Ambiguity Handling — v1.8.4</h2>
+  <p>Gets the best result even when your prompt is vague — by clarifying before doing expensive work instead of guessing.</p>
+  <table>
+    <tr><th>Flow</th><th>Behavior on vague input</th></tr>
+    <tr><td><strong>Build (chat)</strong></td><td>Scores requirement clarity; if below <code>clarify.threshold</code> it asks 2–3 targeted questions and <em>halts</em> — no wasted 13-step build. Refine and re-run.</td></tr>
+    <tr><td><strong>Build (Command Palette)</strong></td><td>Now also clarifies: prompts via input boxes and merges your answers into an enriched requirement before building.</td></tr>
+    <tr><td><strong>Ask / investigate</strong></td><td>Detects vague questions; the answer states its interpretation + assumptions, answers the most likely intent, then offers focused clarifying questions — and never fabricates beyond the KB. No extra model call.</td></tr>
+    <tr><td><strong>Config</strong></td><td><code>clarify.enabled</code> (on/off) and <code>clarify.threshold</code> (0–100 strictness).</td></tr>
+  </table>
+</div>
 
 <div class="card">
   <h2>⚡ Token Optimization — v1.8.3</h2>
@@ -229,7 +241,7 @@
 
   <h3>Option A — From VSIX (recommended)</h3>
   <ol class="step-list">
-    <li>Download <code>auto-spec-kit-1.8.3.vsix</code></li>
+    <li>Download <code>auto-spec-kit-1.8.4.vsix</code></li>
     <li>Open VS Code → Extensions panel (<kbd>Ctrl+Shift+X</kbd>)</li>
     <li>Click <strong>⋯ → Install from VSIX…</strong></li>
     <li>Select the downloaded file</li>
@@ -267,7 +279,9 @@ npx @vscode/vsce package --no-dependencies --allow-missing-repository
   "autoSpecKit.agents.mergeStrategy": "auto",
   "autoSpecKit.agents.contextStrategy": "smart",
   "autoSpecKit.agents.systemKbTokens": 10000,
-  "autoSpecKit.ask.maxContextTokens": 24000
+  "autoSpecKit.ask.maxContextTokens": 24000,
+  "autoSpecKit.clarify.enabled": true,
+  "autoSpecKit.clarify.threshold": 60
 }</code></pre>
 </div>
 </div>
@@ -1130,6 +1144,8 @@ autoSync:
     <tr><td><code>autoSpecKit.agents.contextStrategy</code></td><td><code>smart</code></td><td><code>smart</code> = relevant files + capped KB in system prompt, <code>full</code> = entire KB (most tokens), <code>minimal</code> = requirement only (fewest tokens)</td></tr>
     <tr><td><code>autoSpecKit.agents.systemKbTokens</code></td><td><code>10000</code></td><td>Token budget for the KB embedded in the build system prompt when <code>contextStrategy = smart</code></td></tr>
     <tr><td><code>autoSpecKit.ask.maxContextTokens</code></td><td><code>24000</code></td><td>Max KB tokens loaded per "Ask About Codebase" question (only relevant topics)</td></tr>
+    <tr><td><code>autoSpecKit.clarify.enabled</code></td><td><code>true</code></td><td>Clarify vague requirements before /build (chat halts &amp; asks; Command Palette enriches)</td></tr>
+    <tr><td><code>autoSpecKit.clarify.threshold</code></td><td><code>60</code></td><td>Min clarity score (0–100) to build without asking. Higher = stricter</td></tr>
   </table>
 
   <h3>Auto-Sync Settings</h3>
@@ -1184,7 +1200,7 @@ autoSync:
     <li class="green">Run <code>npm install</code> to install dependencies</li>
     <li class="green">Run <code>npm run compile</code> to build</li>
     <li class="purple">Run <code>npm run package</code> to create <code>.vsix</code></li>
-    <li class="purple">Install: <code>code --install-extension auto-spec-kit-1.8.3.vsix</code></li>
+    <li class="purple">Install: <code>code --install-extension auto-spec-kit-1.8.4.vsix</code></li>
   </ol>
 
   <div class="sep"></div>

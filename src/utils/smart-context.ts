@@ -88,6 +88,36 @@ export function selectKBTopicsForQuestion(question: string): string[] {
 }
 
 /**
+ * Heuristic: is a question too vague/under-specified to answer precisely?
+ * Pure + cheap — used to nudge the answer toward interpretation + clarifying
+ * questions instead of confidently guessing. No model call.
+ */
+export function isVagueQuestion(question: string): boolean {
+  const q = question.trim().toLowerCase();
+  if (!q) { return true; }
+  const words = q.split(/\s+/).filter(Boolean);
+
+  // Very short questions are almost always under-specified.
+  if (words.length <= 3) { return true; }
+
+  // Mentions a concrete code target → treat as specific enough.
+  const hasConcreteTarget =
+    /[a-z0-9_./-]+\.(ts|tsx|js|jsx|java|py|go|rb|php|cs|sql|kt)\b/.test(q) ||
+    /\b(endpoint|api|route|controller|service|module|component|function|method|class|entity|model|table|column|migration|schema|field|config)\b/.test(q);
+
+  // Generic verbs with no concrete target and few words = vague.
+  const startsGeneric = /^(fix|help|check|review|investigate|debug|explain|improve|optimi[sz]e|look|see|tell)\b/.test(q);
+  if (startsGeneric && !hasConcreteTarget && words.length <= 6) { return true; }
+
+  // Pronoun-only references ("why does this fail", "what about it").
+  if (/\b(this|that|it|these|those|here|there)\b/.test(q) && !hasConcreteTarget && words.length <= 6) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
  * Build a KB context string limited to the given topics and a token budget.
  * Used by `ask` to avoid dumping the entire knowledge base into every question.
  */

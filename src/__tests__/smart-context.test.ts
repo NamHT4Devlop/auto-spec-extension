@@ -1,5 +1,20 @@
-import { selectKBTopicsForQuestion } from '../utils/smart-context';
+import { selectKBTopicsForQuestion, isVagueQuestion } from '../utils/smart-context';
 import { orchestratorConfigFor } from '../utils/agent-orchestrator';
+
+describe('isVagueQuestion (ambiguity guard for ask)', () => {
+  it('flags very short or pronoun-only questions as vague', () => {
+    expect(isVagueQuestion('fix this')).toBe(true);
+    expect(isVagueQuestion('why does it fail')).toBe(true);
+    expect(isVagueQuestion('check security')).toBe(true);
+    expect(isVagueQuestion('help')).toBe(true);
+  });
+
+  it('treats questions with a concrete code target as specific', () => {
+    expect(isVagueQuestion('Why does AuthService.login throw on expired token?')).toBe(false);
+    expect(isVagueQuestion('Which endpoint handles the order migration table?')).toBe(false);
+    expect(isVagueQuestion('Explain how the payment module validates the amount field')).toBe(false);
+  });
+});
 
 describe('orchestratorConfigFor (token-optimized merge)', () => {
   it("auto => structured (no LLM merge) for review steps", () => {

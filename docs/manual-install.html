@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Auto Spec Kit v1.8.3 — Manual Install Guide</title>
+<title>Auto Spec Kit v1.8.4 — Manual Install Guide</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #1e293b; min-height: 100vh; line-height: 1.6; }
@@ -78,7 +78,7 @@
   <h1>Manual Install Guide</h1>
   <p class="subtitle">Create the project from scratch on any machine — no git clone needed</p>
   <div style="margin-top:10px">
-    <span class="badge badge-blue">v1.8.3</span>
+    <span class="badge badge-blue">v1.8.4</span>
     <span class="badge badge-green">59 files</span>
     <span class="badge badge-orange">Copy & Paste</span>
   </div>
@@ -122,7 +122,7 @@ mkdir -p docs</code></pre>
   <div class="file-header" onclick="toggleFile('package-json')">
     <span class="file-name">package.json</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">8,485 bytes</span>
+      <span class="file-size">9,024 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('package-json',this)">Copy</button>
     </div>
   </div>
@@ -131,7 +131,7 @@ mkdir -p docs</code></pre>
   &quot;name&quot;: &quot;auto-spec-kit&quot;,
   &quot;displayName&quot;: &quot;Auto Spec Kit&quot;,
   &quot;description&quot;: &quot;Automate the full development workflow: Requirement → Plan → Code → Review → Test → Evidence, powered by GitHub Copilot&quot;,
-  &quot;version&quot;: &quot;1.8.3&quot;,
+  &quot;version&quot;: &quot;1.8.4&quot;,
   &quot;publisher&quot;: &quot;auto-spec-kit&quot;,
   &quot;author&quot;: {
     &quot;name&quot;: &quot;nam.hotrung190920&quot;,
@@ -207,6 +207,8 @@ mkdir -p docs</code></pre>
         &quot;autoSpecKit.agents.contextStrategy&quot;: { &quot;type&quot;: &quot;string&quot;, &quot;default&quot;: &quot;smart&quot;, &quot;enum&quot;: [&quot;smart&quot;, &quot;full&quot;, &quot;minimal&quot;], &quot;description&quot;: &quot;Build context size. &#x27;smart&#x27; (recommended) = discover relevant files + cap the knowledge base in the system prompt, &#x27;full&#x27; = inject the entire KB (most tokens), &#x27;minimal&#x27; = requirement only, no file discovery (fewest tokens).&quot; },
         &quot;autoSpecKit.agents.systemKbTokens&quot;: { &quot;type&quot;: &quot;number&quot;, &quot;default&quot;: 10000, &quot;description&quot;: &quot;Token budget for the knowledge base embedded in the build system prompt when contextStrategy = &#x27;smart&#x27;. Lower = cheaper builds.&quot; },
         &quot;autoSpecKit.ask.maxContextTokens&quot;: { &quot;type&quot;: &quot;number&quot;, &quot;default&quot;: 24000, &quot;description&quot;: &quot;Max tokens of knowledge base context loaded per &#x27;Ask About Codebase&#x27; question. Only relevant KB topics are loaded, capped to this budget.&quot; },
+        &quot;autoSpecKit.clarify.enabled&quot;: { &quot;type&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;description&quot;: &quot;Assess requirement clarity before /build. If vague, ask targeted questions first (chat halts so you can refine; Command Palette asks via input boxes and enriches) instead of building the wrong thing.&quot; },
+        &quot;autoSpecKit.clarify.threshold&quot;: { &quot;type&quot;: &quot;number&quot;, &quot;default&quot;: 60, &quot;minimum&quot;: 0, &quot;maximum&quot;: 100, &quot;description&quot;: &quot;Minimum clarity score (0-100) required to start a build without clarification. Higher = stricter (asks more often).&quot; },
         &quot;autoSpecKit.autoSync&quot;: { &quot;type&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;description&quot;: &quot;Auto-fetch and pull latest code before every command (read-only — never pushes or commits)&quot; },
         &quot;autoSpecKit.autoSyncKBUpdate&quot;: { &quot;type&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;description&quot;: &quot;Auto-update Knowledge Base when pulled code contains source changes&quot; }
       }
@@ -447,7 +449,7 @@ npm-debug.log*
   <div class="file-header" onclick="toggleFile('src-chat-participant-ts')">
     <span class="file-name">src/chat-participant.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">24,745 bytes</span>
+      <span class="file-size">25,014 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-chat-participant-ts',this)">Copy</button>
     </div>
   </div>
@@ -611,10 +613,15 @@ async function handleBuild(
     return { metadata: { command: &#x27;build&#x27; } };
   }
 
-  // ── Clarify vague requirements ──
-  const enrichedRequirement = await requirementClarifier.clarifyIfNeeded(
+  // ── Clarify vague requirements (halt instead of building the wrong thing) ──
+  const clarity = await requirementClarifier.clarifyIfNeeded(
     requirement, root, model, token, stream,
   );
+  if (!clarity.proceed) {
+    // Questions were streamed to the user; do not run the expensive pipeline.
+    return { metadata: { command: &#x27;build&#x27;, halted: &#x27;needs-clarification&#x27; } };
+  }
+  const enrichedRequirement = clarity.requirement;
 
   // ── Auto-detect project profile ──
   const profileDetector = new ProjectProfileDetector(root);
@@ -1057,7 +1064,7 @@ export function registerChatParticipant(context: vscode.ExtensionContext): void 
   <div class="file-header" onclick="toggleFile('src-extension-ts')">
     <span class="file-name">src/extension.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">9,122 bytes</span>
+      <span class="file-size">11,215 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-extension-ts',this)">Copy</button>
     </div>
   </div>
@@ -1079,6 +1086,7 @@ import { askAboutCodebase } from &#x27;./workflow/ask-kb&#x27;;
 import { generateUserStories } from &#x27;./workflow/generate-user-stories&#x27;;
 import { visualizeKnowledgeBase } from &#x27;./workflow/visualize-kb&#x27;;
 import { registerChatParticipant } from &#x27;./chat-participant&#x27;;
+import { RequirementClarifier } from &#x27;./utils/requirement-clarifier&#x27;;
 
 export function activate(context: vscode.ExtensionContext): void {
   const ch = initChannel(&#x27;Auto Spec Kit&#x27;);
@@ -1135,14 +1143,26 @@ export function activate(context: vscode.ExtensionContext): void {
         ignoreFocusOut: true,
       });
       if (!req?.trim()) { return; }
+
+      // ── Clarify vague requirements before the (expensive) pipeline ──
+      // Command Palette has no chat stream, so the clarifier asks via input
+      // boxes and enriches; it never hard-blocks the user.
+      const clarifyCts = new vscode.CancellationTokenSource();
+      context.subscriptions.push(clarifyCts);
+      const clarity = await new RequirementClarifier().clarifyIfNeeded(
+        req.trim(), root, model, clarifyCts.token,
+      );
+      if (!clarity.proceed) { return; }
+      const finalReq = clarity.requirement;
+
       ch.show(true);
       log(`\n╔═══════════════════════════════════════════════════════════════╗`);
       log(`║         🚀  AUTO SPEC KIT — DEVELOPMENT WORKFLOW              ║`);
       log(`╚═══════════════════════════════════════════════════════════════╝`);
-      log(`\nRequirement: ${req}\nWorkspace  : ${root}\nModel      : ${model.name}  [${model.id}]\n`);
+      log(`\nRequirement: ${finalReq}\nWorkspace  : ${root}\nModel      : ${model.name}  [${model.id}]\n`);
       await withProgress(&#x27;🚀 Auto Spec Kit&#x27;, async (progress, token) =&gt; {
         try {
-          await runWorkflow(req.trim(), root, model, token, progress, context.extensionPath);
+          await runWorkflow(finalReq, root, model, token, progress, context.extensionPath);
         } catch (err: any) {
           if (!token.isCancellationRequested) {
             log(`\n❌ ERROR: ${err?.message ?? err}`);
@@ -6089,7 +6109,7 @@ export function scanProject(root: string, options: ScanOptions = {}): string {
   <div class="file-header" onclick="toggleFile('src-utils-requirement-clarifier-ts')">
     <span class="file-name">src/utils/requirement-clarifier.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">7,655 bytes</span>
+      <span class="file-size">9,799 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-utils-requirement-clarifier-ts',this)">Copy</button>
     </div>
   </div>
@@ -6127,15 +6147,30 @@ export interface ClarityAssessment {
   enrichedRequirement?: string;
 }
 
-const CLARITY_THRESHOLD = 60;
+/** Outcome of a clarification pass. */
+export interface ClarifyResult {
+  /** false = caller should NOT run the (expensive) pipeline — user was asked to refine. */
+  proceed: boolean;
+  /** Requirement to use if proceeding (possibly enriched). */
+  requirement: string;
+}
+
+const DEFAULT_CLARITY_THRESHOLD = 60;
+/** Requirements with at least this many words skip the (cheap) assessment call. */
+const SKIP_ASSESSMENT_WORDS = 30;
 
 // ─── RequirementClarifier ─────────────────────────────────────────────────────
 
 export class RequirementClarifier {
 
   /**
-   * Main entry point. Returns the original requirement if clear enough,
-   * or an enriched version after clarification.
+   * Main entry point. Decides whether the requirement is clear enough to build.
+   *
+   * - Clear enough → { proceed: true, requirement } (possibly enriched).
+   * - Vague + chat stream → asks targeted questions and HALTS
+   *   ({ proceed: false }) so we don&#x27;t burn a full pipeline on a vague spec.
+   * - Vague + no stream (Command Palette) → asks via input boxes and enriches,
+   *   then proceeds (never blocks the user outright).
    */
   async clarifyIfNeeded(
     requirement: string,
@@ -6143,39 +6178,58 @@ export class RequirementClarifier {
     model: vscode.LanguageModelChat,
     token: vscode.CancellationToken,
     stream?: vscode.ChatResponseStream,
-  ): Promise&lt;string&gt; {
-    // Very short requirements are almost always vague
-    if (requirement.split(/\s+/).length &gt;= 15) {
+  ): Promise&lt;ClarifyResult&gt; {
+    const cfg = vscode.workspace.getConfiguration(&#x27;autoSpecKit&#x27;);
+    if (!cfg.get&lt;boolean&gt;(&#x27;clarify.enabled&#x27;, true)) {
+      return { proceed: true, requirement };
+    }
+    const threshold = cfg.get&lt;number&gt;(&#x27;clarify.threshold&#x27;, DEFAULT_CLARITY_THRESHOLD);
+
+    // Long, detailed requirements skip the assessment call to save tokens.
+    if (requirement.split(/\s+/).filter(Boolean).length &gt;= SKIP_ASSESSMENT_WORDS) {
       log(&#x27;📝 RequirementClarifier: requirement looks detailed enough, skipping&#x27;);
-      return requirement;
+      return { proceed: true, requirement };
     }
 
-    const assessment = await this.assess(requirement, workspaceRoot, model, token);
+    const assessment = await this.assess(requirement, workspaceRoot, model, token, threshold);
 
     if (assessment.isReady) {
       log(`📝 RequirementClarifier: score=${assessment.score}/100 — clear enough`);
-      return assessment.enrichedRequirement ?? requirement;
+      return { proceed: true, requirement: assessment.enrichedRequirement ?? requirement };
     }
 
-    log(`📝 RequirementClarifier: score=${assessment.score}/100 — needs clarification`);
+    log(`📝 RequirementClarifier: score=${assessment.score}/100 (threshold ${threshold}) — needs clarification`);
 
-    // Ask user for clarification
-    const answers = await this.askClarifyingQuestions(
-      requirement,
-      assessment.suggestedQuestions,
-      stream,
-    );
-
-    if (!answers || answers.length === 0) {
-      // User skipped — proceed with original
-      log(&#x27;📝 RequirementClarifier: user skipped clarification&#x27;);
-      return requirement;
+    // ── Chat mode: show questions and HALT (do not run the pipeline) ──
+    if (stream) {
+      stream.markdown(
+        `\n\n⚠️ **Your requirement is a bit vague** (clarity ${assessment.score}/100). ` +
+        `To avoid building the wrong thing, please answer these and re-run \`/build\`:\n\n`
+      );
+      const qs = assessment.suggestedQuestions.length
+        ? assessment.suggestedQuestions
+        : [&#x27;What exactly should change (entities, endpoints, UI)?&#x27;,
+           &#x27;What is in scope and out of scope?&#x27;,
+           &#x27;What does &quot;done&quot; look like (acceptance criteria)?&#x27;];
+      qs.forEach((q, i) =&gt; stream.markdown(`${i + 1}. ${q}\n`));
+      if (assessment.missingAspects.length) {
+        stream.markdown(`\n_Missing: ${assessment.missingAspects.join(&#x27;, &#x27;)}._\n`);
+      }
+      stream.markdown(
+        `\n💡 Re-run with detail, e.g.: \`@autospec /build ${requirement} — &lt;add specifics from above&gt;\`\n`
+      );
+      return { proceed: false, requirement };
     }
 
-    // Merge answers into enriched requirement
+    // ── Command Palette mode: ask via input boxes, then enrich ──
+    const answers = await this.askClarifyingQuestions(assessment.suggestedQuestions);
+    if (!answers.length) {
+      log(&#x27;📝 RequirementClarifier: user skipped clarification — proceeding with original&#x27;);
+      return { proceed: true, requirement };
+    }
     const enriched = await this.enrichRequirement(requirement, answers, model, token);
     log(`📝 RequirementClarifier: enriched from ${requirement.length} → ${enriched.length} chars`);
-    return enriched;
+    return { proceed: true, requirement: enriched };
   }
 
   /**
@@ -6186,6 +6240,7 @@ export class RequirementClarifier {
     workspaceRoot: string,
     model: vscode.LanguageModelChat,
     token: vscode.CancellationToken,
+    threshold: number = DEFAULT_CLARITY_THRESHOLD,
   ): Promise&lt;ClarityAssessment&gt; {
     const cfg = vscode.workspace.getConfiguration(&#x27;autoSpecKit&#x27;);
     const kbRelPath = cfg.get&lt;string&gt;(&#x27;knowledgeBasePath&#x27;, &#x27;knowledge-base&#x27;);
@@ -6238,7 +6293,7 @@ ${kbContext ? `## PROJECT KNOWLEDGE BASE (file summaries)\n${kbContext}` : &#x27
         const score = parsed.totalScore ?? 0;
         return {
           score,
-          isReady: score &gt;= CLARITY_THRESHOLD,
+          isReady: score &gt;= threshold,
           missingAspects: parsed.missingAspects ?? [],
           suggestedQuestions: (parsed.suggestedQuestions ?? []).slice(0, 3),
         };
@@ -6252,35 +6307,25 @@ ${kbContext ? `## PROJECT KNOWLEDGE BASE (file summaries)\n${kbContext}` : &#x27
   }
 
   /**
-   * Ask clarifying questions via VS Code Quick Pick or chat stream.
+   * Ask clarifying questions via VS Code input boxes (Command Palette mode).
+   * Returns the collected Q&amp;A pairs (empty if the user skipped everything).
    */
-  private async askClarifyingQuestions(
-    requirement: string,
-    questions: string[],
-    stream?: vscode.ChatResponseStream,
-  ): Promise&lt;string[]&gt; {
-    if (questions.length === 0) { return []; }
+  private async askClarifyingQuestions(questions: string[]): Promise&lt;string[]&gt; {
+    const qs = questions.length ? questions : [
+      &#x27;What exactly should change (entities, endpoints, UI)?&#x27;,
+      &#x27;What is in scope and what is out of scope?&#x27;,
+      &#x27;What does &quot;done&quot; look like (acceptance criteria)?&#x27;,
+    ];
 
-    // If we have a chat stream, ask via chat (non-blocking UX)
-    if (stream) {
-      stream.markdown(`\n\n💡 **Your requirement could be more specific.** I have a few quick questions:\n\n`);
-      questions.forEach((q, i) =&gt; {
-        stream.markdown(`${i + 1}. ${q}\n`);
-      });
-      stream.markdown(`\n*Tip: Re-run \`/build\` with more detail, or add answers after your requirement.*\n`);
-      // Return empty — user will re-submit with more detail
-      return [];
-    }
-
-    // Fallback: use Quick Pick dialog
     const answers: string[] = [];
-    for (const question of questions) {
+    for (const question of qs) {
       const answer = await vscode.window.showInputBox({
         title: &#x27;📝 Clarify Requirement&#x27;,
         prompt: question,
         placeHolder: &#x27;Type your answer or press Escape to skip&#x27;,
+        ignoreFocusOut: true,
       });
-      if (answer) { answers.push(`Q: ${question}\nA: ${answer}`); }
+      if (answer &amp;&amp; answer.trim()) { answers.push(`Q: ${question}\nA: ${answer.trim()}`); }
     }
 
     return answers;
@@ -6695,7 +6740,7 @@ export function createSessionDir(
   <div class="file-header" onclick="toggleFile('src-utils-smart-context-ts')">
     <span class="file-name">src/utils/smart-context.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">13,415 bytes</span>
+      <span class="file-size">14,736 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-utils-smart-context-ts',this)">Copy</button>
     </div>
   </div>
@@ -6787,6 +6832,36 @@ export function selectKBTopicsForQuestion(question: string): string[] {
     return Object.keys(KB_TOPIC_MAP);
   }
   return [...new Set([...matched, &#x27;architecture&#x27;, &#x27;conventions&#x27;])];
+}
+
+/**
+ * Heuristic: is a question too vague/under-specified to answer precisely?
+ * Pure + cheap — used to nudge the answer toward interpretation + clarifying
+ * questions instead of confidently guessing. No model call.
+ */
+export function isVagueQuestion(question: string): boolean {
+  const q = question.trim().toLowerCase();
+  if (!q) { return true; }
+  const words = q.split(/\s+/).filter(Boolean);
+
+  // Very short questions are almost always under-specified.
+  if (words.length &lt;= 3) { return true; }
+
+  // Mentions a concrete code target → treat as specific enough.
+  const hasConcreteTarget =
+    /[a-z0-9_./-]+\.(ts|tsx|js|jsx|java|py|go|rb|php|cs|sql|kt)\b/.test(q) ||
+    /\b(endpoint|api|route|controller|service|module|component|function|method|class|entity|model|table|column|migration|schema|field|config)\b/.test(q);
+
+  // Generic verbs with no concrete target and few words = vague.
+  const startsGeneric = /^(fix|help|check|review|investigate|debug|explain|improve|optimi[sz]e|look|see|tell)\b/.test(q);
+  if (startsGeneric &amp;&amp; !hasConcreteTarget &amp;&amp; words.length &lt;= 6) { return true; }
+
+  // Pronoun-only references (&quot;why does this fail&quot;, &quot;what about it&quot;).
+  if (/\b(this|that|it|these|those|here|there)\b/.test(q) &amp;&amp; !hasConcreteTarget &amp;&amp; words.length &lt;= 6) {
+    return true;
+  }
+
+  return false;
 }
 
 /**
@@ -7611,7 +7686,7 @@ export class WorkspaceResolver {
   <div class="file-header" onclick="toggleFile('src-workflow-ask-kb-ts')">
     <span class="file-name">src/workflow/ask-kb.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">2,404 bytes</span>
+      <span class="file-size">3,463 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-workflow-ask-kb-ts',this)">Copy</button>
     </div>
   </div>
@@ -7621,7 +7696,7 @@ export class WorkspaceResolver {
 import { log, banner } from &#x27;../logger&#x27;;
 import { callCopilot } from &#x27;../utils/copilot&#x27;;
 import { loadKnowledgeBase } from &#x27;../utils/file-utils&#x27;;
-import { selectKBTopicsForQuestion, loadKBForTopics } from &#x27;../utils/smart-context&#x27;;
+import { selectKBTopicsForQuestion, loadKBForTopics, isVagueQuestion } from &#x27;../utils/smart-context&#x27;;
 import { estimateTokens, truncateToTokens } from &#x27;../utils/token-budget&#x27;;
 
 export async function askAboutCodebase(
@@ -7650,14 +7725,33 @@ export async function askAboutCodebase(
       : fullKb;
   }
 
-  log(`ℹ  KB context: topics [${topics.join(&#x27;, &#x27;)}] (~${estimateTokens(kb).toLocaleString()} tokens)`);
+  const vague = isVagueQuestion(question);
+  log(`ℹ  KB context: topics [${topics.join(&#x27;, &#x27;)}] (~${estimateTokens(kb).toLocaleString()} tokens)${vague ? &#x27; | ⚠ question looks vague&#x27; : &#x27;&#x27;}`);
 
-  const SYSTEM = `You are an expert on this codebase. Answer questions based ONLY on the knowledge base below. If the answer is not covered by the provided context, say so explicitly rather than guessing.\n\n=== KNOWLEDGE BASE (relevant subset) ===\n${kb}`;
+  // Ambiguity-safe answering handled in ONE call (no extra model round-trip):
+  // the model must surface its interpretation/assumptions and never fabricate.
+  const SYSTEM = `You are an expert on this codebase. Answer questions using ONLY the knowledge base below.
+
+=== ANSWERING RULES ===
+1. Ground every claim in the knowledge base. If it does not contain the answer, say so explicitly — never invent files, APIs, or behavior.
+2. Cite concrete names from the KB (files, modules, endpoints, entities) where relevant.
+3. If the question is ambiguous or under-specified:
+   a) First, briefly state how you INTERPRET the question and the ASSUMPTIONS you are making.
+   b) Then answer the most likely intent as best the KB allows.
+   c) Finally, list 2–3 specific CLARIFYING QUESTIONS (or alternative interpretations) so the user can refine.
+4. Prefer a precise, scoped answer over a broad, hedged one.
+
+=== KNOWLEDGE BASE (relevant subset) ===
+${kb}`;
+
+  const userMessage = vague
+    ? `${question}\n\n[NOTE: This question appears broad or under-specified. Begin by stating your interpretation and assumptions, then answer the most likely intent, then ask focused clarifying questions.]`
+    : question;
 
   banner([&#x27;💬 ASK ABOUT CODEBASE&#x27;, `Q: ${question.slice(0, 60)}`]);
   log(`ℹ  Question: ${question}\n`);
 
-  const answer = await callCopilot(model, SYSTEM, question, token, &#x27;Ask About Codebase&#x27;);
+  const answer = await callCopilot(model, SYSTEM, userMessage, token, &#x27;Ask About Codebase&#x27;);
 
   const content = `# 💬 Answer: ${question.slice(0, 80)}
 _${new Date().toLocaleString(&#x27;en-US&#x27;)}_
@@ -12070,7 +12164,7 @@ npm run compile
 npm run package
 
 # Install in VS Code
-code --install-extension auto-spec-kit-1.8.3.vsix</code></pre>
+code --install-extension auto-spec-kit-1.8.4.vsix</code></pre>
   <p>Or press <strong>F5</strong> in VS Code to launch the Extension Development Host for testing.</p>
 </div>
 

@@ -15,6 +15,7 @@ import { askAboutCodebase } from './workflow/ask-kb';
 import { generateUserStories } from './workflow/generate-user-stories';
 import { visualizeKnowledgeBase } from './workflow/visualize-kb';
 import { registerChatParticipant } from './chat-participant';
+import { RequirementClarifier } from './utils/requirement-clarifier';
 
 export function activate(context: vscode.ExtensionContext): void {
   const ch = initChannel('Auto Spec Kit');
@@ -71,14 +72,26 @@ export function activate(context: vscode.ExtensionContext): void {
         ignoreFocusOut: true,
       });
       if (!req?.trim()) { return; }
+
+      // ── Clarify vague requirements before the (expensive) pipeline ──
+      // Command Palette has no chat stream, so the clarifier asks via input
+      // boxes and enriches; it never hard-blocks the user.
+      const clarifyCts = new vscode.CancellationTokenSource();
+      context.subscriptions.push(clarifyCts);
+      const clarity = await new RequirementClarifier().clarifyIfNeeded(
+        req.trim(), root, model, clarifyCts.token,
+      );
+      if (!clarity.proceed) { return; }
+      const finalReq = clarity.requirement;
+
       ch.show(true);
       log(`\n╔═══════════════════════════════════════════════════════════════╗`);
       log(`║         🚀  AUTO SPEC KIT — DEVELOPMENT WORKFLOW              ║`);
       log(`╚═══════════════════════════════════════════════════════════════╝`);
-      log(`\nRequirement: ${req}\nWorkspace  : ${root}\nModel      : ${model.name}  [${model.id}]\n`);
+      log(`\nRequirement: ${finalReq}\nWorkspace  : ${root}\nModel      : ${model.name}  [${model.id}]\n`);
       await withProgress('🚀 Auto Spec Kit', async (progress, token) => {
         try {
-          await runWorkflow(req.trim(), root, model, token, progress, context.extensionPath);
+          await runWorkflow(finalReq, root, model, token, progress, context.extensionPath);
         } catch (err: any) {
           if (!token.isCancellationRequested) {
             log(`\n❌ ERROR: ${err?.message ?? err}`);

@@ -2,7 +2,7 @@
   "name": "auto-spec-kit",
   "displayName": "Auto Spec Kit",
   "description": "Automate the full development workflow: Requirement → Plan → Code → Review → Test → Evidence, powered by GitHub Copilot",
-  "version": "1.8.3",
+  "version": "1.8.4",
   "publisher": "auto-spec-kit",
   "author": {
     "name": "nam.hotrung190920",
@@ -78,6 +78,8 @@
         "autoSpecKit.agents.contextStrategy": { "type": "string", "default": "smart", "enum": ["smart", "full", "minimal"], "description": "Build context size. 'smart' (recommended) = discover relevant files + cap the knowledge base in the system prompt, 'full' = inject the entire KB (most tokens), 'minimal' = requirement only, no file discovery (fewest tokens)." },
         "autoSpecKit.agents.systemKbTokens": { "type": "number", "default": 10000, "description": "Token budget for the knowledge base embedded in the build system prompt when contextStrategy = 'smart'. Lower = cheaper builds." },
         "autoSpecKit.ask.maxContextTokens": { "type": "number", "default": 24000, "description": "Max tokens of knowledge base context loaded per 'Ask About Codebase' question. Only relevant KB topics are loaded, capped to this budget." },
+        "autoSpecKit.clarify.enabled": { "type": "boolean", "default": true, "description": "Assess requirement clarity before /build. If vague, ask targeted questions first (chat halts so you can refine; Command Palette asks via input boxes and enriches) instead of building the wrong thing." },
+        "autoSpecKit.clarify.threshold": { "type": "number", "default": 60, "minimum": 0, "maximum": 100, "description": "Minimum clarity score (0-100) required to start a build without clarification. Higher = stricter (asks more often)." },
         "autoSpecKit.autoSync": { "type": "boolean", "default": true, "description": "Auto-fetch and pull latest code before every command (read-only — never pushes or commits)" },
         "autoSpecKit.autoSyncKBUpdate": { "type": "boolean", "default": true, "description": "Auto-update Knowledge Base when pulled code contains source changes" }
       }

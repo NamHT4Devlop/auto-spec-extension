@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import { log, banner } from '../logger';
 import { callCopilot } from '../utils/copilot';
 import { loadKnowledgeBase } from '../utils/file-utils';
-import { selectKBTopicsForQuestion, loadKBForTopics } from '../utils/smart-context';
+import { selectKBTopicsForQuestion, loadKBForTopics, isVagueQuestion } from '../utils/smart-context';
 import { estimateTokens, truncateToTokens } from '../utils/token-budget';
 
 export async function askAboutCodebase(
@@ -32,14 +32,33 @@ export async function askAboutCodebase(
       : fullKb;
   }
 
-  log(`ℹ  KB context: topics [${topics.join(', ')}] (~${estimateTokens(kb).toLocaleString()} tokens)`);
+  const vague = isVagueQuestion(question);
+  log(`ℹ  KB context: topics [${topics.join(', ')}] (~${estimateTokens(kb).toLocaleString()} tokens)${vague ? ' | ⚠ question looks vague' : ''}`);
 
-  const SYSTEM = `You are an expert on this codebase. Answer questions based ONLY on the knowledge base below. If the answer is not covered by the provided context, say so explicitly rather than guessing.\n\n=== KNOWLEDGE BASE (relevant subset) ===\n${kb}`;
+  // Ambiguity-safe answering handled in ONE call (no extra model round-trip):
+  // the model must surface its interpretation/assumptions and never fabricate.
+  const SYSTEM = `You are an expert on this codebase. Answer questions using ONLY the knowledge base below.
+
+=== ANSWERING RULES ===
+1. Ground every claim in the knowledge base. If it does not contain the answer, say so explicitly — never invent files, APIs, or behavior.
+2. Cite concrete names from the KB (files, modules, endpoints, entities) where relevant.
+3. If the question is ambiguous or under-specified:
+   a) First, briefly state how you INTERPRET the question and the ASSUMPTIONS you are making.
+   b) Then answer the most likely intent as best the KB allows.
+   c) Finally, list 2–3 specific CLARIFYING QUESTIONS (or alternative interpretations) so the user can refine.
+4. Prefer a precise, scoped answer over a broad, hedged one.
+
+=== KNOWLEDGE BASE (relevant subset) ===
+${kb}`;
+
+  const userMessage = vague
+    ? `${question}\n\n[NOTE: This question appears broad or under-specified. Begin by stating your interpretation and assumptions, then answer the most likely intent, then ask focused clarifying questions.]`
+    : question;
 
   banner(['💬 ASK ABOUT CODEBASE', `Q: ${question.slice(0, 60)}`]);
   log(`ℹ  Question: ${question}\n`);
 
-  const answer = await callCopilot(model, SYSTEM, question, token, 'Ask About Codebase');
+  const answer = await callCopilot(model, SYSTEM, userMessage, token, 'Ask About Codebase');
 
   const content = `# 💬 Answer: ${question.slice(0, 80)}
 _${new Date().toLocaleString('en-US')}_
