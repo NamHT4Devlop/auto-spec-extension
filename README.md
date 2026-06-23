@@ -81,9 +81,9 @@ Traditional AI coding assistants answer one question at a time. Auto Spec Kit ru
 ```bash
 git clone <your-repo-url>
 cd auto-spec-extension
-npm install
-npm run compile
-npm run package
+yarn install
+yarn compile
+yarn package
 # Install the generated .vsix:
 code --install-extension auto-spec-kit-1.8.0.vsix
 ```

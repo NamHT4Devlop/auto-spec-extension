@@ -100,10 +100,10 @@
   "scripts": {
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "pretest": "npm run compile",
+    "pretest": "yarn compile",
     "test": "jest --coverage",
     "test:watch": "jest --watch",
-    "package": "npm run compile && npx @vscode/vsce package --no-dependencies"
+    "package": "yarn compile && vsce package --no-dependencies --allow-missing-repository"
   },
   "devDependencies": {
     "@types/jest": "^29.5.0",
@@ -113,5 +113,6 @@
     "ts-jest": "^29.1.0",
     "typescript": "^5.4.0",
     "@vscode/vsce": "^3.0.0"
-  }
+  },
+  "packageManager": "yarn@1.22.22"
 }

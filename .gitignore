@@ -1,6 +1,12 @@
 # Dependencies
 node_modules/
 
+# This project uses Yarn — ignore npm's lockfile to avoid conflicting lockfiles
+package-lock.json
+
+# Compiled output (built via `yarn compile`)
+coverage/
+
 
 # Knowledge Base (auto-generated, project-specific)
 knowledge-base/

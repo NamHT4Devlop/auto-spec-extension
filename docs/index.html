@@ -251,8 +251,8 @@
   <h3>Option B — From Source</h3>
   <pre><code>git clone <your-repo-url>
 cd auto-spec-extension
-npm install
-npm run compile
+yarn install
+yarn compile
 npx @vscode/vsce package --no-dependencies --allow-missing-repository
 # Install the generated .vsix from the Extensions panel</code></pre>
 </div>
@@ -1188,7 +1188,7 @@ autoSync:
     <tr><td>Config Files (5)</td><td><code>package.json</code>, <code>tsconfig.json</code>, <code>jest.config.js</code>, <code>.vscodeignore</code>, <code>.gitignore</code></td></tr>
     <tr><td>Source Files (49)</td><td>Every <code>.ts</code> file + resources, grouped by directory</td></tr>
     <tr><td>Tests & Mocks (5)</td><td>Unit tests + VS Code mock for development</td></tr>
-    <tr><td>Build & Run</td><td><code>npm run compile</code> → <code>npm run package</code> → install <code>.vsix</code></td></tr>
+    <tr><td>Build & Run</td><td><code>yarn compile</code> → <code>yarn package</code> → install <code>.vsix</code></td></tr>
   </table>
 
   <div class="sep"></div>
@@ -1197,9 +1197,9 @@ autoSync:
   <ol class="step-list">
     <li>Open the guide → create folders with the provided terminal commands</li>
     <li>For each file: click to expand → click <strong>Copy</strong> → paste into your editor</li>
-    <li class="green">Run <code>npm install</code> to install dependencies</li>
-    <li class="green">Run <code>npm run compile</code> to build</li>
-    <li class="purple">Run <code>npm run package</code> to create <code>.vsix</code></li>
+    <li class="green">Run <code>yarn install</code> to install dependencies</li>
+    <li class="green">Run <code>yarn compile</code> to build</li>
+    <li class="purple">Run <code>yarn package</code> to create <code>.vsix</code></li>
     <li class="purple">Install: <code>code --install-extension ai-dev-assistant-1.8.4.vsix</code></li>
   </ol>
 

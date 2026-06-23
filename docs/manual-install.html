@@ -122,7 +122,7 @@ mkdir -p docs</code></pre>
   <div class="file-header" onclick="toggleFile('package-json')">
     <span class="file-name">package.json</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">8,628 bytes</span>
+      <span class="file-size">8,673 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('package-json',this)">Copy</button>
     </div>
   </div>
@@ -229,10 +229,10 @@ mkdir -p docs</code></pre>
   &quot;scripts&quot;: {
     &quot;compile&quot;: &quot;tsc -p ./&quot;,
     &quot;watch&quot;: &quot;tsc -watch -p ./&quot;,
-    &quot;pretest&quot;: &quot;npm run compile&quot;,
+    &quot;pretest&quot;: &quot;yarn compile&quot;,
     &quot;test&quot;: &quot;jest --coverage&quot;,
     &quot;test:watch&quot;: &quot;jest --watch&quot;,
-    &quot;package&quot;: &quot;npm run compile &amp;&amp; npx @vscode/vsce package --no-dependencies&quot;
+    &quot;package&quot;: &quot;yarn compile &amp;&amp; vsce package --no-dependencies --allow-missing-repository&quot;
   },
   &quot;devDependencies&quot;: {
     &quot;@types/jest&quot;: &quot;^29.5.0&quot;,
@@ -242,7 +242,8 @@ mkdir -p docs</code></pre>
     &quot;ts-jest&quot;: &quot;^29.1.0&quot;,
     &quot;typescript&quot;: &quot;^5.4.0&quot;,
     &quot;@vscode/vsce&quot;: &quot;^3.0.0&quot;
-  }
+  },
+  &quot;packageManager&quot;: &quot;yarn@1.22.22&quot;
 }
 </code></pre>
   </div>
@@ -371,7 +372,7 @@ npm-debug.log*
 
 <div class="card">
   <h2><span class="step-num">4</span> Install Dependencies</h2>
-  <pre><code>npm install</code></pre>
+  <pre><code>yarn install</code></pre>
   <p>This installs TypeScript, Jest, VS Code types, and vsce from <code>devDependencies</code>.</p>
 </div>
 
@@ -12147,10 +12148,10 @@ Use this checklist to ensure nothing is missed during review:
 <div class="card">
   <h2><span class="step-num">6</span> Build & Run</h2>
   <pre><code># Compile TypeScript
-npm run compile
+yarn compile
 
 # Package as .vsix
-npm run package
+yarn package
 
 # Install in VS Code
 code --install-extension ai-dev-assistant-1.8.4.vsix</code></pre>
