@@ -1,22 +1,11 @@
 {
-  "name": "auto-spec-kit",
-  "displayName": "Auto Spec Kit",
+  "name": "ai-dev-assistant",
+  "displayName": "AI Dev Assistant",
   "description": "Automate the full development workflow: Requirement → Plan → Code → Review → Test → Evidence, powered by GitHub Copilot",
   "version": "1.8.4",
-  "publisher": "auto-spec-kit",
+  "publisher": "internal-tools",
   "author": {
-    "name": "nam.hotrung190920",
-    "email": "trungnam5513@gmail.com",
-    "url": "https://github.com/NamHT4Devlop"
-  },
-  "homepage": "https://github.com/NamHT4Devlop/auto-spec-extension#readme",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/NamHT4Devlop/auto-spec-extension.git"
-  },
-  "bugs": {
-    "url": "https://github.com/NamHT4Devlop/auto-spec-extension/issues",
-    "email": "trungnam5513@gmail.com"
+    "name": "Internal Tools"
   },
   "keywords": [
     "copilot", "ai", "spec", "code-review", "knowledge-base",

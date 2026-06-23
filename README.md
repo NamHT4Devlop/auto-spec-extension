@@ -79,7 +79,7 @@ Traditional AI coding assistants answer one question at a time. Auto Spec Kit ru
 ### From Source
 
 ```bash
-git clone https://github.com/NamHT4Devlop/auto-spec-extension.git
+git clone <your-repo-url>
 cd auto-spec-extension
 npm install
 npm run compile
