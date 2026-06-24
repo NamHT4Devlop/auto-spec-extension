@@ -2,7 +2,7 @@
   "name": "ai-dev-assistant",
   "displayName": "AI Dev Assistant",
   "description": "Automate the full development workflow: Requirement → Plan → Code → Review → Test → Evidence, powered by GitHub Copilot",
-  "version": "1.11.0",
+  "version": "1.11.1",
   "publisher": "internal-tools",
   "author": {
     "name": "Internal Tools"
@@ -27,6 +27,7 @@
         "id": "auto-spec-kit.autospec",
         "fullName": "Protector Spec",
         "name": "protector_spec",
+        "icon": "resources/protector-spec.svg",
         "description": "AI-powered development workflow: plan, code, review, test, generate KB & user stories",
         "isSticky": true,
         "commands": [

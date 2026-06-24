@@ -1,0 +1,21 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Protector Spec">
+  <defs>
+    <linearGradient id="psBg" x1="0" y1="0" x2="128" y2="128" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6366f1"/>
+      <stop offset="0.55" stop-color="#4f46e5"/>
+      <stop offset="1" stop-color="#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="psShield" x1="32" y1="20" x2="96" y2="108" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#e0e7ff"/>
+    </linearGradient>
+  </defs>
+  <!-- rounded background -->
+  <rect width="128" height="128" rx="28" fill="url(#psBg)"/>
+  <!-- shield -->
+  <path d="M64 22 L98 34 V64 C98 86 84 100 64 108 C44 100 30 86 30 64 V34 Z"
+        fill="url(#psShield)" stroke="#312e81" stroke-width="2" stroke-linejoin="round"/>
+  <!-- check mark (protection verified) -->
+  <path d="M48 64 L59 75 L82 49" fill="none" stroke="#4f46e5" stroke-width="9"
+        stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

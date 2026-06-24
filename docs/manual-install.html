@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Auto Spec Kit v1.11.0 — Manual Install Guide</title>
+<title>Auto Spec Kit v1.11.1 — Manual Install Guide</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #1e293b; min-height: 100vh; line-height: 1.6; }
@@ -78,8 +78,8 @@
   <h1>Manual Install Guide</h1>
   <p class="subtitle">Create the project from scratch on any machine — no git clone needed</p>
   <div style="margin-top:10px">
-    <span class="badge badge-blue">v1.11.0</span>
-    <span class="badge badge-green">60 files</span>
+    <span class="badge badge-blue">v1.11.1</span>
+    <span class="badge badge-green">61 files</span>
     <span class="badge badge-orange">Copy & Paste</span>
   </div>
 </header>
@@ -122,7 +122,7 @@ mkdir -p docs</code></pre>
   <div class="file-header" onclick="toggleFile('package-json')">
     <span class="file-name">package.json</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">10,112 bytes</span>
+      <span class="file-size">10,160 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('package-json',this)">Copy</button>
     </div>
   </div>
@@ -131,7 +131,7 @@ mkdir -p docs</code></pre>
   &quot;name&quot;: &quot;ai-dev-assistant&quot;,
   &quot;displayName&quot;: &quot;AI Dev Assistant&quot;,
   &quot;description&quot;: &quot;Automate the full development workflow: Requirement → Plan → Code → Review → Test → Evidence, powered by GitHub Copilot&quot;,
-  &quot;version&quot;: &quot;1.11.0&quot;,
+  &quot;version&quot;: &quot;1.11.1&quot;,
   &quot;publisher&quot;: &quot;internal-tools&quot;,
   &quot;author&quot;: {
     &quot;name&quot;: &quot;Internal Tools&quot;
@@ -156,6 +156,7 @@ mkdir -p docs</code></pre>
         &quot;id&quot;: &quot;auto-spec-kit.autospec&quot;,
         &quot;fullName&quot;: &quot;Protector Spec&quot;,
         &quot;name&quot;: &quot;protector_spec&quot;,
+        &quot;icon&quot;: &quot;resources/protector-spec.svg&quot;,
         &quot;description&quot;: &quot;AI-powered development workflow: plan, code, review, test, generate KB &amp; user stories&quot;,
         &quot;isSticky&quot;: true,
         &quot;commands&quot;: [
@@ -10067,6 +10068,40 @@ ${sourceCtx ? `\n=== RELEVANT SOURCE CODE ===\n${sourceCtx}` : &#x27;&#x27;}`;
   </div>
 </div>
 
+<div class="file-block" id="file-resources-protector-spec-svg">
+  <div class="file-header" onclick="toggleFile('resources-protector-spec-svg')">
+    <span class="file-name">resources/protector-spec.svg</span>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span class="file-size">1,091 bytes</span>
+      <button class="copy-btn" onclick="event.stopPropagation();copyFile('resources-protector-spec-svg',this)">Copy</button>
+    </div>
+  </div>
+  <div class="file-body" id="body-resources-protector-spec-svg">
+    <pre><code id="code-resources-protector-spec-svg">&lt;svg width=&quot;128&quot; height=&quot;128&quot; viewBox=&quot;0 0 128 128&quot; fill=&quot;none&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot; role=&quot;img&quot; aria-label=&quot;Protector Spec&quot;&gt;
+  &lt;defs&gt;
+    &lt;linearGradient id=&quot;psBg&quot; x1=&quot;0&quot; y1=&quot;0&quot; x2=&quot;128&quot; y2=&quot;128&quot; gradientUnits=&quot;userSpaceOnUse&quot;&gt;
+      &lt;stop offset=&quot;0&quot; stop-color=&quot;#6366f1&quot;/&gt;
+      &lt;stop offset=&quot;0.55&quot; stop-color=&quot;#4f46e5&quot;/&gt;
+      &lt;stop offset=&quot;1&quot; stop-color=&quot;#7c3aed&quot;/&gt;
+    &lt;/linearGradient&gt;
+    &lt;linearGradient id=&quot;psShield&quot; x1=&quot;32&quot; y1=&quot;20&quot; x2=&quot;96&quot; y2=&quot;108&quot; gradientUnits=&quot;userSpaceOnUse&quot;&gt;
+      &lt;stop offset=&quot;0&quot; stop-color=&quot;#ffffff&quot;/&gt;
+      &lt;stop offset=&quot;1&quot; stop-color=&quot;#e0e7ff&quot;/&gt;
+    &lt;/linearGradient&gt;
+  &lt;/defs&gt;
+  &lt;!-- rounded background --&gt;
+  &lt;rect width=&quot;128&quot; height=&quot;128&quot; rx=&quot;28&quot; fill=&quot;url(#psBg)&quot;/&gt;
+  &lt;!-- shield --&gt;
+  &lt;path d=&quot;M64 22 L98 34 V64 C98 86 84 100 64 108 C44 100 30 86 30 64 V34 Z&quot;
+        fill=&quot;url(#psShield)&quot; stroke=&quot;#312e81&quot; stroke-width=&quot;2&quot; stroke-linejoin=&quot;round&quot;/&gt;
+  &lt;!-- check mark (protection verified) --&gt;
+  &lt;path d=&quot;M48 64 L59 75 L82 49&quot; fill=&quot;none&quot; stroke=&quot;#4f46e5&quot; stroke-width=&quot;9&quot;
+        stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;/&gt;
+&lt;/svg&gt;
+</code></pre>
+  </div>
+</div>
+
 <div class="file-block" id="file-src-workflow-visualize-kb-ts">
   <div class="file-header" onclick="toggleFile('src-workflow-visualize-kb-ts')">
     <span class="file-name">src/workflow/visualize-kb.ts</span>
@@ -12968,7 +13003,7 @@ yarn compile
 yarn package
 
 # Install in VS Code
-code --install-extension ai-dev-assistant-1.11.0.vsix</code></pre>
+code --install-extension ai-dev-assistant-1.11.1.vsix</code></pre>
   <p>Or press <strong>F5</strong> in VS Code to launch the Extension Development Host for testing.</p>
 </div>
 
