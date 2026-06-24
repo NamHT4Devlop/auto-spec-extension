@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import { log, banner } from '../logger';
 import { callCopilot } from '../utils/copilot';
 import { loadKnowledgeBase } from '../utils/file-utils';
-import { selectKBTopicsForQuestion, loadKBForTopics, isVagueQuestion } from '../utils/smart-context';
+import { selectKBTopicsForQuestion, loadKBForTopics, isVagueQuestion, loadMatchingModuleDocs } from '../utils/smart-context';
 import { estimateTokens, truncateToTokens } from '../utils/token-budget';
 
 export async function askAboutCodebase(
@@ -21,7 +21,13 @@ export async function askAboutCodebase(
   // Token optimization: load only KB topics relevant to the question (no extra
   // model call) instead of dumping the entire knowledge base every time.
   const topics = selectKBTopicsForQuestion(question);
-  let kb = loadKBForTopics(workspaceRoot, kbRelPath, topics, maxKbTokens);
+
+  // Per-module deep docs are the most relevant context when a question names a
+  // module/feature — load those first (up to half the budget), then fill with topics.
+  const moduleDocs = loadMatchingModuleDocs(workspaceRoot, kbRelPath, question, Math.floor(maxKbTokens * 0.5));
+  const topicBudget = Math.max(4000, maxKbTokens - estimateTokens(moduleDocs));
+  const topicKb = loadKBForTopics(workspaceRoot, kbRelPath, topics, topicBudget);
+  let kb = [moduleDocs, topicKb].filter(Boolean).join('\n\n---\n\n');
 
   // Fallback — if topic selection produced nothing (e.g. non-standard KB layout),
   // load the full KB but cap it to the same budget so we never blow up token usage.

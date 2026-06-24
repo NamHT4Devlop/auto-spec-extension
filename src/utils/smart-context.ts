@@ -87,6 +87,52 @@ export function selectKBTopicsForQuestion(question: string): string[] {
   return [...new Set([...matched, 'architecture', 'conventions'])];
 }
 
+/** List per-module KB docs (knowledge-base/modules/*.md), excluding the index. */
+export function listModuleDocs(workspaceRoot: string, kbRelPath: string): { name: string; file: string }[] {
+  const dir = path.join(workspaceRoot, kbRelPath, 'modules');
+  try {
+    return fs.readdirSync(dir)
+      .filter(f => f.endsWith('.md') && f !== '_index.md')
+      .map(f => ({ name: f.replace(/\.md$/, ''), file: path.join(dir, f) }));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Load per-module KB docs whose module name appears in the question. A module doc
+ * is the most relevant context for a question naming that module/feature.
+ */
+export function loadMatchingModuleDocs(
+  workspaceRoot: string,
+  kbRelPath: string,
+  question: string,
+  maxTokens: number,
+): string {
+  if (maxTokens <= 0) { return ''; }
+  const q = question.toLowerCase();
+  const docs = listModuleDocs(workspaceRoot, kbRelPath);
+  const matched = docs.filter(d =>
+    d.name.toLowerCase().split(/[-_./]+/).filter(t => t.length >= 3).some(t => q.includes(t))
+  );
+  if (!matched.length) { return ''; }
+
+  const parts: string[] = [];
+  let used = 0;
+  for (const d of matched) {
+    if (used >= maxTokens) { break; }
+    let content: string;
+    try { content = fs.readFileSync(d.file, 'utf-8').trim(); } catch { continue; }
+    if (!content) { continue; }
+    if (used + estimateTokens(content) > maxTokens) {
+      content = truncateToTokens(content, maxTokens - used, d.name);
+    }
+    parts.push(`### [modules/${d.name}.md]\n${content}`);
+    used += estimateTokens(content);
+  }
+  return parts.join('\n\n---\n\n');
+}
+
 /**
  * Heuristic: is a question too vague/under-specified to answer precisely?
  * Pure + cheap — used to nudge the answer toward interpretation + clarifying

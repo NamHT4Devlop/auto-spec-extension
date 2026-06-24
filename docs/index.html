@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Auto Spec Kit v1.8.4 — Documentation</title>
+<title>Auto Spec Kit v1.9.0 — Documentation</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #1e293b; min-height: 100vh; }
@@ -88,7 +88,7 @@
   <h1>Auto Spec Kit</h1>
   <p class="subtitle">Automate the full development workflow: Requirement → Plan → Code → Review → Test → Evidence</p>
   <div style="margin-top:10px">
-    <span class="badge badge-blue">v1.8.4</span>
+    <span class="badge badge-blue">v1.9.0</span>
     <span class="badge badge-green">Multi-Agent</span>
     <span class="badge badge-purple">Adaptive Intelligence</span>
     <span class="badge badge-orange">No API Key</span>
@@ -111,6 +111,19 @@
 
 <!-- ═══════════════════════════════ OVERVIEW ═══════════════════════════════ -->
 <div id="overview" class="panel active">
+
+<div class="card">
+  <h2>🧠 Deep Knowledge Base for Large Projects — v1.9.0</h2>
+  <p>The KB generator now scales to big codebases with many modules, flows and business rules — instead of one shallow summary.</p>
+  <table>
+    <tr><th>Area</th><th>Change</th></tr>
+    <tr><td><strong>Per-module deep docs</strong></td><td>Generates <code>knowledge-base/modules/&lt;module&gt;.md</code> for each business module (exhaustive flows, rules, entities, APIs, dependencies) plus a <code>modules/_index.md</code>. Map-reduce so nothing is silently dropped.</td></tr>
+    <tr><td><strong>Smarter scanning</strong></td><td>When the byte budget is hit, business-relevant files (services, controllers, domain, validators) are kept first. Scan budget is configurable (<code>scan.maxFileKB</code>, <code>scan.maxTotalKB</code>).</td></tr>
+    <tr><td><strong>Exhaustive catalogues</strong></td><td>Module analysis enumerates EVERY flow and rule (numbered, with file citations) rather than summarizing a truncated view.</td></tr>
+    <tr><td><strong>Ask uses module docs</strong></td><td>Questions naming a module/feature load that module's deep doc first for precise answers.</td></tr>
+    <tr><td><strong>Config</strong></td><td><code>kb.perModule</code>, <code>kb.maxModules</code>, <code>kb.moduleMaxKB</code>.</td></tr>
+  </table>
+</div>
 
 <div class="card">
   <h2>🧭 Clarity &amp; Ambiguity Handling — v1.8.4</h2>
@@ -241,7 +254,7 @@
 
   <h3>Option A — From VSIX (recommended)</h3>
   <ol class="step-list">
-    <li>Download <code>ai-dev-assistant-1.8.4.vsix</code></li>
+    <li>Download <code>ai-dev-assistant-1.9.0.vsix</code></li>
     <li>Open VS Code → Extensions panel (<kbd>Ctrl+Shift+X</kbd>)</li>
     <li>Click <strong>⋯ → Install from VSIX…</strong></li>
     <li>Select the downloaded file</li>
@@ -281,7 +294,10 @@ npx @vscode/vsce package --no-dependencies --allow-missing-repository
   "autoSpecKit.agents.systemKbTokens": 10000,
   "autoSpecKit.ask.maxContextTokens": 24000,
   "autoSpecKit.clarify.enabled": true,
-  "autoSpecKit.clarify.threshold": 60
+  "autoSpecKit.clarify.threshold": 60,
+  "autoSpecKit.scan.maxTotalKB": 900,
+  "autoSpecKit.kb.perModule": true,
+  "autoSpecKit.kb.maxModules": 24
 }</code></pre>
 </div>
 </div>
@@ -1146,6 +1162,11 @@ autoSync:
     <tr><td><code>autoSpecKit.ask.maxContextTokens</code></td><td><code>24000</code></td><td>Max KB tokens loaded per "Ask About Codebase" question (only relevant topics)</td></tr>
     <tr><td><code>autoSpecKit.clarify.enabled</code></td><td><code>true</code></td><td>Clarify vague requirements before /build (chat halts &amp; asks; Command Palette enriches)</td></tr>
     <tr><td><code>autoSpecKit.clarify.threshold</code></td><td><code>60</code></td><td>Min clarity score (0–100) to build without asking. Higher = stricter</td></tr>
+    <tr><td><code>autoSpecKit.scan.maxFileKB</code></td><td><code>48</code></td><td>Max KB read per source file during KB scan</td></tr>
+    <tr><td><code>autoSpecKit.scan.maxTotalKB</code></td><td><code>900</code></td><td>Max total KB of source in the project-level scan (business files prioritized)</td></tr>
+    <tr><td><code>autoSpecKit.kb.perModule</code></td><td><code>true</code></td><td>Generate deep per-module KB docs (modules/&lt;module&gt;.md) + index</td></tr>
+    <tr><td><code>autoSpecKit.kb.maxModules</code></td><td><code>24</code></td><td>Max modules to deep-analyze (largest first)</td></tr>
+    <tr><td><code>autoSpecKit.kb.moduleMaxKB</code></td><td><code>220</code></td><td>Max KB of source fed into each module's analysis</td></tr>
   </table>
 
   <h3>Auto-Sync Settings</h3>
@@ -1200,7 +1221,7 @@ autoSync:
     <li class="green">Run <code>yarn install</code> to install dependencies</li>
     <li class="green">Run <code>yarn compile</code> to build</li>
     <li class="purple">Run <code>yarn package</code> to create <code>.vsix</code></li>
-    <li class="purple">Install: <code>code --install-extension ai-dev-assistant-1.8.4.vsix</code></li>
+    <li class="purple">Install: <code>code --install-extension ai-dev-assistant-1.9.0.vsix</code></li>
   </ol>
 
   <div class="sep"></div>

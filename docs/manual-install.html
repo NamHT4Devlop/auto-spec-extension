@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Auto Spec Kit v1.8.4 — Manual Install Guide</title>
+<title>Auto Spec Kit v1.9.0 — Manual Install Guide</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #1e293b; min-height: 100vh; line-height: 1.6; }
@@ -78,7 +78,7 @@
   <h1>Manual Install Guide</h1>
   <p class="subtitle">Create the project from scratch on any machine — no git clone needed</p>
   <div style="margin-top:10px">
-    <span class="badge badge-blue">v1.8.4</span>
+    <span class="badge badge-blue">v1.9.0</span>
     <span class="badge badge-green">59 files</span>
     <span class="badge badge-orange">Copy & Paste</span>
   </div>
@@ -122,7 +122,7 @@ mkdir -p docs</code></pre>
   <div class="file-header" onclick="toggleFile('package-json')">
     <span class="file-name">package.json</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">8,673 bytes</span>
+      <span class="file-size">9,761 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('package-json',this)">Copy</button>
     </div>
   </div>
@@ -131,7 +131,7 @@ mkdir -p docs</code></pre>
   &quot;name&quot;: &quot;ai-dev-assistant&quot;,
   &quot;displayName&quot;: &quot;AI Dev Assistant&quot;,
   &quot;description&quot;: &quot;Automate the full development workflow: Requirement → Plan → Code → Review → Test → Evidence, powered by GitHub Copilot&quot;,
-  &quot;version&quot;: &quot;1.8.4&quot;,
+  &quot;version&quot;: &quot;1.9.0&quot;,
   &quot;publisher&quot;: &quot;internal-tools&quot;,
   &quot;author&quot;: {
     &quot;name&quot;: &quot;Internal Tools&quot;
@@ -198,6 +198,11 @@ mkdir -p docs</code></pre>
         &quot;autoSpecKit.ask.maxContextTokens&quot;: { &quot;type&quot;: &quot;number&quot;, &quot;default&quot;: 24000, &quot;description&quot;: &quot;Max tokens of knowledge base context loaded per &#x27;Ask About Codebase&#x27; question. Only relevant KB topics are loaded, capped to this budget.&quot; },
         &quot;autoSpecKit.clarify.enabled&quot;: { &quot;type&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;description&quot;: &quot;Assess requirement clarity before /build. If vague, ask targeted questions first (chat halts so you can refine; Command Palette asks via input boxes and enriches) instead of building the wrong thing.&quot; },
         &quot;autoSpecKit.clarify.threshold&quot;: { &quot;type&quot;: &quot;number&quot;, &quot;default&quot;: 60, &quot;minimum&quot;: 0, &quot;maximum&quot;: 100, &quot;description&quot;: &quot;Minimum clarity score (0-100) required to start a build without clarification. Higher = stricter (asks more often).&quot; },
+        &quot;autoSpecKit.scan.maxFileKB&quot;: { &quot;type&quot;: &quot;number&quot;, &quot;default&quot;: 48, &quot;description&quot;: &quot;Max KB read per source file during project scan (Knowledge Base generation).&quot; },
+        &quot;autoSpecKit.scan.maxTotalKB&quot;: { &quot;type&quot;: &quot;number&quot;, &quot;default&quot;: 900, &quot;description&quot;: &quot;Max total KB of source captured in the project-level scan. Business-relevant files (services, controllers, domain, validators) are prioritized when this budget is hit. Per-module docs give full coverage beyond this.&quot; },
+        &quot;autoSpecKit.kb.perModule&quot;: { &quot;type&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;description&quot;: &quot;Generate a deep per-module Knowledge Base doc (knowledge-base/modules/&lt;module&gt;.md) for each business module, plus an index. Recommended for large projects with many flows/rules.&quot; },
+        &quot;autoSpecKit.kb.maxModules&quot;: { &quot;type&quot;: &quot;number&quot;, &quot;default&quot;: 24, &quot;description&quot;: &quot;Maximum number of modules to deep-analyze in the per-module KB phase (largest modules first).&quot; },
+        &quot;autoSpecKit.kb.moduleMaxKB&quot;: { &quot;type&quot;: &quot;number&quot;, &quot;default&quot;: 220, &quot;description&quot;: &quot;Max KB of source fed into each module&#x27;s deep analysis.&quot; },
         &quot;autoSpecKit.autoSync&quot;: { &quot;type&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;description&quot;: &quot;Auto-fetch and pull latest code before every command (read-only — never pushes or commits)&quot; },
         &quot;autoSpecKit.autoSyncKBUpdate&quot;: { &quot;type&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;description&quot;: &quot;Auto-update Knowledge Base when pulled code contains source changes&quot; }
       }
@@ -5903,7 +5908,7 @@ export class ProjectProfileDetector {
   <div class="file-header" onclick="toggleFile('src-utils-project-scanner-ts')">
     <span class="file-name">src/utils/project-scanner.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">6,881 bytes</span>
+      <span class="file-size">12,651 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-utils-project-scanner-ts',this)">Copy</button>
     </div>
   </div>
@@ -5920,7 +5925,62 @@ export interface ScanOptions {
   excludeDocs?: boolean;
   /** Additional glob-style directory names to skip during scan */
   excludeExtra?: string[];
+  /** Max bytes captured per file (default 40KB) */
+  maxFileBytes?: number;
+  /** Max total bytes captured for the whole scan (default 600KB) */
+  maxTotalBytes?: number;
+  /** Restrict the source walk to this sub-directory (relative to root). Used for per-module scans. */
+  subDir?: string;
+  /** Skip the directory-tree section (used for per-module scans to save tokens) */
+  skipTree?: boolean;
 }
+
+/** A detected module/domain within the project. */
+export interface ProjectModule {
+  /** Display name (directory name) */
+  name: string;
+  /** Path relative to project root */
+  relDir: string;
+  /** Number of source files found under it */
+  fileCount: number;
+}
+
+// Directories that are NOT business modules (framework/infra plumbing).
+const NON_MODULE_DIRS = new Set([
+  &#x27;node_modules&#x27;, &#x27;.git&#x27;, &#x27;dist&#x27;, &#x27;build&#x27;, &#x27;out&#x27;, &#x27;__pycache__&#x27;, &#x27;.next&#x27;, &#x27;.nuxt&#x27;,
+  &#x27;coverage&#x27;, &#x27;spec-kit-sessions&#x27;, &#x27;knowledge-base&#x27;, &#x27;.vscode&#x27;, &#x27;.idea&#x27;, &#x27;vendor&#x27;,
+  &#x27;target&#x27;, &#x27;.gradle&#x27;, &#x27;test&#x27;, &#x27;tests&#x27;, &#x27;__tests__&#x27;, &#x27;mocks&#x27;, &#x27;__mocks__&#x27;,
+  &#x27;node&#x27;, &#x27;bin&#x27;, &#x27;obj&#x27;, &#x27;public&#x27;, &#x27;static&#x27;, &#x27;assets&#x27;, &#x27;resources&#x27;,
+]);
+
+/**
+ * Business-relevance rank for a file path (lower = more important).
+ * Used to keep the most meaningful code when the byte cap forces truncation.
+ */
+function businessRank(relLower: string): number {
+  if (/(service|controller|handler|resolver|usecase|use-case|command|query|domain|workflow|process|saga|orchestrat|validator|policy|rule|guard|interceptor|middleware|gateway|facade)/.test(relLower)) {
+    return 0; // core business logic
+  }
+  if (/(entity|model|schema|migration|repository|dao|mapper|dto|aggregate|event)/.test(relLower)) {
+    return 1; // domain data layer
+  }
+  if (/(\.test\.|\.spec\.|__tests__|_test\.|tests?\/)/.test(relLower)) {
+    return 2; // tests (reveal intent, but bulky)
+  }
+  if (/(config|util|helper|constant|enum|type|\.properties|\.ya?ml|\.xml|\.json)/.test(relLower)) {
+    return 4; // config/util — lowest priority
+  }
+  return 3; // other source
+}
+
+/** Source file extensions (module-scope copy for module discovery). */
+const SOURCE_EXTS_EXPORT = new Set([
+  &#x27;.ts&#x27;, &#x27;.tsx&#x27;, &#x27;.js&#x27;, &#x27;.jsx&#x27;, &#x27;.mjs&#x27;, &#x27;.cjs&#x27;,
+  &#x27;.java&#x27;, &#x27;.kt&#x27;, &#x27;.kts&#x27;, &#x27;.scala&#x27;, &#x27;.groovy&#x27;,
+  &#x27;.py&#x27;, &#x27;.go&#x27;, &#x27;.cs&#x27;, &#x27;.rs&#x27;, &#x27;.rb&#x27;, &#x27;.php&#x27;,
+  &#x27;.vue&#x27;, &#x27;.svelte&#x27;, &#x27;.astro&#x27;,
+  &#x27;.sql&#x27;, &#x27;.graphql&#x27;, &#x27;.gql&#x27;, &#x27;.prisma&#x27;,
+]);
 
 /** Documentation files to exclude in source-only mode */
 const DOC_FILES = new Set([
@@ -5941,12 +6001,13 @@ const DOC_DIRS = new Set([
 ]);
 
 export function scanProject(root: string, options: ScanOptions = {}): string {
-  const { excludeDocs = false, excludeExtra = [] } = options;
+  const { excludeDocs = false, excludeExtra = [], subDir, skipTree = false } = options;
 
   const parts: string[] = [];
-  const MAX_FILE  = 40_000;   // 40KB per file
-  const MAX_TOTAL = 600_000;  // 600KB total context
+  const MAX_FILE  = options.maxFileBytes  ?? 40_000;    // bytes per file
+  const MAX_TOTAL = options.maxTotalBytes ?? 600_000;   // total context bytes
   let totalSize   = 0;
+  const walkRoot  = subDir ? path.join(root, subDir) : root;
 
   const SKIP_DIRS = new Set([
     &#x27;node_modules&#x27;, &#x27;.git&#x27;, &#x27;dist&#x27;, &#x27;build&#x27;, &#x27;out&#x27;, &#x27;__pycache__&#x27;,
@@ -6014,12 +6075,14 @@ export function scanProject(root: string, options: ScanOptions = {}): string {
       }
     });
   };
-  walkTree(root);
-  parts.push(`## DIRECTORY TREE\n\`\`\`\n${root}\n${treeLines.join(&#x27;\n&#x27;)}\n\`\`\``);
+  if (!skipTree) {
+    walkTree(walkRoot);
+    parts.push(`## DIRECTORY TREE\n\`\`\`\n${walkRoot}\n${treeLines.join(&#x27;\n&#x27;)}\n\`\`\``);
+  }
 
   // ── 2. Priority files (always included) ───────────────────────
   const seen = new Set&lt;string&gt;();
-  for (const fname of PRIORITY) {
+  for (const fname of (subDir ? [] : PRIORITY)) {
     const full = path.join(root, fname);
     if (!fs.existsSync(full)) { continue; }
     try {
@@ -6055,41 +6118,109 @@ export function scanProject(root: string, options: ScanOptions = {}): string {
     &#x27;.env.example&#x27;,
   ]);
 
-  const walkSrc = (dir: string, depth = 0) =&gt; {
-    if (depth &gt; 6 || totalSize &gt;= MAX_TOTAL) { return; }
+  // Collect ALL candidate source files first, then read them in business-priority
+  // order so the byte cap keeps the most meaningful code (not whatever the walk hit first).
+  const candidates: string[] = [];
+  const collect = (dir: string, depth = 0) =&gt; {
+    if (depth &gt; 8) { return; }
     let entries: fs.Dirent[];
     try { entries = fs.readdirSync(dir, { withFileTypes: true }); }
     catch { return; }
-
     for (const entry of entries) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
-        if (!SKIP_DIRS.has(entry.name)) { walkSrc(full, depth + 1); }
+        if (!SKIP_DIRS.has(entry.name)) { collect(full, depth + 1); }
         continue;
       }
       if (seen.has(full)) { continue; }
-      // In source-only mode, skip any doc files by name
       if (excludeDocs &amp;&amp; DOC_FILES.has(entry.name.toLowerCase())) { continue; }
       const ext = path.extname(entry.name).toLowerCase();
-      if (SKIP_EXTS.has(ext)) { continue; }
-      if (!SOURCE_EXTS.has(ext)) { continue; }
-      if (totalSize &gt;= MAX_TOTAL) { break; }
-
-      try {
-        let content = fs.readFileSync(full, &#x27;utf-8&#x27;).trim();
-        if (!content) { continue; }
-        if (content.length &gt; MAX_FILE) { content = content.slice(0, MAX_FILE) + &#x27;\n... [TRUNCATED]&#x27;; }
-        totalSize += content.length;
-        const rel = path.relative(root, full);
-        parts.push(`## FILE: ${rel}\n\`\`\`\n${content}\n\`\`\``);
-        seen.add(full);
-      } catch { /* skip */ }
+      if (SKIP_EXTS.has(ext) || !SOURCE_EXTS.has(ext)) { continue; }
+      candidates.push(full);
     }
   };
-  walkSrc(root);
+  collect(walkRoot);
 
-  log(`   → ${seen.size} files scanned, ${(totalSize / 1024).toFixed(0)}KB total`);
+  candidates.sort((a, b) =&gt; {
+    const ra = businessRank(path.relative(root, a).toLowerCase());
+    const rb = businessRank(path.relative(root, b).toLowerCase());
+    if (ra !== rb) { return ra - rb; }
+    return a.localeCompare(b);
+  });
+
+  let truncatedCount = 0;
+  for (const full of candidates) {
+    if (totalSize &gt;= MAX_TOTAL) { truncatedCount++; continue; }
+    try {
+      let content = fs.readFileSync(full, &#x27;utf-8&#x27;).trim();
+      if (!content) { continue; }
+      if (content.length &gt; MAX_FILE) { content = content.slice(0, MAX_FILE) + &#x27;\n... [TRUNCATED]&#x27;; }
+      totalSize += content.length;
+      const rel = path.relative(root, full);
+      parts.push(`## FILE: ${rel}\n\`\`\`\n${content}\n\`\`\``);
+      seen.add(full);
+    } catch { /* skip */ }
+  }
+
+  if (truncatedCount &gt; 0) {
+    parts.push(`## NOTE\n${truncatedCount} additional source file(s) were omitted due to the ${(MAX_TOTAL / 1024).toFixed(0)}KB scan budget. Increase autoSpecKit.scan.maxTotalKB or rely on per-module KB docs for full coverage.`);
+  }
+
+  log(`   → ${seen.size} files scanned, ${(totalSize / 1024).toFixed(0)}KB total${truncatedCount ? ` (${truncatedCount} omitted by budget)` : &#x27;&#x27;}`);
   return parts.join(&#x27;\n\n---\n\n&#x27;);
+}
+
+/**
+ * Discover business modules: immediate sub-directories of the primary source root(s)
+ * that contain a meaningful number of source files. Used for per-module KB generation.
+ */
+export function discoverModules(root: string, options: ScanOptions = {}): ProjectModule[] {
+  const minFiles = 2;
+  const sourceRoots = [&#x27;src&#x27;, &#x27;app&#x27;, &#x27;lib&#x27;, &#x27;internal&#x27;, &#x27;pkg&#x27;, &#x27;cmd&#x27;, &#x27;modules&#x27;, &#x27;packages&#x27;, &#x27;apps&#x27;, &#x27;services&#x27;, &#x27;domains&#x27;]
+    .map(d =&gt; path.join(root, d))
+    .filter(d =&gt; { try { return fs.statSync(d).isDirectory(); } catch { return false; } });
+  // Fallback: if none of the conventional roots exist, treat the project root itself.
+  const roots = sourceRoots.length ? sourceRoots : [root];
+
+  const countSource = (dir: string, depth = 0): number =&gt; {
+    if (depth &gt; 6) { return 0; }
+    let entries: fs.Dirent[];
+    try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return 0; }
+    let c = 0;
+    for (const e of entries) {
+      if (e.isDirectory()) {
+        if (!NON_MODULE_DIRS.has(e.name) &amp;&amp; !e.name.startsWith(&#x27;.&#x27;)) { c += countSource(path.join(dir, e.name), depth + 1); }
+      } else if (SOURCE_EXTS_EXPORT.has(path.extname(e.name).toLowerCase())) {
+        c++;
+      }
+    }
+    return c;
+  };
+
+  const modules: ProjectModule[] = [];
+  const seenNames = new Set&lt;string&gt;();
+  for (const sr of roots) {
+    let entries: fs.Dirent[];
+    try { entries = fs.readdirSync(sr, { withFileTypes: true }); } catch { continue; }
+    for (const e of entries) {
+      if (!e.isDirectory() || NON_MODULE_DIRS.has(e.name) || e.name.startsWith(&#x27;.&#x27;)) { continue; }
+      const dir = path.join(sr, e.name);
+      const fileCount = countSource(dir);
+      if (fileCount &lt; minFiles) { continue; }
+      const relDir = path.relative(root, dir);
+      if (seenNames.has(e.name)) { continue; }
+      seenNames.add(e.name);
+      modules.push({ name: e.name, relDir, fileCount });
+    }
+  }
+  // Largest/most-significant modules first.
+  modules.sort((a, b) =&gt; b.fileCount - a.fileCount);
+  return modules;
+}
+
+/** Scan a single module subtree (no tree, no priority manifests) with its own byte budget. */
+export function scanModule(root: string, relDir: string, options: ScanOptions = {}): string {
+  return scanProject(root, { ...options, subDir: relDir, skipTree: true });
 }
 </code></pre>
   </div>
@@ -6730,7 +6861,7 @@ export function createSessionDir(
   <div class="file-header" onclick="toggleFile('src-utils-smart-context-ts')">
     <span class="file-name">src/utils/smart-context.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">14,736 bytes</span>
+      <span class="file-size">16,328 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-utils-smart-context-ts',this)">Copy</button>
     </div>
   </div>
@@ -6822,6 +6953,52 @@ export function selectKBTopicsForQuestion(question: string): string[] {
     return Object.keys(KB_TOPIC_MAP);
   }
   return [...new Set([...matched, &#x27;architecture&#x27;, &#x27;conventions&#x27;])];
+}
+
+/** List per-module KB docs (knowledge-base/modules/*.md), excluding the index. */
+export function listModuleDocs(workspaceRoot: string, kbRelPath: string): { name: string; file: string }[] {
+  const dir = path.join(workspaceRoot, kbRelPath, &#x27;modules&#x27;);
+  try {
+    return fs.readdirSync(dir)
+      .filter(f =&gt; f.endsWith(&#x27;.md&#x27;) &amp;&amp; f !== &#x27;_index.md&#x27;)
+      .map(f =&gt; ({ name: f.replace(/\.md$/, &#x27;&#x27;), file: path.join(dir, f) }));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Load per-module KB docs whose module name appears in the question. A module doc
+ * is the most relevant context for a question naming that module/feature.
+ */
+export function loadMatchingModuleDocs(
+  workspaceRoot: string,
+  kbRelPath: string,
+  question: string,
+  maxTokens: number,
+): string {
+  if (maxTokens &lt;= 0) { return &#x27;&#x27;; }
+  const q = question.toLowerCase();
+  const docs = listModuleDocs(workspaceRoot, kbRelPath);
+  const matched = docs.filter(d =&gt;
+    d.name.toLowerCase().split(/[-_./]+/).filter(t =&gt; t.length &gt;= 3).some(t =&gt; q.includes(t))
+  );
+  if (!matched.length) { return &#x27;&#x27;; }
+
+  const parts: string[] = [];
+  let used = 0;
+  for (const d of matched) {
+    if (used &gt;= maxTokens) { break; }
+    let content: string;
+    try { content = fs.readFileSync(d.file, &#x27;utf-8&#x27;).trim(); } catch { continue; }
+    if (!content) { continue; }
+    if (used + estimateTokens(content) &gt; maxTokens) {
+      content = truncateToTokens(content, maxTokens - used, d.name);
+    }
+    parts.push(`### [modules/${d.name}.md]\n${content}`);
+    used += estimateTokens(content);
+  }
+  return parts.join(&#x27;\n\n---\n\n&#x27;);
 }
 
 /**
@@ -7676,7 +7853,7 @@ export class WorkspaceResolver {
   <div class="file-header" onclick="toggleFile('src-workflow-ask-kb-ts')">
     <span class="file-name">src/workflow/ask-kb.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">3,463 bytes</span>
+      <span class="file-size">3,926 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-workflow-ask-kb-ts',this)">Copy</button>
     </div>
   </div>
@@ -7686,7 +7863,7 @@ export class WorkspaceResolver {
 import { log, banner } from &#x27;../logger&#x27;;
 import { callCopilot } from &#x27;../utils/copilot&#x27;;
 import { loadKnowledgeBase } from &#x27;../utils/file-utils&#x27;;
-import { selectKBTopicsForQuestion, loadKBForTopics, isVagueQuestion } from &#x27;../utils/smart-context&#x27;;
+import { selectKBTopicsForQuestion, loadKBForTopics, isVagueQuestion, loadMatchingModuleDocs } from &#x27;../utils/smart-context&#x27;;
 import { estimateTokens, truncateToTokens } from &#x27;../utils/token-budget&#x27;;
 
 export async function askAboutCodebase(
@@ -7704,7 +7881,13 @@ export async function askAboutCodebase(
   // Token optimization: load only KB topics relevant to the question (no extra
   // model call) instead of dumping the entire knowledge base every time.
   const topics = selectKBTopicsForQuestion(question);
-  let kb = loadKBForTopics(workspaceRoot, kbRelPath, topics, maxKbTokens);
+
+  // Per-module deep docs are the most relevant context when a question names a
+  // module/feature — load those first (up to half the budget), then fill with topics.
+  const moduleDocs = loadMatchingModuleDocs(workspaceRoot, kbRelPath, question, Math.floor(maxKbTokens * 0.5));
+  const topicBudget = Math.max(4000, maxKbTokens - estimateTokens(moduleDocs));
+  const topicKb = loadKBForTopics(workspaceRoot, kbRelPath, topics, topicBudget);
+  let kb = [moduleDocs, topicKb].filter(Boolean).join(&#x27;\n\n---\n\n&#x27;);
 
   // Fallback — if topic selection produced nothing (e.g. non-standard KB layout),
   // load the full KB but cap it to the same budget so we never blow up token usage.
@@ -7764,7 +7947,7 @@ ${answer}
   <div class="file-header" onclick="toggleFile('src-workflow-generate-kb-ts')">
     <span class="file-name">src/workflow/generate-kb.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">24,750 bytes</span>
+      <span class="file-size">32,560 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-workflow-generate-kb-ts',this)">Copy</button>
     </div>
   </div>
@@ -7797,7 +7980,7 @@ import * as fs from &#x27;fs&#x27;;
 
 import { log, kbHeader, banner } from &#x27;../logger&#x27;;
 import { callCopilot } from &#x27;../utils/copilot&#x27;;
-import { scanProject, ScanOptions } from &#x27;../utils/project-scanner&#x27;;
+import { scanProject, scanModule, discoverModules, ScanOptions, ProjectModule } from &#x27;../utils/project-scanner&#x27;;
 import { AgentOrchestrator, SubAgent } from &#x27;../utils/agent-orchestrator&#x27;;
 import { ProjectProfileDetector } from &#x27;../utils/project-profile&#x27;;
 import { KB_STEPS, KbStep } from &#x27;../constants/kb-steps&#x27;;
@@ -7939,6 +8122,63 @@ Produce the final analysis in well-structured Markdown.`;
   return merged;
 }
 
+// ─── Per-module deep analysis (map step for large projects) ───────────────────
+
+async function analyzeModule(
+  module: ProjectModule,
+  moduleScan: string,
+  kbSystemBase: string,
+  model: vscode.LanguageModelChat,
+  token: vscode.CancellationToken,
+): Promise&lt;string&gt; {
+  const orchestrator = new AgentOrchestrator({ maxParallel: 2, mergeStrategy: &#x27;ai&#x27; });
+  const moduleCtx = `=== MODULE: ${module.name} (path: ${module.relDir}, ${module.fileCount} files) ===\n${moduleScan.slice(0, 120_000)}`;
+
+  const agents: SubAgent[] = [
+    {
+      id: &#x27;flow-rule-cataloguer&#x27;,
+      role: &#x27;Flow &amp; Rule Cataloguer&#x27;,
+      priority: 3,
+      systemContext: `${kbSystemBase}\n\n${moduleCtx}`,
+      prompt: `For the module &quot;${module.name}&quot;, produce a COMPLETE CATALOGUE (not a summary). Enumerate exhaustively and number each item.
+
+### Business Flows
+List EVERY business flow in this module. For each: entry point / trigger, step-by-step path (cite functions + files), state transitions, exit/outcome, error/rollback paths.
+
+### Business Rules &amp; Validations
+List EVERY business rule, validation, constraint and invariant enforced here. For each: the rule, where enforced (file + function), and severity [CRITICAL]/[MAJOR]/[MINOR].
+
+Cite real file paths and function names for every item. If a section has nothing, write &quot;(none found)&quot;.`,
+    },
+    {
+      id: &#x27;domain-api&#x27;,
+      role: &#x27;Domain &amp; API Analyzer&#x27;,
+      priority: 2,
+      systemContext: `${kbSystemBase}\n\n${moduleCtx}`,
+      prompt: `For the module &quot;${module.name}&quot;:
+
+### Entities &amp; Data Model
+Entities/tables/DTOs with key fields, relationships, and state machines (status/state fields).
+
+### API / Entry Points
+Endpoints, message consumers/producers, scheduled jobs, CLI commands this module exposes.
+
+### Dependencies
+Which other modules/services this module depends on, and which depend on it.
+
+Cite file paths for everything.`,
+    },
+  ];
+
+  const mergeInstruction = `Produce the definitive Knowledge Base document for the module &quot;${module.name}&quot;.
+Merge the catalogue + domain analysis into ONE well-structured Markdown document with these sections in order:
+**Overview**, **Business Flows**, **Business Rules**, **Entities &amp; Data Model**, **API / Entry Points**, **Dependencies**.
+Be EXHAUSTIVE — preserve every enumerated flow and rule from the agents (do not collapse the lists). Every claim must cite a file path. No generic filler.`;
+
+  const { merged } = await orchestrator.runAndMerge(agents, mergeInstruction, model, token, kbSystemBase);
+  return merged;
+}
+
 // ─── Main exported function ───────────────────────────────────────────────────
 
 export async function generateKnowledgeBase(
@@ -7955,8 +8195,20 @@ export async function generateKnowledgeBase(
   const maxParallel = cfg.get&lt;number&gt;(&#x27;agents.maxParallel&#x27;, 3);
   const kbPath = path.join(workspaceRoot, kbRelPath);
 
+  // Scan budget (KB) — higher than the old hard-coded caps for deeper coverage.
+  const scanMaxFileBytes  = cfg.get&lt;number&gt;(&#x27;scan.maxFileKB&#x27;, 48) * 1024;
+  const scanMaxTotalBytes = cfg.get&lt;number&gt;(&#x27;scan.maxTotalKB&#x27;, 900) * 1024;
+  // Per-module KB generation (deep docs per business module).
+  const perModuleEnabled  = cfg.get&lt;boolean&gt;(&#x27;kb.perModule&#x27;, true);
+  const maxModules        = cfg.get&lt;number&gt;(&#x27;kb.maxModules&#x27;, 24);
+  const moduleScanBytes   = cfg.get&lt;number&gt;(&#x27;kb.moduleMaxKB&#x27;, 220) * 1024;
+
   // ── Determine scan mode ───────────────────────────────────────
-  let effectiveScanOptions: ScanOptions = scanOptions ?? {};
+  let effectiveScanOptions: ScanOptions = {
+    maxFileBytes: scanMaxFileBytes,
+    maxTotalBytes: scanMaxTotalBytes,
+    ...(scanOptions ?? {}),
+  };
 
   // ── Check existing KB ──────────────────────────────────────────
   if (fs.existsSync(kbPath)) {
@@ -8097,16 +8349,15 @@ export async function generateKnowledgeBase(
     : &#x27;&#x27;;
 
   // ── System context ─────────────────────────────────────────────
-  const KB_SYSTEM = `\
+  // Base = role + stack + rules (no full source). Used for per-module analysis
+  // where each agent receives only its module&#x27;s source.
+  const KB_SYSTEM_BASE = `\
 You are a Principal Software Engineer and Business Analyst hired to deeply understand this codebase.
 
 Your mission is NOT just to describe the code — but to understand WHY the code exists and WHAT PROBLEM IT SOLVES.
 
 === DETECTED PROJECT STACK ===
 ${profileSummary}
-
-=== PROJECT FILES ===
-${projectScan}
 
 === MANDATORY REQUIREMENTS ===
 1. ALWAYS cite actual file paths + function/class/variable names as evidence.
@@ -8116,6 +8367,9 @@ ${projectScan}
 5. When you see magic numbers → explain their business meaning.
 6. Analyze ALL file types: source code, XML config, .properties, SQL migrations, YAML — each carries business context.
 7. For XML-based configurations (Spring, MyBatis, Camel): these are AS IMPORTANT as code — document what they configure and why.${techHintBlock}`;
+
+  // Full = base + whole-project source. Used by the project-level batch steps.
+  const KB_SYSTEM = `${KB_SYSTEM_BASE}\n\n=== PROJECT FILES ===\n${projectScan}`;
 
   const total = KB_STEPS.length + 1; // +1 for review-skills
   let completedSteps = 0;
@@ -8259,10 +8513,68 @@ ${projectScan}
     log(`✅ Saved → ${kbRelPath}/review-skills.md (${(reviewSkillsContent.length / 1024).toFixed(1)}KB)`);
   }
 
+  // ══════════════════════════════════════════════════════════════
+  // MODULE PHASE — per-module deep KB docs (map-reduce for large projects)
+  // ══════════════════════════════════════════════════════════════
+  let moduleCount = 0;
+  if (perModuleEnabled &amp;&amp; !token.isCancellationRequested) {
+    const modules = discoverModules(workspaceRoot, effectiveScanOptions).slice(0, maxModules);
+    if (modules.length &gt; 0) {
+      const modulesDir = path.join(kbPath, &#x27;modules&#x27;);
+      fs.mkdirSync(modulesDir, { recursive: true });
+
+      log(`\n${&#x27;═&#x27;.repeat(66)}`);
+      log(`  🧩 MODULE PHASE — ${modules.length} module(s): ${modules.map(m =&gt; m.name).join(&#x27;, &#x27;)}`);
+      log(`${&#x27;═&#x27;.repeat(66)}\n`);
+      progress.report({ message: `Deep-analyzing ${modules.length} modules...`, increment: 5 });
+
+      const moduleResults = await settledBatch(
+        modules.map(async (mod) =&gt; {
+          log(`   ├─ 🔬 ${mod.name} (${mod.fileCount} files)`);
+          const modScan = scanModule(workspaceRoot, mod.relDir, {
+            ...effectiveScanOptions, maxTotalBytes: moduleScanBytes,
+          });
+          const doc = await analyzeModule(mod, modScan, KB_SYSTEM_BASE, model, token);
+          return { mod, doc };
+        }),
+        maxParallel,
+      );
+
+      const indexLines: string[] = [
+        `# Modules Index`,
+        `_Auto-generated by Auto Spec Kit — per-module deep analysis_\n`,
+        `| Module | Files | Path |`,
+        `|--------|-------|------|`,
+      ];
+      for (const r of moduleResults) {
+        if (r.status === &#x27;fulfilled&#x27; &amp;&amp; r.value.doc.trim()) {
+          const { mod, doc } = r.value;
+          const safe = mod.name.replace(/[^a-zA-Z0-9._-]/g, &#x27;-&#x27;);
+          const rel = `modules/${safe}.md`;
+          fs.writeFileSync(
+            path.join(kbPath, rel),
+            `# Module: ${mod.name}\n_Path: \`${mod.relDir}\` · ${mod.fileCount} source files_\n\n${doc}`,
+            &#x27;utf-8&#x27;,
+          );
+          indexLines.push(`| [${mod.name}](./${safe}.md) | ${mod.fileCount} | \`${mod.relDir}\` |`);
+          moduleCount++;
+          log(`   └─ ✅ ${rel} (${(doc.length / 1024).toFixed(1)}KB)`);
+        } else if (r.status === &#x27;rejected&#x27;) {
+          log(`   └─ ❌ module failed: ${r.reason?.message ?? r.reason}`);
+        }
+      }
+      fs.writeFileSync(path.join(modulesDir, &#x27;_index.md&#x27;), indexLines.join(&#x27;\n&#x27;) + &#x27;\n&#x27;, &#x27;utf-8&#x27;);
+      completedSteps += moduleCount;
+      log(`\n✅ Module docs: ${moduleCount} files in ${kbRelPath}/modules/`);
+    } else {
+      log(&#x27;ℹ  No distinct modules detected — skipping module phase.&#x27;);
+    }
+  }
+
   // ── Summary ────────────────────────────────────────────────────
   banner([
     &#x27;✅  KNOWLEDGE BASE GENERATION COMPLETE!&#x27;,
-    `${completedSteps}/${total} files · Multi-Agent Deep Analysis`,
+    `${completedSteps} files · ${moduleCount} module docs · Multi-Agent Deep Analysis`,
   ]);
   log(`\n🌟 Most important files (generated with multi-agent deep analysis):`);
   log(`   → ${kbRelPath}/04-business-domain.md   — product brief, user roles, core features`);
@@ -12154,7 +12466,7 @@ yarn compile
 yarn package
 
 # Install in VS Code
-code --install-extension ai-dev-assistant-1.8.4.vsix</code></pre>
+code --install-extension ai-dev-assistant-1.9.0.vsix</code></pre>
   <p>Or press <strong>F5</strong> in VS Code to launch the Extension Development Host for testing.</p>
 </div>
 

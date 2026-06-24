@@ -2,7 +2,7 @@
   "name": "ai-dev-assistant",
   "displayName": "AI Dev Assistant",
   "description": "Automate the full development workflow: Requirement → Plan → Code → Review → Test → Evidence, powered by GitHub Copilot",
-  "version": "1.8.4",
+  "version": "1.9.0",
   "publisher": "internal-tools",
   "author": {
     "name": "Internal Tools"
@@ -69,6 +69,11 @@
         "autoSpecKit.ask.maxContextTokens": { "type": "number", "default": 24000, "description": "Max tokens of knowledge base context loaded per 'Ask About Codebase' question. Only relevant KB topics are loaded, capped to this budget." },
         "autoSpecKit.clarify.enabled": { "type": "boolean", "default": true, "description": "Assess requirement clarity before /build. If vague, ask targeted questions first (chat halts so you can refine; Command Palette asks via input boxes and enriches) instead of building the wrong thing." },
         "autoSpecKit.clarify.threshold": { "type": "number", "default": 60, "minimum": 0, "maximum": 100, "description": "Minimum clarity score (0-100) required to start a build without clarification. Higher = stricter (asks more often)." },
+        "autoSpecKit.scan.maxFileKB": { "type": "number", "default": 48, "description": "Max KB read per source file during project scan (Knowledge Base generation)." },
+        "autoSpecKit.scan.maxTotalKB": { "type": "number", "default": 900, "description": "Max total KB of source captured in the project-level scan. Business-relevant files (services, controllers, domain, validators) are prioritized when this budget is hit. Per-module docs give full coverage beyond this." },
+        "autoSpecKit.kb.perModule": { "type": "boolean", "default": true, "description": "Generate a deep per-module Knowledge Base doc (knowledge-base/modules/<module>.md) for each business module, plus an index. Recommended for large projects with many flows/rules." },
+        "autoSpecKit.kb.maxModules": { "type": "number", "default": 24, "description": "Maximum number of modules to deep-analyze in the per-module KB phase (largest modules first)." },
+        "autoSpecKit.kb.moduleMaxKB": { "type": "number", "default": 220, "description": "Max KB of source fed into each module's deep analysis." },
         "autoSpecKit.autoSync": { "type": "boolean", "default": true, "description": "Auto-fetch and pull latest code before every command (read-only — never pushes or commits)" },
         "autoSpecKit.autoSyncKBUpdate": { "type": "boolean", "default": true, "description": "Auto-update Knowledge Base when pulled code contains source changes" }
       }

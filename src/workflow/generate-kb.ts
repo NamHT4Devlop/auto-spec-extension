@@ -26,7 +26,7 @@ import * as fs from 'fs';
 
 import { log, kbHeader, banner } from '../logger';
 import { callCopilot } from '../utils/copilot';
-import { scanProject, ScanOptions } from '../utils/project-scanner';
+import { scanProject, scanModule, discoverModules, ScanOptions, ProjectModule } from '../utils/project-scanner';
 import { AgentOrchestrator, SubAgent } from '../utils/agent-orchestrator';
 import { ProjectProfileDetector } from '../utils/project-profile';
 import { KB_STEPS, KbStep } from '../constants/kb-steps';
@@ -168,6 +168,63 @@ Produce the final analysis in well-structured Markdown.`;
   return merged;
 }
 
+// ─── Per-module deep analysis (map step for large projects) ───────────────────
+
+async function analyzeModule(
+  module: ProjectModule,
+  moduleScan: string,
+  kbSystemBase: string,
+  model: vscode.LanguageModelChat,
+  token: vscode.CancellationToken,
+): Promise<string> {
+  const orchestrator = new AgentOrchestrator({ maxParallel: 2, mergeStrategy: 'ai' });
+  const moduleCtx = `=== MODULE: ${module.name} (path: ${module.relDir}, ${module.fileCount} files) ===\n${moduleScan.slice(0, 120_000)}`;
+
+  const agents: SubAgent[] = [
+    {
+      id: 'flow-rule-cataloguer',
+      role: 'Flow & Rule Cataloguer',
+      priority: 3,
+      systemContext: `${kbSystemBase}\n\n${moduleCtx}`,
+      prompt: `For the module "${module.name}", produce a COMPLETE CATALOGUE (not a summary). Enumerate exhaustively and number each item.
+
+### Business Flows
+List EVERY business flow in this module. For each: entry point / trigger, step-by-step path (cite functions + files), state transitions, exit/outcome, error/rollback paths.
+
+### Business Rules & Validations
+List EVERY business rule, validation, constraint and invariant enforced here. For each: the rule, where enforced (file + function), and severity [CRITICAL]/[MAJOR]/[MINOR].
+
+Cite real file paths and function names for every item. If a section has nothing, write "(none found)".`,
+    },
+    {
+      id: 'domain-api',
+      role: 'Domain & API Analyzer',
+      priority: 2,
+      systemContext: `${kbSystemBase}\n\n${moduleCtx}`,
+      prompt: `For the module "${module.name}":
+
+### Entities & Data Model
+Entities/tables/DTOs with key fields, relationships, and state machines (status/state fields).
+
+### API / Entry Points
+Endpoints, message consumers/producers, scheduled jobs, CLI commands this module exposes.
+
+### Dependencies
+Which other modules/services this module depends on, and which depend on it.
+
+Cite file paths for everything.`,
+    },
+  ];
+
+  const mergeInstruction = `Produce the definitive Knowledge Base document for the module "${module.name}".
+Merge the catalogue + domain analysis into ONE well-structured Markdown document with these sections in order:
+**Overview**, **Business Flows**, **Business Rules**, **Entities & Data Model**, **API / Entry Points**, **Dependencies**.
+Be EXHAUSTIVE — preserve every enumerated flow and rule from the agents (do not collapse the lists). Every claim must cite a file path. No generic filler.`;
+
+  const { merged } = await orchestrator.runAndMerge(agents, mergeInstruction, model, token, kbSystemBase);
+  return merged;
+}
+
 // ─── Main exported function ───────────────────────────────────────────────────
 
 export async function generateKnowledgeBase(
@@ -184,8 +241,20 @@ export async function generateKnowledgeBase(
   const maxParallel = cfg.get<number>('agents.maxParallel', 3);
   const kbPath = path.join(workspaceRoot, kbRelPath);
 
+  // Scan budget (KB) — higher than the old hard-coded caps for deeper coverage.
+  const scanMaxFileBytes  = cfg.get<number>('scan.maxFileKB', 48) * 1024;
+  const scanMaxTotalBytes = cfg.get<number>('scan.maxTotalKB', 900) * 1024;
+  // Per-module KB generation (deep docs per business module).
+  const perModuleEnabled  = cfg.get<boolean>('kb.perModule', true);
+  const maxModules        = cfg.get<number>('kb.maxModules', 24);
+  const moduleScanBytes   = cfg.get<number>('kb.moduleMaxKB', 220) * 1024;
+
   // ── Determine scan mode ───────────────────────────────────────
-  let effectiveScanOptions: ScanOptions = scanOptions ?? {};
+  let effectiveScanOptions: ScanOptions = {
+    maxFileBytes: scanMaxFileBytes,
+    maxTotalBytes: scanMaxTotalBytes,
+    ...(scanOptions ?? {}),
+  };
 
   // ── Check existing KB ──────────────────────────────────────────
   if (fs.existsSync(kbPath)) {
@@ -326,16 +395,15 @@ export async function generateKnowledgeBase(
     : '';
 
   // ── System context ─────────────────────────────────────────────
-  const KB_SYSTEM = `\
+  // Base = role + stack + rules (no full source). Used for per-module analysis
+  // where each agent receives only its module's source.
+  const KB_SYSTEM_BASE = `\
 You are a Principal Software Engineer and Business Analyst hired to deeply understand this codebase.
 
 Your mission is NOT just to describe the code — but to understand WHY the code exists and WHAT PROBLEM IT SOLVES.
 
 === DETECTED PROJECT STACK ===
 ${profileSummary}
-
-=== PROJECT FILES ===
-${projectScan}
 
 === MANDATORY REQUIREMENTS ===
 1. ALWAYS cite actual file paths + function/class/variable names as evidence.
@@ -345,6 +413,9 @@ ${projectScan}
 5. When you see magic numbers → explain their business meaning.
 6. Analyze ALL file types: source code, XML config, .properties, SQL migrations, YAML — each carries business context.
 7. For XML-based configurations (Spring, MyBatis, Camel): these are AS IMPORTANT as code — document what they configure and why.${techHintBlock}`;
+
+  // Full = base + whole-project source. Used by the project-level batch steps.
+  const KB_SYSTEM = `${KB_SYSTEM_BASE}\n\n=== PROJECT FILES ===\n${projectScan}`;
 
   const total = KB_STEPS.length + 1; // +1 for review-skills
   let completedSteps = 0;
@@ -488,10 +559,68 @@ ${projectScan}
     log(`✅ Saved → ${kbRelPath}/review-skills.md (${(reviewSkillsContent.length / 1024).toFixed(1)}KB)`);
   }
 
+  // ══════════════════════════════════════════════════════════════
+  // MODULE PHASE — per-module deep KB docs (map-reduce for large projects)
+  // ══════════════════════════════════════════════════════════════
+  let moduleCount = 0;
+  if (perModuleEnabled && !token.isCancellationRequested) {
+    const modules = discoverModules(workspaceRoot, effectiveScanOptions).slice(0, maxModules);
+    if (modules.length > 0) {
+      const modulesDir = path.join(kbPath, 'modules');
+      fs.mkdirSync(modulesDir, { recursive: true });
+
+      log(`\n${'═'.repeat(66)}`);
+      log(`  🧩 MODULE PHASE — ${modules.length} module(s): ${modules.map(m => m.name).join(', ')}`);
+      log(`${'═'.repeat(66)}\n`);
+      progress.report({ message: `Deep-analyzing ${modules.length} modules...`, increment: 5 });
+
+      const moduleResults = await settledBatch(
+        modules.map(async (mod) => {
+          log(`   ├─ 🔬 ${mod.name} (${mod.fileCount} files)`);
+          const modScan = scanModule(workspaceRoot, mod.relDir, {
+            ...effectiveScanOptions, maxTotalBytes: moduleScanBytes,
+          });
+          const doc = await analyzeModule(mod, modScan, KB_SYSTEM_BASE, model, token);
+          return { mod, doc };
+        }),
+        maxParallel,
+      );
+
+      const indexLines: string[] = [
+        `# Modules Index`,
+        `_Auto-generated by Auto Spec Kit — per-module deep analysis_\n`,
+        `| Module | Files | Path |`,
+        `|--------|-------|------|`,
+      ];
+      for (const r of moduleResults) {
+        if (r.status === 'fulfilled' && r.value.doc.trim()) {
+          const { mod, doc } = r.value;
+          const safe = mod.name.replace(/[^a-zA-Z0-9._-]/g, '-');
+          const rel = `modules/${safe}.md`;
+          fs.writeFileSync(
+            path.join(kbPath, rel),
+            `# Module: ${mod.name}\n_Path: \`${mod.relDir}\` · ${mod.fileCount} source files_\n\n${doc}`,
+            'utf-8',
+          );
+          indexLines.push(`| [${mod.name}](./${safe}.md) | ${mod.fileCount} | \`${mod.relDir}\` |`);
+          moduleCount++;
+          log(`   └─ ✅ ${rel} (${(doc.length / 1024).toFixed(1)}KB)`);
+        } else if (r.status === 'rejected') {
+          log(`   └─ ❌ module failed: ${r.reason?.message ?? r.reason}`);
+        }
+      }
+      fs.writeFileSync(path.join(modulesDir, '_index.md'), indexLines.join('\n') + '\n', 'utf-8');
+      completedSteps += moduleCount;
+      log(`\n✅ Module docs: ${moduleCount} files in ${kbRelPath}/modules/`);
+    } else {
+      log('ℹ  No distinct modules detected — skipping module phase.');
+    }
+  }
+
   // ── Summary ────────────────────────────────────────────────────
   banner([
     '✅  KNOWLEDGE BASE GENERATION COMPLETE!',
-    `${completedSteps}/${total} files · Multi-Agent Deep Analysis`,
+    `${completedSteps} files · ${moduleCount} module docs · Multi-Agent Deep Analysis`,
   ]);
   log(`\n🌟 Most important files (generated with multi-agent deep analysis):`);
   log(`   → ${kbRelPath}/04-business-domain.md   — product brief, user roles, core features`);
