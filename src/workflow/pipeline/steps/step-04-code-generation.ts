@@ -11,7 +11,7 @@
 
 import { log } from '../../../logger';
 import { callCopilot } from '../../../utils/copilot';
-import { saveFile } from '../../../utils/file-utils';
+import { saveFile, loadKbDocs } from '../../../utils/file-utils';
 import { AgentOrchestrator, SubAgent, orchestratorConfigFor } from '../../../utils/agent-orchestrator';
 import { SmartContextLoader } from '../../../utils/smart-context';
 import { PipelineContext, PipelineStep, StepResult } from '../types';
@@ -38,6 +38,15 @@ export class Step04CodeGeneration implements PipelineStep {
     const smartCtx = loader.loadContext(ctx.workspaceRoot, ctx.kbRelPath, relevantFiles, ['conventions'], 30_000);
     const referenceCode = loader.buildAgentContext(smartCtx.chunks, ['source', 'kb'], ['conventions'], 15_000);
 
+    // Architecture guardrails: the documented patterns + conventions new code MUST follow.
+    const archGuardrails = loadKbDocs(
+      ctx.workspaceRoot, ctx.kbRelPath,
+      ['16-architecture-patterns.md', '12-conventions.md'], 14_000,
+    );
+    const archBlock = archGuardrails
+      ? `\n\n=== ARCHITECTURE & DESIGN PATTERNS (MUST FOLLOW — DO NOT BREAK) ===\n${archGuardrails}`
+      : '';
+
     // Spawn parallel code generators
     const orchestrator = new AgentOrchestrator(orchestratorConfigFor(ctx, 'generative', 3));
 
@@ -45,7 +54,7 @@ export class Step04CodeGeneration implements PipelineStep {
       id: `codegen-${i}`,
       role: `Code Generator: ${unit.label}`,
       priority: unit.priority,
-      systemContext: `${ctx.systemPrompt}\n\n=== REFERENCE CODE (existing patterns) ===\n${referenceCode}`,
+      systemContext: `${ctx.systemPrompt}\n\n=== REFERENCE CODE (existing patterns) ===\n${referenceCode}${archBlock}`,
       prompt: `\
 ## FULL REQUIREMENT
 ${ctx.requirement}
@@ -64,8 +73,9 @@ ${planFinal}
 2. Use ### FILE: <path> format for each file.
 3. Write complete, production-ready code — NO placeholders.
 4. Follow existing project patterns exactly (see REFERENCE CODE).
-5. Include proper imports, types, error handling.
-6. Language: ${ctx.lang}`,
+5. ARCHITECTURE: follow the documented design pattern of the target module and respect the layer/dependency rules and "Architecture Invariants — DO NOT BREAK". Do NOT cross layer boundaries (e.g. controller calling the DB directly) or introduce a different pattern than the surrounding module. When in doubt, copy the matching Extension Recipe.
+6. Include proper imports, types, error handling.
+7. Language: ${ctx.lang}`,
     }));
 
     const mergeInstruction = `\
@@ -106,7 +116,15 @@ You are assembling code from ${workUnits.length} parallel code generators into a
   private async singleAgentGenerate(ctx: PipelineContext, plan: string): Promise<StepResult> {
     log(`ℹ  Using single-agent code generation`);
 
-    const code = await callCopilot(ctx.model, ctx.systemPrompt, `\
+    const archGuardrails = loadKbDocs(
+      ctx.workspaceRoot, ctx.kbRelPath,
+      ['16-architecture-patterns.md', '12-conventions.md'], 14_000,
+    );
+    const sys = archGuardrails
+      ? `${ctx.systemPrompt}\n\n=== ARCHITECTURE & DESIGN PATTERNS (MUST FOLLOW — DO NOT BREAK) ===\n${archGuardrails}`
+      : ctx.systemPrompt;
+
+    const code = await callCopilot(ctx.model, sys, `\
 Implement ALL code for the following requirement based on the approved plan.
 
 ## REQUIREMENT: ${ctx.requirement}
@@ -123,6 +141,7 @@ ${plan}
 ## RULES:
 - Complete, production-ready code — NO placeholders.
 - Follow exact conventions from the knowledge base.
+- ARCHITECTURE: follow the documented design pattern of the target module; respect layer/dependency rules and the "Architecture Invariants — DO NOT BREAK"; do not introduce a different pattern or cross layer boundaries.
 - Language: ${ctx.lang}`, ctx.token, 'Code Generation');
 
     saveFile(ctx.sessionDir, '03-code/code-raw.md', code);

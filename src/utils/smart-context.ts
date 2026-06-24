@@ -39,7 +39,7 @@ export interface SmartContextResult {
 // ─── KB Topic Mapping ─────────────────────────────────────────────────────────
 
 const KB_TOPIC_MAP: Record<string, string[]> = {
-  'architecture':   ['01-project-structure.md', '02-tech-stack.md', '07-architecture-diagram.md'],
+  'architecture':   ['01-project-structure.md', '02-tech-stack.md', '07-architecture-diagram.md', '16-architecture-patterns.md'],
   'domain':         ['04-business-domain.md', '05-domain-model.md'],
   'business-rules': ['13-business-rules.md', '10-core-flows.md'],
   'api':            ['11-api-docs.md', '05-domain-model.md'],

@@ -12,7 +12,7 @@
 
 import { log } from '../../../logger';
 import { callCopilot } from '../../../utils/copilot';
-import { saveFile, extractFiles } from '../../../utils/file-utils';
+import { saveFile, extractFiles, loadKbDocs } from '../../../utils/file-utils';
 import { loadGitContext, formatGitContextForPrompt } from '../../../utils/git-utils';
 import { AgentOrchestrator, SubAgent, orchestratorConfigFor } from '../../../utils/agent-orchestrator';
 import { PipelineContext, PipelineStep, StepResult } from '../types';
@@ -40,6 +40,12 @@ ${code}
 
 ## GIT CONTEXT:
 ${gitBlock}`;
+
+    // Documented architecture + conventions the change must conform to.
+    const archGuardrails = loadKbDocs(
+      ctx.workspaceRoot, ctx.kbRelPath,
+      ['16-architecture-patterns.md', '12-conventions.md'], 14_000,
+    );
 
     const orchestrator = new AgentOrchestrator(orchestratorConfigFor(ctx, 'review', 4));
 
@@ -70,25 +76,23 @@ For each issue:
       },
       {
         id: 'architecture-reviewer',
-        role: 'Architecture Reviewer',
-        priority: 2,
-        systemContext: `You are a software architect reviewing code for design quality.\n\n${ctx.kb ? `=== PROJECT CONVENTIONS ===\n${ctx.kb.slice(0, 10000)}` : ''}`,
+        role: 'Architecture & Pattern Conformance Reviewer',
+        priority: 3,
+        systemContext: `You are a software architect enforcing the project's documented architecture and design patterns.\n\n${archGuardrails ? `=== DOCUMENTED ARCHITECTURE & PATTERNS (the change MUST conform) ===\n${archGuardrails}` : (ctx.kb ? `=== PROJECT CONVENTIONS ===\n${ctx.kb.slice(0, 10000)}` : '')}`,
         prompt: `\
 ${sharedCodeContext}
 
-## YOUR FOCUS: ARCHITECTURE & CODE QUALITY
-Review this code for design and quality:
+## YOUR FOCUS: ARCHITECTURE & PATTERN CONFORMANCE (DO NOT let the change break the design)
+Check the generated code against the DOCUMENTED architecture & patterns above. Flag every deviation:
 
-1. **Layer Violations** — Does any code bypass the correct layer (e.g., controller calling DB directly)?
-2. **Coupling** — Are modules properly decoupled? Any circular dependencies?
-3. **Naming** — Do names follow project conventions? Are they descriptive?
-4. **DRY** — Any duplicated logic that should be extracted?
-5. **SOLID** — Single responsibility? Interface segregation? Dependency inversion?
-6. **Error Handling** — Consistent with project patterns? No swallowed errors?
-7. **Type Safety** — Any \`any\` types? Missing null checks? Unsafe casts?
-8. **Consistency** — Does new code match existing project patterns exactly?
+1. **Architecture Invariants** — Does the code violate any rule in "Architecture Invariants — DO NOT BREAK"? Quote the specific invariant it breaks.
+2. **Pattern Conformance** — Does the new code follow the SAME design pattern as the module it lives in (e.g., Repository, Ports & Adapters, CQRS, Camel route)? Or did it introduce a foreign pattern?
+3. **Layer / Dependency Rules** — Any forbidden dependency direction (e.g. controller → DB directly, domain → infrastructure, cross-module shortcut, circular dependency)?
+4. **Boundary Violations** — Does it cross a module/bounded-context boundary in a way the docs forbid (should use a port/event/queue instead)?
+5. **Extension Recipe** — If an Extension Recipe exists for this kind of change, does the code follow it? If not, what diverged?
+6. **Consistency** — Naming, error-handling location, transaction boundaries, validation placement — match the documented conventions?
 
-For each issue: severity, location, bad code, fixed code.`,
+For each issue: severity (CRITICAL/MAJOR/MINOR), exact location, which documented rule/pattern is violated, the bad code, and the fixed code that conforms. If the code fully conforms, say so explicitly.`,
       },
       {
         id: 'performance-reviewer',

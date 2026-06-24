@@ -65,6 +65,28 @@ export function isSafeRelativePath(root: string, rel: string): boolean {
   }
 }
 
+/**
+ * Load specific KB files by name (in priority order) and concatenate, capped to maxChars.
+ * Missing files are skipped. Used to inject architecture/convention guardrails into steps.
+ */
+export function loadKbDocs(root: string, kbRelPath: string, names: string[], maxChars = 16_000): string {
+  const parts: string[] = [];
+  let total = 0;
+  for (const name of names) {
+    if (total >= maxChars) { break; }
+    try {
+      const p = path.join(root, kbRelPath, name);
+      if (!fs.existsSync(p)) { continue; }
+      let c = fs.readFileSync(p, 'utf-8').trim();
+      if (!c) { continue; }
+      if (total + c.length > maxChars) { c = c.slice(0, Math.max(0, maxChars - total)) + '\n... [truncated]'; }
+      parts.push(`### [${name}]\n${c}`);
+      total += c.length;
+    } catch { /* skip */ }
+  }
+  return parts.join('\n\n---\n\n');
+}
+
 export function extractFiles(content: string): ExtractedFile[] {
   const files: ExtractedFile[] = [];
   // Match: ### FILE: <path>\n```<lang?>\n<code>\n```

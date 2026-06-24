@@ -164,6 +164,11 @@ Risk matrix with mitigations
 
 ### 7. ESTIMATE — Complexity: Simple/Medium/Complex | Time: X hours
 
+### 8. ARCHITECTURE CONFORMANCE (do NOT break the existing design)
+- Identify which architectural style / design pattern the target module uses (from the KB architecture docs).
+- The plan MUST follow that pattern and respect layer/dependency rules and module boundaries — do not introduce a different pattern or cross-layer shortcut.
+- List the specific "Architecture Invariants — DO NOT BREAK" that apply to this change, and how the plan honors each.
+
 ⚠️ Do NOT generate code. Plan only.`;
 
     const { merged, agentResults } = await orchestrator.runAndMerge(

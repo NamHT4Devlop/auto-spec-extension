@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Auto Spec Kit v1.9.1 — Documentation</title>
+<title>Auto Spec Kit v1.10.0 — Documentation</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #1e293b; min-height: 100vh; }
@@ -88,7 +88,7 @@
   <h1>Auto Spec Kit</h1>
   <p class="subtitle">Automate the full development workflow: Requirement → Plan → Code → Review → Test → Evidence</p>
   <div style="margin-top:10px">
-    <span class="badge badge-blue">v1.9.1</span>
+    <span class="badge badge-blue">v1.10.0</span>
     <span class="badge badge-green">Multi-Agent</span>
     <span class="badge badge-purple">Adaptive Intelligence</span>
     <span class="badge badge-orange">No API Key</span>
@@ -111,6 +111,18 @@
 
 <!-- ═══════════════════════════════ OVERVIEW ═══════════════════════════════ -->
 <div id="overview" class="panel active">
+
+<div class="card">
+  <h2>🏛️ Architecture Conformance — v1.10.0</h2>
+  <p>Captures the project's design patterns and enforces them so generated code follows the existing architecture instead of breaking it — even when a repo mixes many patterns.</p>
+  <table>
+    <tr><th>Stage</th><th>What it does</th></tr>
+    <tr><td><strong>KB</strong></td><td>New <code>16-architecture-patterns.md</code> (deep, multi-agent): architectural style(s) per module, design-pattern catalog with examples, allowed vs forbidden layer/dependency rules, module boundaries, "Extension Recipes" (how to add X the right way), and "Architecture Invariants — DO NOT BREAK".</td></tr>
+    <tr><td><strong>Plan</strong></td><td>Planning must identify the target module's pattern and list the invariants the change has to honor — no cross-layer shortcuts.</td></tr>
+    <tr><td><strong>Code-gen</strong></td><td>The patterns + conventions docs are injected into every generator; new code follows the surrounding module's pattern and Extension Recipes.</td></tr>
+    <tr><td><strong>Review</strong></td><td>Dedicated <em>Architecture &amp; Pattern Conformance Reviewer</em> flags any broken invariant, foreign pattern, forbidden dependency or boundary violation — with the conforming fix.</td></tr>
+  </table>
+</div>
 
 <div class="card">
   <h2>🤖 Updated Models &amp; Polyglot Repos — v1.9.1</h2>
@@ -266,7 +278,7 @@
 
   <h3>Option A — From VSIX (recommended)</h3>
   <ol class="step-list">
-    <li>Download <code>ai-dev-assistant-1.9.1.vsix</code></li>
+    <li>Download <code>ai-dev-assistant-1.10.0.vsix</code></li>
     <li>Open VS Code → Extensions panel (<kbd>Ctrl+Shift+X</kbd>)</li>
     <li>Click <strong>⋯ → Install from VSIX…</strong></li>
     <li>Select the downloaded file</li>
@@ -1233,7 +1245,7 @@ autoSync:
     <li class="green">Run <code>yarn install</code> to install dependencies</li>
     <li class="green">Run <code>yarn compile</code> to build</li>
     <li class="purple">Run <code>yarn package</code> to create <code>.vsix</code></li>
-    <li class="purple">Install: <code>code --install-extension ai-dev-assistant-1.9.1.vsix</code></li>
+    <li class="purple">Install: <code>code --install-extension ai-dev-assistant-1.10.0.vsix</code></li>
   </ol>
 
   <div class="sep"></div>

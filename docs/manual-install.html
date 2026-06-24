@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Auto Spec Kit v1.9.1 — Manual Install Guide</title>
+<title>Auto Spec Kit v1.10.0 — Manual Install Guide</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #1e293b; min-height: 100vh; line-height: 1.6; }
@@ -78,7 +78,7 @@
   <h1>Manual Install Guide</h1>
   <p class="subtitle">Create the project from scratch on any machine — no git clone needed</p>
   <div style="margin-top:10px">
-    <span class="badge badge-blue">v1.9.1</span>
+    <span class="badge badge-blue">v1.10.0</span>
     <span class="badge badge-green">59 files</span>
     <span class="badge badge-orange">Copy & Paste</span>
   </div>
@@ -122,7 +122,7 @@ mkdir -p docs</code></pre>
   <div class="file-header" onclick="toggleFile('package-json')">
     <span class="file-name">package.json</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">9,761 bytes</span>
+      <span class="file-size">9,762 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('package-json',this)">Copy</button>
     </div>
   </div>
@@ -131,7 +131,7 @@ mkdir -p docs</code></pre>
   &quot;name&quot;: &quot;ai-dev-assistant&quot;,
   &quot;displayName&quot;: &quot;AI Dev Assistant&quot;,
   &quot;description&quot;: &quot;Automate the full development workflow: Requirement → Plan → Code → Review → Test → Evidence, powered by GitHub Copilot&quot;,
-  &quot;version&quot;: &quot;1.9.1&quot;,
+  &quot;version&quot;: &quot;1.10.0&quot;,
   &quot;publisher&quot;: &quot;internal-tools&quot;,
   &quot;author&quot;: {
     &quot;name&quot;: &quot;Internal Tools&quot;
@@ -1407,7 +1407,7 @@ export interface TestResult {
   <div class="file-header" onclick="toggleFile('src-constants-kb-steps-ts')">
     <span class="file-name">src/constants/kb-steps.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">8,715 bytes</span>
+      <span class="file-size">11,631 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-constants-kb-steps-ts',this)">Copy</button>
     </div>
   </div>
@@ -1667,6 +1667,38 @@ Kafka topics, SQS queues, SNS topics, RabbitMQ exchanges, Spring Events, domain 
 ## 4. Graceful Degradation
 ## 5. Operational Runbook (Common Issues)
 ## 6. Logging &amp; Observability`,
+  },
+
+  // 16 — ARCHITECTURE &amp; DESIGN PATTERNS (guardrails for safe changes)
+  {
+    label: &#x27;16 — Architecture &amp; Design Patterns&#x27;,
+    file: &#x27;16-architecture-patterns.md&#x27;,
+    prompt: `You are a software architect. Document the ACTUAL architecture and design patterns used in this codebase so future changes follow them and DO NOT break the design. Cite real files/classes for every pattern. A large repo often mixes MULTIPLE patterns — capture each one and WHERE it applies.
+
+## 1. Architectural Style(s)
+Identify the architectural style(s) in use and where each applies (per module/layer). Examples: Layered (Controller→Service→Repository), Hexagonal / Ports &amp; Adapters, Clean/Onion, DDD (aggregates, domain events), CQRS, Event-Driven, Pipeline/Routes (e.g., Apache Camel), Transaction Script, MVC, Modular Monolith, Microservices. For each: which module/package uses it + evidence.
+
+## 2. Design Patterns Catalog
+List every recurring design pattern with a real example (file + class): Repository/DAO, Factory, Builder, Strategy, Adapter, Facade, Decorator, Observer/Listener, Template Method, Singleton/Bean, Dependency Injection, Specification, Mapper/Converter, Unit of Work, Saga, Outbox, etc. Note WHEN to use each in this project.
+
+## 3. Layer &amp; Dependency Rules (allowed vs forbidden)
+Define the dependency direction rules. Make them explicit and enforceable:
+- ALLOWED: e.g. Controller → Service → Repository → DB
+- FORBIDDEN: e.g. Controller must NOT call Repository/DB directly; Domain must NOT import infrastructure; no circular deps between modules X and Y.
+Cite where the rule is currently honored.
+
+## 4. Module Boundaries &amp; Communication
+How modules/bounded-contexts talk to each other (direct call, interface/port, events, queue, shared DB). What crossing-the-boundary is allowed vs not.
+
+## 5. Extension Recipes (&quot;how to add X the right way&quot;)
+Step-by-step recipes that match THIS codebase&#x27;s patterns, e.g.:
+- &quot;Add a new REST endpoint&quot; → which files, in which order, following which pattern.
+- &quot;Add a new entity + persistence&quot; → entity, repository/mapper, migration, service.
+- &quot;Add a new async consumer / Camel route / SQS handler&quot;.
+Each recipe cites an existing example to copy from.
+
+## 6. Architecture Invariants — DO NOT BREAK
+A numbered checklist of hard rules new code MUST satisfy (layering, naming, transaction boundaries, error handling location, where validation lives, idempotency for consumers, etc.). Mark severity [CRITICAL]/[MAJOR]. This list is used to review every generated change.`,
   },
 
 ];
@@ -2160,7 +2192,7 @@ export async function callCopilot(
   <div class="file-header" onclick="toggleFile('src-utils-file-utils-ts')">
     <span class="file-name">src/utils/file-utils.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">3,322 bytes</span>
+      <span class="file-size">4,163 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-utils-file-utils-ts',this)">Copy</button>
     </div>
   </div>
@@ -2230,6 +2262,28 @@ export function isSafeRelativePath(root: string, rel: string): boolean {
   } catch {
     return false;
   }
+}
+
+/**
+ * Load specific KB files by name (in priority order) and concatenate, capped to maxChars.
+ * Missing files are skipped. Used to inject architecture/convention guardrails into steps.
+ */
+export function loadKbDocs(root: string, kbRelPath: string, names: string[], maxChars = 16_000): string {
+  const parts: string[] = [];
+  let total = 0;
+  for (const name of names) {
+    if (total &gt;= maxChars) { break; }
+    try {
+      const p = path.join(root, kbRelPath, name);
+      if (!fs.existsSync(p)) { continue; }
+      let c = fs.readFileSync(p, &#x27;utf-8&#x27;).trim();
+      if (!c) { continue; }
+      if (total + c.length &gt; maxChars) { c = c.slice(0, Math.max(0, maxChars - total)) + &#x27;\n... [truncated]&#x27;; }
+      parts.push(`### [${name}]\n${c}`);
+      total += c.length;
+    } catch { /* skip */ }
+  }
+  return parts.join(&#x27;\n\n---\n\n&#x27;);
 }
 
 export function extractFiles(content: string): ExtractedFile[] {
@@ -6921,7 +6975,7 @@ export function createSessionDir(
   <div class="file-header" onclick="toggleFile('src-utils-smart-context-ts')">
     <span class="file-name">src/utils/smart-context.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">16,328 bytes</span>
+      <span class="file-size">16,359 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-utils-smart-context-ts',this)">Copy</button>
     </div>
   </div>
@@ -6967,7 +7021,7 @@ export interface SmartContextResult {
 // ─── KB Topic Mapping ─────────────────────────────────────────────────────────
 
 const KB_TOPIC_MAP: Record&lt;string, string[]&gt; = {
-  &#x27;architecture&#x27;:   [&#x27;01-project-structure.md&#x27;, &#x27;02-tech-stack.md&#x27;, &#x27;07-architecture-diagram.md&#x27;],
+  &#x27;architecture&#x27;:   [&#x27;01-project-structure.md&#x27;, &#x27;02-tech-stack.md&#x27;, &#x27;07-architecture-diagram.md&#x27;, &#x27;16-architecture-patterns.md&#x27;],
   &#x27;domain&#x27;:         [&#x27;04-business-domain.md&#x27;, &#x27;05-domain-model.md&#x27;],
   &#x27;business-rules&#x27;: [&#x27;13-business-rules.md&#x27;, &#x27;10-core-flows.md&#x27;],
   &#x27;api&#x27;:            [&#x27;11-api-docs.md&#x27;, &#x27;05-domain-model.md&#x27;],
@@ -8007,7 +8061,7 @@ ${answer}
   <div class="file-header" onclick="toggleFile('src-workflow-generate-kb-ts')">
     <span class="file-name">src/workflow/generate-kb.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">34,151 bytes</span>
+      <span class="file-size">34,262 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-workflow-generate-kb-ts',this)">Copy</button>
     </div>
   </div>
@@ -8052,6 +8106,7 @@ const DEEP_ANALYSIS_STEPS = new Set([
   &#x27;05-domain-model.md&#x27;,
   &#x27;10-core-flows.md&#x27;,
   &#x27;13-business-rules.md&#x27;,
+  &#x27;16-architecture-patterns.md&#x27;,
 ]);
 
 // ─── Batch definitions (steps within a batch run in parallel) ─────────────────
@@ -8062,6 +8117,7 @@ const BATCHES: number[][] = [
   [6, 7, 8],       // Batch 3: architecture, database, auth
   [9, 10, 11],     // Batch 4: core flows★, api docs, conventions
   [12, 13, 14],    // Batch 5: business rules★, integrations, errors
+  [15],            // Batch 6: architecture &amp; design patterns★ (guardrails)
 ];
 
 // ─── Source file categorization for multi-agent context splitting ──────────────
@@ -10087,7 +10143,7 @@ export interface SessionState {
   <div class="file-header" onclick="toggleFile('src-workflow-pipeline-steps-step-01-planning-ts')">
     <span class="file-name">src/workflow/pipeline/steps/step-01-planning.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">8,643 bytes</span>
+      <span class="file-size">9,100 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-workflow-pipeline-steps-step-01-planning-ts',this)">Copy</button>
     </div>
   </div>
@@ -10257,6 +10313,11 @@ The output plan must include ALL of the following sections:
 Risk matrix with mitigations
 
 ### 7. ESTIMATE — Complexity: Simple/Medium/Complex | Time: X hours
+
+### 8. ARCHITECTURE CONFORMANCE (do NOT break the existing design)
+- Identify which architectural style / design pattern the target module uses (from the KB architecture docs).
+- The plan MUST follow that pattern and respect layer/dependency rules and module boundaries — do not introduce a different pattern or cross-layer shortcut.
+- List the specific &quot;Architecture Invariants — DO NOT BREAK&quot; that apply to this change, and how the plan honors each.
 
 ⚠️ Do NOT generate code. Plan only.`;
 
@@ -10516,7 +10577,7 @@ ${feedback}
   <div class="file-header" onclick="toggleFile('src-workflow-pipeline-steps-step-04-code-generation-ts')">
     <span class="file-name">src/workflow/pipeline/steps/step-04-code-generation.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">6,861 bytes</span>
+      <span class="file-size">8,174 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-workflow-pipeline-steps-step-04-code-generation-ts',this)">Copy</button>
     </div>
   </div>
@@ -10534,7 +10595,7 @@ ${feedback}
 
 import { log } from &#x27;../../../logger&#x27;;
 import { callCopilot } from &#x27;../../../utils/copilot&#x27;;
-import { saveFile } from &#x27;../../../utils/file-utils&#x27;;
+import { saveFile, loadKbDocs } from &#x27;../../../utils/file-utils&#x27;;
 import { AgentOrchestrator, SubAgent, orchestratorConfigFor } from &#x27;../../../utils/agent-orchestrator&#x27;;
 import { SmartContextLoader } from &#x27;../../../utils/smart-context&#x27;;
 import { PipelineContext, PipelineStep, StepResult } from &#x27;../types&#x27;;
@@ -10561,6 +10622,15 @@ export class Step04CodeGeneration implements PipelineStep {
     const smartCtx = loader.loadContext(ctx.workspaceRoot, ctx.kbRelPath, relevantFiles, [&#x27;conventions&#x27;], 30_000);
     const referenceCode = loader.buildAgentContext(smartCtx.chunks, [&#x27;source&#x27;, &#x27;kb&#x27;], [&#x27;conventions&#x27;], 15_000);
 
+    // Architecture guardrails: the documented patterns + conventions new code MUST follow.
+    const archGuardrails = loadKbDocs(
+      ctx.workspaceRoot, ctx.kbRelPath,
+      [&#x27;16-architecture-patterns.md&#x27;, &#x27;12-conventions.md&#x27;], 14_000,
+    );
+    const archBlock = archGuardrails
+      ? `\n\n=== ARCHITECTURE &amp; DESIGN PATTERNS (MUST FOLLOW — DO NOT BREAK) ===\n${archGuardrails}`
+      : &#x27;&#x27;;
+
     // Spawn parallel code generators
     const orchestrator = new AgentOrchestrator(orchestratorConfigFor(ctx, &#x27;generative&#x27;, 3));
 
@@ -10568,7 +10638,7 @@ export class Step04CodeGeneration implements PipelineStep {
       id: `codegen-${i}`,
       role: `Code Generator: ${unit.label}`,
       priority: unit.priority,
-      systemContext: `${ctx.systemPrompt}\n\n=== REFERENCE CODE (existing patterns) ===\n${referenceCode}`,
+      systemContext: `${ctx.systemPrompt}\n\n=== REFERENCE CODE (existing patterns) ===\n${referenceCode}${archBlock}`,
       prompt: `\
 ## FULL REQUIREMENT
 ${ctx.requirement}
@@ -10587,8 +10657,9 @@ ${planFinal}
 2. Use ### FILE: &lt;path&gt; format for each file.
 3. Write complete, production-ready code — NO placeholders.
 4. Follow existing project patterns exactly (see REFERENCE CODE).
-5. Include proper imports, types, error handling.
-6. Language: ${ctx.lang}`,
+5. ARCHITECTURE: follow the documented design pattern of the target module and respect the layer/dependency rules and &quot;Architecture Invariants — DO NOT BREAK&quot;. Do NOT cross layer boundaries (e.g. controller calling the DB directly) or introduce a different pattern than the surrounding module. When in doubt, copy the matching Extension Recipe.
+6. Include proper imports, types, error handling.
+7. Language: ${ctx.lang}`,
     }));
 
     const mergeInstruction = `\
@@ -10629,7 +10700,15 @@ You are assembling code from ${workUnits.length} parallel code generators into a
   private async singleAgentGenerate(ctx: PipelineContext, plan: string): Promise&lt;StepResult&gt; {
     log(`ℹ  Using single-agent code generation`);
 
-    const code = await callCopilot(ctx.model, ctx.systemPrompt, `\
+    const archGuardrails = loadKbDocs(
+      ctx.workspaceRoot, ctx.kbRelPath,
+      [&#x27;16-architecture-patterns.md&#x27;, &#x27;12-conventions.md&#x27;], 14_000,
+    );
+    const sys = archGuardrails
+      ? `${ctx.systemPrompt}\n\n=== ARCHITECTURE &amp; DESIGN PATTERNS (MUST FOLLOW — DO NOT BREAK) ===\n${archGuardrails}`
+      : ctx.systemPrompt;
+
+    const code = await callCopilot(ctx.model, sys, `\
 Implement ALL code for the following requirement based on the approved plan.
 
 ## REQUIREMENT: ${ctx.requirement}
@@ -10646,6 +10725,7 @@ ${plan}
 ## RULES:
 - Complete, production-ready code — NO placeholders.
 - Follow exact conventions from the knowledge base.
+- ARCHITECTURE: follow the documented design pattern of the target module; respect layer/dependency rules and the &quot;Architecture Invariants — DO NOT BREAK&quot;; do not introduce a different pattern or cross layer boundaries.
 - Language: ${ctx.lang}`, ctx.token, &#x27;Code Generation&#x27;);
 
     saveFile(ctx.sessionDir, &#x27;03-code/code-raw.md&#x27;, code);
@@ -10719,7 +10799,7 @@ interface WorkUnit {
   <div class="file-header" onclick="toggleFile('src-workflow-pipeline-steps-step-05-code-review-ts')">
     <span class="file-name">src/workflow/pipeline/steps/step-05-code-review.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">8,285 bytes</span>
+      <span class="file-size">9,246 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-workflow-pipeline-steps-step-05-code-review-ts',this)">Copy</button>
     </div>
   </div>
@@ -10738,7 +10818,7 @@ interface WorkUnit {
 
 import { log } from &#x27;../../../logger&#x27;;
 import { callCopilot } from &#x27;../../../utils/copilot&#x27;;
-import { saveFile, extractFiles } from &#x27;../../../utils/file-utils&#x27;;
+import { saveFile, extractFiles, loadKbDocs } from &#x27;../../../utils/file-utils&#x27;;
 import { loadGitContext, formatGitContextForPrompt } from &#x27;../../../utils/git-utils&#x27;;
 import { AgentOrchestrator, SubAgent, orchestratorConfigFor } from &#x27;../../../utils/agent-orchestrator&#x27;;
 import { PipelineContext, PipelineStep, StepResult } from &#x27;../types&#x27;;
@@ -10766,6 +10846,12 @@ ${code}
 
 ## GIT CONTEXT:
 ${gitBlock}`;
+
+    // Documented architecture + conventions the change must conform to.
+    const archGuardrails = loadKbDocs(
+      ctx.workspaceRoot, ctx.kbRelPath,
+      [&#x27;16-architecture-patterns.md&#x27;, &#x27;12-conventions.md&#x27;], 14_000,
+    );
 
     const orchestrator = new AgentOrchestrator(orchestratorConfigFor(ctx, &#x27;review&#x27;, 4));
 
@@ -10796,25 +10882,23 @@ For each issue:
       },
       {
         id: &#x27;architecture-reviewer&#x27;,
-        role: &#x27;Architecture Reviewer&#x27;,
-        priority: 2,
-        systemContext: `You are a software architect reviewing code for design quality.\n\n${ctx.kb ? `=== PROJECT CONVENTIONS ===\n${ctx.kb.slice(0, 10000)}` : &#x27;&#x27;}`,
+        role: &#x27;Architecture &amp; Pattern Conformance Reviewer&#x27;,
+        priority: 3,
+        systemContext: `You are a software architect enforcing the project&#x27;s documented architecture and design patterns.\n\n${archGuardrails ? `=== DOCUMENTED ARCHITECTURE &amp; PATTERNS (the change MUST conform) ===\n${archGuardrails}` : (ctx.kb ? `=== PROJECT CONVENTIONS ===\n${ctx.kb.slice(0, 10000)}` : &#x27;&#x27;)}`,
         prompt: `\
 ${sharedCodeContext}
 
-## YOUR FOCUS: ARCHITECTURE &amp; CODE QUALITY
-Review this code for design and quality:
+## YOUR FOCUS: ARCHITECTURE &amp; PATTERN CONFORMANCE (DO NOT let the change break the design)
+Check the generated code against the DOCUMENTED architecture &amp; patterns above. Flag every deviation:
 
-1. **Layer Violations** — Does any code bypass the correct layer (e.g., controller calling DB directly)?
-2. **Coupling** — Are modules properly decoupled? Any circular dependencies?
-3. **Naming** — Do names follow project conventions? Are they descriptive?
-4. **DRY** — Any duplicated logic that should be extracted?
-5. **SOLID** — Single responsibility? Interface segregation? Dependency inversion?
-6. **Error Handling** — Consistent with project patterns? No swallowed errors?
-7. **Type Safety** — Any \`any\` types? Missing null checks? Unsafe casts?
-8. **Consistency** — Does new code match existing project patterns exactly?
+1. **Architecture Invariants** — Does the code violate any rule in &quot;Architecture Invariants — DO NOT BREAK&quot;? Quote the specific invariant it breaks.
+2. **Pattern Conformance** — Does the new code follow the SAME design pattern as the module it lives in (e.g., Repository, Ports &amp; Adapters, CQRS, Camel route)? Or did it introduce a foreign pattern?
+3. **Layer / Dependency Rules** — Any forbidden dependency direction (e.g. controller → DB directly, domain → infrastructure, cross-module shortcut, circular dependency)?
+4. **Boundary Violations** — Does it cross a module/bounded-context boundary in a way the docs forbid (should use a port/event/queue instead)?
+5. **Extension Recipe** — If an Extension Recipe exists for this kind of change, does the code follow it? If not, what diverged?
+6. **Consistency** — Naming, error-handling location, transaction boundaries, validation placement — match the documented conventions?
 
-For each issue: severity, location, bad code, fixed code.`,
+For each issue: severity (CRITICAL/MAJOR/MINOR), exact location, which documented rule/pattern is violated, the bad code, and the fixed code that conforms. If the code fully conforms, say so explicitly.`,
       },
       {
         id: &#x27;performance-reviewer&#x27;,
@@ -12540,7 +12624,7 @@ yarn compile
 yarn package
 
 # Install in VS Code
-code --install-extension ai-dev-assistant-1.9.1.vsix</code></pre>
+code --install-extension ai-dev-assistant-1.10.0.vsix</code></pre>
   <p>Or press <strong>F5</strong> in VS Code to launch the Extension Development Host for testing.</p>
 </div>
 

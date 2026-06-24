@@ -38,6 +38,7 @@ const DEEP_ANALYSIS_STEPS = new Set([
   '05-domain-model.md',
   '10-core-flows.md',
   '13-business-rules.md',
+  '16-architecture-patterns.md',
 ]);
 
 // ─── Batch definitions (steps within a batch run in parallel) ─────────────────
@@ -48,6 +49,7 @@ const BATCHES: number[][] = [
   [6, 7, 8],       // Batch 3: architecture, database, auth
   [9, 10, 11],     // Batch 4: core flows★, api docs, conventions
   [12, 13, 14],    // Batch 5: business rules★, integrations, errors
+  [15],            // Batch 6: architecture & design patterns★ (guardrails)
 ];
 
 // ─── Source file categorization for multi-agent context splitting ──────────────

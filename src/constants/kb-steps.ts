@@ -255,4 +255,36 @@ Kafka topics, SQS queues, SNS topics, RabbitMQ exchanges, Spring Events, domain 
 ## 6. Logging & Observability`,
   },
 
+  // 16 — ARCHITECTURE & DESIGN PATTERNS (guardrails for safe changes)
+  {
+    label: '16 — Architecture & Design Patterns',
+    file: '16-architecture-patterns.md',
+    prompt: `You are a software architect. Document the ACTUAL architecture and design patterns used in this codebase so future changes follow them and DO NOT break the design. Cite real files/classes for every pattern. A large repo often mixes MULTIPLE patterns — capture each one and WHERE it applies.
+
+## 1. Architectural Style(s)
+Identify the architectural style(s) in use and where each applies (per module/layer). Examples: Layered (Controller→Service→Repository), Hexagonal / Ports & Adapters, Clean/Onion, DDD (aggregates, domain events), CQRS, Event-Driven, Pipeline/Routes (e.g., Apache Camel), Transaction Script, MVC, Modular Monolith, Microservices. For each: which module/package uses it + evidence.
+
+## 2. Design Patterns Catalog
+List every recurring design pattern with a real example (file + class): Repository/DAO, Factory, Builder, Strategy, Adapter, Facade, Decorator, Observer/Listener, Template Method, Singleton/Bean, Dependency Injection, Specification, Mapper/Converter, Unit of Work, Saga, Outbox, etc. Note WHEN to use each in this project.
+
+## 3. Layer & Dependency Rules (allowed vs forbidden)
+Define the dependency direction rules. Make them explicit and enforceable:
+- ALLOWED: e.g. Controller → Service → Repository → DB
+- FORBIDDEN: e.g. Controller must NOT call Repository/DB directly; Domain must NOT import infrastructure; no circular deps between modules X and Y.
+Cite where the rule is currently honored.
+
+## 4. Module Boundaries & Communication
+How modules/bounded-contexts talk to each other (direct call, interface/port, events, queue, shared DB). What crossing-the-boundary is allowed vs not.
+
+## 5. Extension Recipes ("how to add X the right way")
+Step-by-step recipes that match THIS codebase's patterns, e.g.:
+- "Add a new REST endpoint" → which files, in which order, following which pattern.
+- "Add a new entity + persistence" → entity, repository/mapper, migration, service.
+- "Add a new async consumer / Camel route / SQS handler".
+Each recipe cites an existing example to copy from.
+
+## 6. Architecture Invariants — DO NOT BREAK
+A numbered checklist of hard rules new code MUST satisfy (layering, naming, transaction boundaries, error handling location, where validation lives, idempotency for consumers, etc.). Mark severity [CRITICAL]/[MAJOR]. This list is used to review every generated change.`,
+  },
+
 ];
