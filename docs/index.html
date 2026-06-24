@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Auto Spec Kit v1.10.0 — Documentation</title>
+<title>Auto Spec Kit v1.11.0 — Documentation</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #1e293b; min-height: 100vh; }
@@ -88,7 +88,7 @@
   <h1>Auto Spec Kit</h1>
   <p class="subtitle">Automate the full development workflow: Requirement → Plan → Code → Review → Test → Evidence</p>
   <div style="margin-top:10px">
-    <span class="badge badge-blue">v1.10.0</span>
+    <span class="badge badge-blue">v1.11.0</span>
     <span class="badge badge-green">Multi-Agent</span>
     <span class="badge badge-purple">Adaptive Intelligence</span>
     <span class="badge badge-orange">No API Key</span>
@@ -111,6 +111,16 @@
 
 <!-- ═══════════════════════════════ OVERVIEW ═══════════════════════════════ -->
 <div id="overview" class="panel active">
+
+<div class="card">
+  <h2>📝 Document Command &amp; Rename — v1.11.0</h2>
+  <p>New investigate-and-document workflow, and the chat agent is now <code>@protector_spec</code>.</p>
+  <table>
+    <tr><th>Change</th><th>Detail</th></tr>
+    <tr><td><strong>/document</strong></td><td>New command: <code>@protector_spec /document &lt;topic&gt;</code> (or Command Palette → "Write Document"). Investigates a feature/entity/module and produces a <strong>business ↔ code field-level mapping</strong> (entities, fields, types, validations, flows, rules, APIs) grounded in the KB + real source. <strong>Exported as a self-contained HTML</strong> file (and Markdown), opened in a panel with "Open in Browser".</td></tr>
+    <tr><td><strong>Chat rename</strong></td><td>The participant is now <code>@protector_spec</code> (was <code>@autospec</code>). All commands work the same: <code>/build /scan /rescan /review /ask /plan /map /document /help</code>.</td></tr>
+  </table>
+</div>
 
 <div class="card">
   <h2>🏛️ Architecture Conformance — v1.10.0</h2>
@@ -278,7 +288,7 @@
 
   <h3>Option A — From VSIX (recommended)</h3>
   <ol class="step-list">
-    <li>Download <code>ai-dev-assistant-1.10.0.vsix</code></li>
+    <li>Download <code>ai-dev-assistant-1.11.0.vsix</code></li>
     <li>Open VS Code → Extensions panel (<kbd>Ctrl+Shift+X</kbd>)</li>
     <li>Click <strong>⋯ → Install from VSIX…</strong></li>
     <li>Select the downloaded file</li>
@@ -330,37 +340,37 @@ npx @vscode/vsce package --no-dependencies --allow-missing-repository
 <div id="chat" class="panel">
 
 <div class="card">
-  <h2>🤖 Copilot Chat — @autospec</h2>
+  <h2>🤖 Copilot Chat — @protector_spec</h2>
   <span class="role role-all">FOR: Everyone</span>
-  <p>The <strong>primary way</strong> to use Auto Spec Kit. Open the Copilot Chat panel in VS Code and type <code>@autospec</code> followed by a slash command.</p>
+  <p>The <strong>primary way</strong> to use Auto Spec Kit. Open the Copilot Chat panel in VS Code and type <code>@protector_spec</code> followed by a slash command.</p>
 
   <h3>All Commands</h3>
   <table>
     <tr><th>Command</th><th>What it does</th><th>Example</th></tr>
-    <tr><td><code>@autospec /build</code></td><td>Build a feature — full 13-step pipeline</td><td><code>@autospec /build Add reset password feature using email OTP</code></td></tr>
-    <tr><td><code>@autospec /scan</code></td><td>Scan the project — generate Knowledge Base</td><td><code>@autospec /scan</code></td></tr>
-    <tr><td><code>@autospec /rescan</code></td><td>Rescan latest changes — update KB</td><td><code>@autospec /rescan</code></td></tr>
-    <tr><td><code>@autospec /review</code></td><td>Review current open file</td><td><code>@autospec /review</code></td></tr>
-    <tr><td><code>@autospec /ask</code></td><td>Ask about codebase (uses KB)</td><td><code>@autospec /ask How does auth work?</code></td></tr>
-    <tr><td><code>@autospec /plan</code></td><td>Plan user stories (PO/BA)</td><td><code>@autospec /plan User onboarding redesign...</code></td></tr>
-    <tr><td><code>@autospec /map</code></td><td>Map the codebase — dependency graph</td><td><code>@autospec /map</code></td></tr>
-    <tr><td><code>@autospec /help</code></td><td>Status dashboard + command reference</td><td><code>@autospec /help</code></td></tr>
+    <tr><td><code>@protector_spec /build</code></td><td>Build a feature — full 13-step pipeline</td><td><code>@protector_spec /build Add reset password feature using email OTP</code></td></tr>
+    <tr><td><code>@protector_spec /scan</code></td><td>Scan the project — generate Knowledge Base</td><td><code>@protector_spec /scan</code></td></tr>
+    <tr><td><code>@protector_spec /rescan</code></td><td>Rescan latest changes — update KB</td><td><code>@protector_spec /rescan</code></td></tr>
+    <tr><td><code>@protector_spec /review</code></td><td>Review current open file</td><td><code>@protector_spec /review</code></td></tr>
+    <tr><td><code>@protector_spec /ask</code></td><td>Ask about codebase (uses KB)</td><td><code>@protector_spec /ask How does auth work?</code></td></tr>
+    <tr><td><code>@protector_spec /plan</code></td><td>Plan user stories (PO/BA)</td><td><code>@protector_spec /plan User onboarding redesign...</code></td></tr>
+    <tr><td><code>@protector_spec /map</code></td><td>Map the codebase — dependency graph</td><td><code>@protector_spec /map</code></td></tr>
+    <tr><td><code>@protector_spec /help</code></td><td>Status dashboard + command reference</td><td><code>@protector_spec /help</code></td></tr>
   </table>
 
   <h3>Free Text (no slash command)</h3>
-  <p>If you type <code>@autospec Which module handles payment?</code> without a slash command, it defaults to <code>/ask</code> — a Q&amp;A answered from the Knowledge Base.</p>
+  <p>If you type <code>@protector_spec Which module handles payment?</code> without a slash command, it defaults to <code>/ask</code> — a Q&amp;A answered from the Knowledge Base.</p>
 </div>
 
 <div class="card">
-  <h2>Deep Dive: <code>@autospec /build</code></h2>
-  <p>When you type <code>@autospec /build Add reset password feature using email OTP, expires after 10 minutes</code>, this is the full execution path:</p>
+  <h2>Deep Dive: <code>@protector_spec /build</code></h2>
+  <p>When you type <code>@protector_spec /build Add reset password feature using email OTP, expires after 10 minutes</code>, this is the full execution path:</p>
 
   <svg viewBox="0 0 700 320" xmlns="http://www.w3.org/2000/svg">
     <defs><marker id="ac" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#94a3b8"/></marker></defs>
 
     <!-- User input -->
     <rect x="10" y="10" width="300" height="36" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
-    <text x="160" y="28" fill="#92400e" text-anchor="middle" font-size="9" font-weight="bold">USER: @autospec /build Add reset password...</text>
+    <text x="160" y="28" fill="#92400e" text-anchor="middle" font-size="9" font-weight="bold">USER: @protector_spec /build Add reset password...</text>
     <text x="160" y="40" fill="#a16207" text-anchor="middle" font-size="8">typed in Copilot Chat panel</text>
 
     <line x1="310" y1="28" x2="340" y2="28" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ac)"/>
@@ -368,7 +378,7 @@ npx @vscode/vsce package --no-dependencies --allow-missing-repository
     <!-- VS Code routes -->
     <rect x="340" y="10" width="170" height="36" rx="8" fill="#6366f1" stroke="#4f46e5" stroke-width="1.5"/>
     <text x="425" y="26" fill="white" text-anchor="middle" font-size="9" font-weight="bold">VS Code Chat API</text>
-    <text x="425" y="40" fill="rgba(255,255,255,.8)" text-anchor="middle" font-size="8">routes to @autospec participant</text>
+    <text x="425" y="40" fill="rgba(255,255,255,.8)" text-anchor="middle" font-size="8">routes to @protector_spec participant</text>
 
     <line x1="510" y1="28" x2="540" y2="28" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ac)"/>
 
@@ -409,8 +419,8 @@ npx @vscode/vsce package --no-dependencies --allow-missing-repository
 
   <h3>How the Chat Participant bridges to the pipeline</h3>
   <ol class="step-list">
-    <li>You type <code>@autospec /build Add reset password feature</code> in Copilot Chat</li>
-    <li>VS Code routes the message to the <code>@autospec</code> Chat Participant (registered in <code>chat-participant.ts</code>)</li>
+    <li>You type <code>@protector_spec /build Add reset password feature</code> in Copilot Chat</li>
+    <li>VS Code routes the message to the <code>@protector_spec</code> Chat Participant (registered in <code>chat-participant.ts</code>)</li>
     <li class="orange"><strong>GitSyncGuard</strong> runs <code>git fetch --all --prune</code> + <code>git pull --ff-only</code>. If source files changed, the KB is auto-updated. Non-fatal — skipped silently if offline or not a git repo.</li>
     <li class="green"><code>handleBuild()</code> calls <code>resolveModel()</code> to pick the best available Copilot model, then creates a <strong>Progress adapter</strong> that converts <code>vscode.Progress.report()</code> calls into <code>stream.progress()</code> — so every pipeline step updates the chat panel in real-time</li>
     <li class="green"><code>handleBuild()</code> calls <code>runWorkflow()</code> from <code>workflow/run-task.ts</code> — the same function used by the Command Palette command</li>
@@ -422,12 +432,12 @@ npx @vscode/vsce package --no-dependencies --allow-missing-repository
 
 <div class="card">
   <h2>Example Session</h2>
-  <pre><code>You:     @autospec /scan
+  <pre><code>You:     @protector_spec /scan
 Bot:     📚 Scanning Project...
          Analyzing your codebase with multi-agent batch parallelism...
          ✅ Scan complete! Knowledge Base generated in knowledge-base/ folder.
 
-You:     @autospec /build Add reset password feature using email OTP, expires after 10 minutes
+You:     @protector_spec /build Add reset password feature using email OTP, expires after 10 minutes
 Bot:     🚀 Auto Spec Kit — Dev Workflow
          Requirement: Add reset password feature...
          [Step 01/13] Planning with 3 parallel agents...
@@ -438,11 +448,11 @@ Bot:     🚀 Auto Spec Kit — Dev Workflow
          ...
          ✅ Pipeline completed! Check spec-kit-sessions/ for full details.
 
-You:     @autospec /review
+You:     @protector_spec /review
 Bot:     🔍 Reviewing: src/services/auth.service.ts
          ✅ Review complete! Check Output panel for findings.
 
-You:     @autospec What API endpoints require authentication?
+You:     @protector_spec What API endpoints require authentication?
 Bot:     💬 Searching Knowledge Base...
          ✅ Check Output panel for the full answer.</code></pre>
 </div>
@@ -743,7 +753,7 @@ Bot:     💬 Searching Knowledge Base...
 <div class="card">
   <h2>🔭 Map Codebase</h2>
   <span class="role role-sm">FOR: Architects, Tech Leads</span>
-  <p>Command Palette → <strong>Map Codebase</strong> or <code>@autospec /map</code>. Universal multi-language scanner + optional AI enrichment.</p>
+  <p>Command Palette → <strong>Map Codebase</strong> or <code>@protector_spec /map</code>. Universal multi-language scanner + optional AI enrichment.</p>
 
   <ol class="step-list">
     <li><strong>Static Scan</strong> — Multi-language parser (TS/JS/Python/Java/Kotlin/Scala/Groovy/Go/Ruby/C#/PHP/Rust). Detects: file imports, class hierarchy, method declarations, API routes, decorators, XML config.</li>
@@ -772,6 +782,20 @@ Bot:     💬 Searching Knowledge Base...
   </table>
   <p style="margin-top:8px;font-size:13px;color:#94a3b8"><strong>Also scanned for KB:</strong> <code>.xml</code> (MyBatis mappers, Spring config, Camel), <code>.properties</code>, <code>.json</code>, <code>.proto</code>, <code>.tf/.hcl</code>, <code>.ftl</code>, <code>.jsp</code>, <code>.erb</code> templates</p>
 </div>
+
+<div class="card">
+  <h2>📝 Write Document</h2>
+  <span class="role role-sm">FOR: BA, Devs, Tech Leads</span>
+  <p>Command Palette → <strong>Write Document</strong> or <code>@protector_spec /document &lt;topic&gt;</code>. Investigates a feature/entity/module and writes a precise <strong>business ↔ code</strong> document, exported as <strong>HTML</strong>.</p>
+
+  <ol class="step-list">
+    <li><strong>Investigate</strong> — pulls the relevant KB topics, per-module docs, and the actual source files for the topic.</li>
+    <li class="green"><strong>Field-level mapping</strong> — a table per entity: Field · Type · Business Meaning · Validation/Rule · Source (file · class.field / DB column).</li>
+    <li class="purple"><strong>Also documents</strong> — business overview, end-to-end flows mapped to code, business rules & invariants, API/entry points, assumptions & gaps.</li>
+    <li>Exports a self-contained <code>.html</code> (and <code>.md</code>) to <code>spec-kit-sessions/documents/</code>, opens a panel + "Open in Browser".</li>
+  </ol>
+  <p style="margin-top:8px;font-size:13px;color:#94a3b8">Grounded in the KB + real code — it never invents fields; missing items are marked <em>(not found in codebase)</em>.</p>
+</div>
 </div>
 
 <!-- ═══════════════════════════════ INTELLIGENCE (v1.8.0) ═══════════════════════════════ -->
@@ -791,7 +815,7 @@ Bot:     💬 Searching Knowledge Base...
 
     <!-- User Input -->
     <rect x="250" y="40" width="200" height="36" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
-    <text x="350" y="63" text-anchor="middle" font-size="12" font-weight="600" fill="#1e40af">@autospec /build "add login"</text>
+    <text x="350" y="63" text-anchor="middle" font-size="12" font-weight="600" fill="#1e40af">@protector_spec /build "add login"</text>
 
     <!-- Arrow down -->
     <line x1="350" y1="76" x2="350" y2="100" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ia)"/>
@@ -948,7 +972,7 @@ autoSync:
 
 <div class="card">
   <h2>📊 /help — Context-Aware Dashboard</h2>
-  <p><code>@autospec /help</code> shows a live status dashboard:</p>
+  <p><code>@protector_spec /help</code> shows a live status dashboard:</p>
   <table>
     <tr><th>Item</th><th>What it shows</th></tr>
     <tr><td>Knowledge Base</td><td>File count + last update time</td></tr>
@@ -1033,7 +1057,7 @@ autoSync:
     <rect x="130" y="24" width="200" height="36" rx="8" fill="#3b82f6" stroke="#2563eb" stroke-width="1.5"/>
     <text x="230" y="46" fill="white" text-anchor="middle" font-size="11" font-weight="bold">extension.ts — 8 commands</text>
     <rect x="370" y="24" width="220" height="36" rx="8" fill="#6366f1" stroke="#4f46e5" stroke-width="1.5"/>
-    <text x="480" y="46" fill="white" text-anchor="middle" font-size="11" font-weight="bold">chat-participant.ts — @autospec</text>
+    <text x="480" y="46" fill="white" text-anchor="middle" font-size="11" font-weight="bold">chat-participant.ts — @protector_spec</text>
 
     <text x="350" y="82" fill="#64748b" text-anchor="middle" font-size="9" text-transform="uppercase" letter-spacing="1">Workflow Layer</text>
 
@@ -1102,7 +1126,7 @@ autoSync:
   <h3>File Structure (46 TypeScript files)</h3>
   <pre><code>src/
 ├── extension.ts                    ← entry point, 8 commands
-├── chat-participant.ts             ← @autospec Copilot Chat (7 slash commands)
+├── chat-participant.ts             ← @protector_spec Copilot Chat (7 slash commands)
 ├── logger.ts                       ← output channel
 ├── types/index.ts                  ← ExtractedFile, TestResult
 ├── constants/kb-steps.ts           ← 15 KB generation prompts
@@ -1245,7 +1269,7 @@ autoSync:
     <li class="green">Run <code>yarn install</code> to install dependencies</li>
     <li class="green">Run <code>yarn compile</code> to build</li>
     <li class="purple">Run <code>yarn package</code> to create <code>.vsix</code></li>
-    <li class="purple">Install: <code>code --install-extension ai-dev-assistant-1.10.0.vsix</code></li>
+    <li class="purple">Install: <code>code --install-extension ai-dev-assistant-1.11.0.vsix</code></li>
   </ol>
 
   <div class="sep"></div>

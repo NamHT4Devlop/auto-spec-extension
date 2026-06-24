@@ -13,7 +13,7 @@ Auto Spec Kit is a VS Code extension that turns a one-line task description into
 - [Requirements](#-requirements)
 - [Installation](#-installation)
 - [Quick Start](#-quick-start)
-- [Usage — Copilot Chat (`@autospec`)](#-usage--copilot-chat-autospec)
+- [Usage — Copilot Chat (`@protector_spec`)](#-usage--copilot-chat-autospec)
 - [Usage — Command Palette](#-usage--command-palette)
 - [Deep Dive: `/build` — 13-Step Pipeline](#-deep-dive-build--13-step-pipeline)
 - [Detailed Workflows](#-detailed-workflows)
@@ -94,39 +94,39 @@ code --install-extension auto-spec-kit-1.8.0.vsix
 
 1. **Install** the extension (see above)
 2. Open any project in VS Code
-3. Open **Copilot Chat** panel → type `@autospec /scan` → Scan project & generate Knowledge Base
-4. Then type `@autospec /build Add email verification to user registration`
+3. Open **Copilot Chat** panel → type `@protector_spec /scan` → Scan project & generate Knowledge Base
+4. Then type `@protector_spec /build Add email verification to user registration`
 5. Watch the 13-step multi-agent pipeline run
 
 Or use keyboard shortcuts: `Cmd+Shift+B` (Scan), `Cmd+Shift+K` (Build).
 
 ---
 
-## 🤖 Usage — Copilot Chat (`@autospec`)
+## 🤖 Usage — Copilot Chat (`@protector_spec`)
 
 **This is the primary way to use Auto Spec Kit.** Open the Copilot Chat panel in VS Code and type:
 
 | Command | What it does |
 |---|---|
-| `@autospec /build Add reset password feature` | Build a feature — full 13-step pipeline |
-| `@autospec /scan` | Scan the project — generate Knowledge Base |
-| `@autospec /rescan` | Rescan latest changes — update Knowledge Base |
-| `@autospec /review` | Review current file — security, architecture, performance |
-| `@autospec /ask How does auth work?` | Ask about codebase — Q&A powered by KB |
-| `@autospec /plan User onboarding redesign...` | Plan user stories — Epic → Sprint Plan (PO/BA) |
-| `@autospec /map` | Map the codebase — interactive dependency graph |
+| `@protector_spec /build Add reset password feature` | Build a feature — full 13-step pipeline |
+| `@protector_spec /scan` | Scan the project — generate Knowledge Base |
+| `@protector_spec /rescan` | Rescan latest changes — update Knowledge Base |
+| `@protector_spec /review` | Review current file — security, architecture, performance |
+| `@protector_spec /ask How does auth work?` | Ask about codebase — Q&A powered by KB |
+| `@protector_spec /plan User onboarding redesign...` | Plan user stories — Epic → Sprint Plan (PO/BA) |
+| `@protector_spec /map` | Map the codebase — interactive dependency graph |
 
 ### Free text (no slash command)
 
 ```
-@autospec Which module handles payment processing?
+@protector_spec Which module handles payment processing?
 ```
 
 If you don't use a slash command, your message is treated as `/ask` — a question about the codebase answered from the Knowledge Base.
 
 ### How it works
 
-When you type `@autospec`, VS Code routes your message to the Auto Spec Kit **Chat Participant**. The extension:
+When you type `@protector_spec`, VS Code routes your message to the Auto Spec Kit **Chat Participant**. The extension:
 
 1. Reads your slash command (e.g., `/build`, `/scan`, `/review`)
 2. Resolves the best available Copilot model
@@ -137,12 +137,12 @@ When you type `@autospec`, VS Code routes your message to the Auto Spec Kit **Ch
 ### Example session
 
 ```
-You:     @autospec /scan
+You:     @protector_spec /scan
 Bot:     📚 Generating Knowledge Base...
          Analyzing your codebase with multi-agent batch parallelism...
          ✅ Knowledge Base generated! Check knowledge-base/ folder.
 
-You:     @autospec /build Add reset password feature using email OTP, expires after 10 minutes
+You:     @protector_spec /build Add reset password feature using email OTP, expires after 10 minutes
 Bot:     🚀 Auto Spec Kit — Dev Workflow
          Requirement: Add reset password feature using email OTP...
          [Step 01/13] Planning with 3 parallel agents...
@@ -150,11 +150,11 @@ Bot:     🚀 Auto Spec Kit — Dev Workflow
          ...
          ✅ Pipeline completed! Check spec-kit-sessions/ for full details.
 
-You:     @autospec /review
+You:     @protector_spec /review
 Bot:     🔍 Reviewing: src/services/auth.service.ts
          ✅ Review complete! Check Output panel for findings.
 
-You:     @autospec What API endpoints require authentication?
+You:     @protector_spec What API endpoints require authentication?
 Bot:     💬 Searching Knowledge Base...
          ✅ Check Output panel for the full answer.
 ```
@@ -180,7 +180,7 @@ All commands are also available via **Command Palette** (`Ctrl+Shift+P` → type
 
 ## 🔬 Deep Dive: `/build` — 13-Step Pipeline
 
-When you type `@autospec /build Add reset password feature using email OTP, expires after 10 minutes`, this is exactly what happens:
+When you type `@protector_spec /build Add reset password feature using email OTP, expires after 10 minutes`, this is exactly what happens:
 
 ### Input
 
@@ -336,7 +336,7 @@ spec-kit-sessions/2026-06-10T14-30-00/
 
 ### 1. Scan Project (Knowledge Base)
 
-**Chat:** `@autospec /scan` | **Shortcut:** `Ctrl+Shift+B` / `Cmd+Shift+B`
+**Chat:** `@protector_spec /scan` | **Shortcut:** `Ctrl+Shift+B` / `Cmd+Shift+B`
 
 Scans your entire project and generates a comprehensive Knowledge Base — 15 Markdown files covering every aspect of the codebase at **business depth**.
 
@@ -366,7 +366,7 @@ Uses **batch parallelism** (5 batches × 3 parallel agents). Critical business s
 
 ### 2. Review Current File
 
-**Chat:** `@autospec /review` | **Access:** Right-click → **Auto Spec Kit: Review Current File**
+**Chat:** `@protector_spec /review` | **Access:** Right-click → **Auto Spec Kit: Review Current File**
 
 Multi-agent code review with 4 parallel reviewers (Security, Architecture, Performance, Business Consistency). Cross-references your Knowledge Base for business rule validation.
 
@@ -374,7 +374,7 @@ Multi-agent code review with 4 parallel reviewers (Security, Architecture, Perfo
 
 ### 3. Rescan Latest Changes
 
-**Chat:** `@autospec /rescan` | **Access:** Command Palette
+**Chat:** `@protector_spec /rescan` | **Access:** Command Palette
 
 Merges learnings from manual work back into the KB. Useful when you complete tasks outside the `/build` pipeline.
 
@@ -382,18 +382,18 @@ Merges learnings from manual work back into the KB. Useful when you complete tas
 
 ### 4. Ask About Codebase
 
-**Chat:** `@autospec /ask <question>` or just `@autospec <question>`
+**Chat:** `@protector_spec /ask <question>` or just `@protector_spec <question>`
 
 Natural language Q&A grounded in the Knowledge Base. Examples:
-- `@autospec /ask How does order cancellation work?`
-- `@autospec Which services call the payment gateway?`
-- `@autospec What environment variables are required?`
+- `@protector_spec /ask How does order cancellation work?`
+- `@protector_spec Which services call the payment gateway?`
+- `@protector_spec What environment variables are required?`
 
 ---
 
 ### 5. Plan User Stories (PO/BA)
 
-**Chat:** `@autospec /plan <epic description>` | **Shortcut:** `Ctrl+Shift+U`
+**Chat:** `@protector_spec /plan <epic description>` | **Shortcut:** `Ctrl+Shift+U`
 
 A 7-step AI pipeline for PO/BA that requires only 2 inputs (Epic title + description):
 
@@ -409,7 +409,7 @@ A 7-step AI pipeline for PO/BA that requires only 2 inputs (Epic title + descrip
 
 **Example:**
 ```
-@autospec /plan User Onboarding Redesign: Simplify registration, add social login 
+@protector_spec /plan User Onboarding Redesign: Simplify registration, add social login 
 (Google, GitHub), implement email verification with OTP, create guided setup wizard.
 ```
 
@@ -417,7 +417,7 @@ A 7-step AI pipeline for PO/BA that requires only 2 inputs (Epic title + descrip
 
 ### 6. Map Codebase (Dependency Graph)
 
-**Chat:** `@autospec /map` | **Access:** Command Palette
+**Chat:** `@protector_spec /map` | **Access:** Command Palette
 
 Generates an interactive D3.js force-directed graph of your project. Supports **9 programming languages** (TypeScript, JavaScript, Python, Java, Go, Ruby, C#, PHP, Rust).
 
@@ -476,7 +476,7 @@ v1.8.0 introduces 5 systems that make Auto Spec Kit smarter over time and work a
 
 ### `/help` — Context-Aware Status
 
-`@autospec /help` now shows a live dashboard: KB status, model info, project profile, learnings count, workspace type, and `.autospec.yml` detection — all at a glance.
+`@protector_spec /help` now shows a live dashboard: KB status, model info, project profile, learnings count, workspace type, and `.autospec.yml` detection — all at a glance.
 
 ### SessionMemory — No Context Lost
 
@@ -582,7 +582,7 @@ Config priority: `.autospec.yml` > VS Code settings > defaults.
 | Scan Project (generate KB) | `Ctrl+Shift+B` | `Cmd+Shift+B` |
 | Plan User Stories | `Ctrl+Shift+U` | `Cmd+Shift+U` |
 
-All other commands: Command Palette (`Ctrl+Shift+P` → `Auto Spec Kit`) or Copilot Chat (`@autospec`).
+All other commands: Command Palette (`Ctrl+Shift+P` → `Auto Spec Kit`) or Copilot Chat (`@protector_spec`).
 
 ---
 
@@ -718,7 +718,7 @@ Code Review (Step 05) and Review File both load git context:
 Before every command (except `/help`), Auto Spec Kit ensures your workspace is up to date:
 
 ```
-@autospec /build ...
+@protector_spec /build ...
   ├── git fetch --all --prune        ← fetch all remotes
   ├── git pull --ff-only             ← fast-forward merge only
   ├── detect changed source files    ← .ts, .py, .java, .go, etc.
@@ -778,7 +778,7 @@ Apache Camel, MyBatis (XML mappers), Flyway / Liquibase migrations, Spring XML c
 ## 💡 Tips & Best Practices
 
 - **Be specific** with `/build` — "Add JWT refresh token rotation with 7-day expiry" beats "add auth"
-- **Scan first** (`@autospec /scan`) — the pipeline is significantly more accurate with KB context
+- **Scan first** (`@protector_spec /scan`) — the pipeline is significantly more accurate with KB context
 - **Set `autoSpecKit.testCommand`** so Step 11 runs real tests
 - **Use `/review` often** — the 4-agent review catches issues manual review misses
 - For **complex tasks**, use `gpt-5.5` or `claude-opus-4-7`; for **fast iterations**, `o4-mini`
@@ -811,7 +811,7 @@ Apache Camel, MyBatis (XML mappers), Flyway / Liquibase migrations, Spring XML c
 - ✅ All 8 AI pipeline steps upgraded to multi-agent (3-4 parallel agents each)
 
 **Copilot Chat Integration**
-- ✅ `@autospec` Chat Participant with 7 slash commands
+- ✅ `@protector_spec` Chat Participant with 7 slash commands
 - ✅ Stream progress and results directly into chat panel
 - ✅ Free text defaults to `/ask`
 

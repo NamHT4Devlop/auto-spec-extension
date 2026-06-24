@@ -1,17 +1,17 @@
 /**
  * chat-participant.ts — Copilot Chat Integration
  *
- * Registers @autospec as a Chat Participant in VS Code Copilot Chat.
+ * Registers @protector_spec as a Chat Participant in VS Code Copilot Chat.
  * Users can invoke:
- *   @autospec /build Add reset password feature
- *   @autospec /scan
- *   @autospec /rescan
- *   @autospec /review
- *   @autospec /ask Which module handles payment?
- *   @autospec /plan Epic: User onboarding redesign
- *   @autospec /map
- *   @autospec /help
- *   @autospec (free text → defaults to /ask)
+ *   @protector_spec /build Add reset password feature
+ *   @protector_spec /scan
+ *   @protector_spec /rescan
+ *   @protector_spec /review
+ *   @protector_spec /ask Which module handles payment?
+ *   @protector_spec /plan Epic: User onboarding redesign
+ *   @protector_spec /map
+ *   @protector_spec /help
+ *   @protector_spec (free text → defaults to /ask)
  *
  * Integrated systems:
  *   - SessionMemory     — persistent context across long chat sessions
@@ -31,6 +31,7 @@ import { updateKBStandalone } from './workflow/update-kb';
 import { askAboutCodebase } from './workflow/ask-kb';
 import { generateUserStories } from './workflow/generate-user-stories';
 import { visualizeKnowledgeBase } from './workflow/visualize-kb';
+import { writeDocument } from './workflow/write-document';
 import { SessionMemory } from './utils/session-memory';
 import { RequirementClarifier } from './utils/requirement-clarifier';
 import { ProjectProfileDetector } from './utils/project-profile';
@@ -80,7 +81,7 @@ async function handleChatRequest(
     return { metadata: { command: request.command ?? 'none' } };
   }
 
-  log(`\n🤖 Chat: @autospec /${command} ${userPrompt}`);
+  log(`\n🤖 Chat: @protector_spec /${command} ${userPrompt}`);
 
   // ── Auto-sync: fetch + pull latest code before every command ──
   // Gated on workspace trust: auto-sync runs git against the project remote, which
@@ -115,6 +116,9 @@ async function handleChatRequest(
       case 'map':
         return await handleMap(root, stream, extensionContext);
 
+      case 'document':
+        return await handleDocument(root, userPrompt, stream, chatToken);
+
       case 'help':
         return showHelp(stream, root);
 
@@ -147,7 +151,7 @@ async function handleBuild(
   extContext: vscode.ExtensionContext,
 ): Promise<vscode.ChatResult> {
   if (!requirement) {
-    stream.markdown('Please describe the feature to build.\n\n**Example:**\n```\n@autospec /build Add reset password feature using email OTP, expires after 10 minutes\n```');
+    stream.markdown('Please describe the feature to build.\n\n**Example:**\n```\n@protector_spec /build Add reset password feature using email OTP, expires after 10 minutes\n```');
     return { metadata: { command: 'build' } };
   }
 
@@ -258,7 +262,7 @@ async function handleReview(
 ): Promise<vscode.ChatResult> {
   const editor = vscode.window.activeTextEditor;
   if (!editor) {
-    stream.markdown('⚠️ **No file open.** Please open a file in the editor first, then run `@autospec /review`.');
+    stream.markdown('⚠️ **No file open.** Please open a file in the editor first, then run `@protector_spec /review`.');
     return { metadata: { command: 'review' } };
   }
 
@@ -286,7 +290,7 @@ async function handleAsk(
   token: vscode.CancellationToken,
 ): Promise<vscode.ChatResult> {
   if (!question) {
-    stream.markdown('Ask a question about your codebase.\n\n**Examples:**\n```\n@autospec /ask Which module handles payment?\n@autospec /ask What API endpoints require authentication?\n@autospec /ask How does the order flow work?\n```');
+    stream.markdown('Ask a question about your codebase.\n\n**Examples:**\n```\n@protector_spec /ask Which module handles payment?\n@protector_spec /ask What API endpoints require authentication?\n@protector_spec /ask How does the order flow work?\n```');
     return { metadata: { command: 'ask' } };
   }
 
@@ -313,7 +317,7 @@ async function handlePlan(
   token: vscode.CancellationToken,
 ): Promise<vscode.ChatResult> {
   if (!epicDescription) {
-    stream.markdown('Please provide an Epic description.\n\n**Example:**\n```\n@autospec /plan User Onboarding Redesign: Simplify the registration process, add social login (Google, GitHub), implement email verification with OTP, and create a guided setup wizard for new users.\n```');
+    stream.markdown('Please provide an Epic description.\n\n**Example:**\n```\n@protector_spec /plan User Onboarding Redesign: Simplify the registration process, add social login (Google, GitHub), implement email verification with OTP, and create a guided setup wizard for new users.\n```');
     return { metadata: { command: 'plan' } };
   }
 
@@ -352,6 +356,33 @@ async function handleMap(
   stream.markdown('\n\n✅ **Codebase map opened!** Check the webview panel and saved HTML file.');
 
   return { metadata: { command: 'map' } };
+}
+
+async function handleDocument(
+  root: string,
+  topic: string,
+  stream: vscode.ChatResponseStream,
+  token: vscode.CancellationToken,
+): Promise<vscode.ChatResult> {
+  if (!topic) {
+    stream.markdown('Please say what to document.\n\n**Example:**\n```\n@protector_spec /document Order checkout flow\n@protector_spec /document User entity (field-level mapping)\n```');
+    return { metadata: { command: 'document' } };
+  }
+
+  const model = await resolveModel();
+  if (!model) {
+    stream.markdown('⚠️ No Copilot model available.');
+    return { metadata: { command: 'document' } };
+  }
+
+  stream.progress('Investigating & writing document (business ↔ code)...');
+  const result = await writeDocument(topic, root, model, token);
+
+  // Show the document in chat and point to the exported HTML.
+  stream.markdown(result.markdown);
+  stream.markdown(`\n\n---\n📄 **Exported HTML:** \`${result.htmlFile}\` (also opened in a panel — use "Open HTML in Browser" to view/print).`);
+
+  return { metadata: { command: 'document' } };
 }
 
 async function handleRescan(
@@ -493,22 +524,23 @@ function showHelp(stream: vscode.ChatResponseStream, root?: string): vscode.Chat
 
 | Command | Description |
 |---------|-------------|
-| \`@autospec /build <requirement>\` | Build a feature — full 13-step pipeline |
-| \`@autospec /scan\` | Scan the project — generate Knowledge Base |
-| \`@autospec /rescan\` | Rescan latest changes — update Knowledge Base |
-| \`@autospec /review\` | Review current file — security, architecture, performance |
-| \`@autospec /ask <question>\` | Ask about codebase — Q&A powered by KB |
-| \`@autospec /plan <epic>\` | Plan user stories — Epic → Stories → Sprint Plan |
-| \`@autospec /map\` | Map the codebase — interactive dependency graph |
-| \`@autospec /help\` | Show this help with status info |
+| \`@protector_spec /build <requirement>\` | Build a feature — full 13-step pipeline |
+| \`@protector_spec /scan\` | Scan the project — generate Knowledge Base |
+| \`@protector_spec /rescan\` | Rescan latest changes — update Knowledge Base |
+| \`@protector_spec /review\` | Review current file — security, architecture, performance |
+| \`@protector_spec /ask <question>\` | Ask about codebase — Q&A powered by KB |
+| \`@protector_spec /plan <epic>\` | Plan user stories — Epic → Stories → Sprint Plan |
+| \`@protector_spec /map\` | Map the codebase — interactive dependency graph |
+| \`@protector_spec /document <topic>\` | Write a technical doc — business ↔ code field mapping, exported as HTML |
+| \`@protector_spec /help\` | Show this help with status info |
 
 ## Quick Start
 
-1. \`@autospec /scan\` — scan your project first (generates Knowledge Base)
-2. \`@autospec /build Add reset password feature\` — run the 13-step pipeline
-3. \`@autospec /review\` — review any open file with 4 AI agents
+1. \`@protector_spec /scan\` — scan your project first (generates Knowledge Base)
+2. \`@protector_spec /build Add reset password feature\` — run the 13-step pipeline
+3. \`@protector_spec /review\` — review any open file with 4 AI agents
 
-**Free text:** \`@autospec How does auth work?\` defaults to \`/ask\`.
+**Free text:** \`@protector_spec How does auth work?\` defaults to \`/ask\`.
 
 **Keyboard shortcuts:** \`Cmd+Shift+K\` (Build) · \`Cmd+Shift+B\` (Scan) · \`Cmd+Shift+U\` (Plan)
 `);
@@ -597,6 +629,6 @@ export function registerChatParticipant(context: vscode.ExtensionContext): void 
 
   participant.iconPath = vscode.Uri.joinPath(context.extensionUri, 'resources', 'icon.png');
 
-  log('🤖 Chat Participant @autospec registered (with SessionMemory, Clarifier, Resolver)');
+  log('🤖 Chat Participant @protector_spec registered (with SessionMemory, Clarifier, Resolver)');
   context.subscriptions.push(participant);
 }

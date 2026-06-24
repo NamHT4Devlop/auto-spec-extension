@@ -545,6 +545,140 @@ document.addEventListener('keydown', e => {
 import type { GraphData } from './graph-builder';
 import * as crypto from 'crypto';
 
+// ═══════════════════════════════════════════════════════════════════════════
+// Markdown → safe HTML (small, dependency-free subset) + document page builder
+// Used by the /document command. All text is HTML-escaped before formatting.
+// ═══════════════════════════════════════════════════════════════════════════
+
+function mdInline(s: string): string {
+  let t = esc(s);
+  t = t.replace(/`([^`]+)`/g, (_m, c) => `<code>${c}</code>`);
+  t = t.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  t = t.replace(/(^|[^_])_([^_]+)_(?!_)/g, '$1<em>$2</em>');
+  // Only allow http(s) links; everything else stays literal text.
+  t = t.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+    (_m, txt, url) => `<a href="${url}" rel="noopener noreferrer" target="_blank">${txt}</a>`);
+  return t;
+}
+
+function renderMdTable(rows: string[]): string {
+  const parse = (line: string) =>
+    line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(c => c.trim());
+  const header = parse(rows[0]);
+  const body = rows.slice(2).map(parse); // rows[1] is the |---|---| separator
+  let h = '<table><thead><tr>' + header.map(c => `<th>${mdInline(c)}</th>`).join('') + '</tr></thead><tbody>';
+  for (const r of body) { h += '<tr>' + r.map(c => `<td>${mdInline(c)}</td>`).join('') + '</tr>'; }
+  return h + '</tbody></table>';
+}
+
+export function markdownToHtml(md: string): string {
+  const lines = (md ?? '').replace(/\r\n/g, '\n').split('\n');
+  const out: string[] = [];
+  let i = 0;
+  let listType: 'ul' | 'ol' | null = null;
+  const closeList = () => { if (listType) { out.push(`</${listType}>`); listType = null; } };
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    // Code fence
+    const fence = line.match(/^\s*```(\w*)\s*$/);
+    if (fence) {
+      closeList();
+      const buf: string[] = [];
+      i++;
+      while (i < lines.length && !/^\s*```\s*$/.test(lines[i])) { buf.push(lines[i]); i++; }
+      i++; // skip closing fence
+      out.push(`<pre><code>${esc(buf.join('\n'))}</code></pre>`);
+      continue;
+    }
+
+    // Table (current line + next look like a table with a separator row)
+    if (/^\s*\|.*\|\s*$/.test(line) && i + 1 < lines.length && /^\s*\|?[\s:|-]+\|?\s*$/.test(lines[i + 1]) && lines[i + 1].includes('-')) {
+      closeList();
+      const rows: string[] = [];
+      while (i < lines.length && /^\s*\|.*\|\s*$/.test(lines[i])) { rows.push(lines[i]); i++; }
+      out.push(renderMdTable(rows));
+      continue;
+    }
+
+    // Heading
+    const h = line.match(/^(#{1,6})\s+(.*)$/);
+    if (h) { closeList(); out.push(`<h${h[1].length}>${mdInline(h[2])}</h${h[1].length}>`); i++; continue; }
+
+    // Horizontal rule
+    if (/^\s*([-*_])\1\1+\s*$/.test(line)) { closeList(); out.push('<hr>'); i++; continue; }
+
+    // Unordered list
+    const ul = line.match(/^\s*[-*]\s+(.*)$/);
+    if (ul) {
+      if (listType !== 'ul') { closeList(); out.push('<ul>'); listType = 'ul'; }
+      out.push(`<li>${mdInline(ul[1])}</li>`); i++; continue;
+    }
+    // Ordered list
+    const ol = line.match(/^\s*\d+\.\s+(.*)$/);
+    if (ol) {
+      if (listType !== 'ol') { closeList(); out.push('<ol>'); listType = 'ol'; }
+      out.push(`<li>${mdInline(ol[1])}</li>`); i++; continue;
+    }
+
+    // Blank line
+    if (/^\s*$/.test(line)) { closeList(); i++; continue; }
+
+    // Paragraph
+    closeList();
+    out.push(`<p>${mdInline(line)}</p>`);
+    i++;
+  }
+  closeList();
+  return out.join('\n');
+}
+
+export function buildDocumentHtml(topic: string, markdown: string): string {
+  const body = markdownToHtml(markdown);
+  const safeTopic = esc(topic);
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:;">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${safeTopic} — Document</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1e293b;line-height:1.65;background:#f8fafc}
+.doc{max-width:980px;margin:0 auto;padding:40px 32px 80px}
+h1{font-size:1.9rem;font-weight:750;margin:0 0 8px;color:#0f172a;border-bottom:3px solid #6366f1;padding-bottom:12px}
+h2{font-size:1.3rem;font-weight:700;margin:30px 0 10px;color:#1e293b}
+h3{font-size:1.05rem;font-weight:650;margin:20px 0 8px;color:#334155}
+h4{font-size:.95rem;font-weight:650;margin:16px 0 6px;color:#475569}
+p{margin:8px 0}
+em{color:#64748b}
+a{color:#6366f1}
+code{background:#eef2ff;color:#4338ca;padding:1px 6px;border-radius:5px;font-family:'Fira Code',ui-monospace,monospace;font-size:.86em}
+pre{background:#0f172a;color:#e2e8f0;padding:14px 16px;border-radius:10px;overflow-x:auto;margin:12px 0}
+pre code{background:none;color:inherit;padding:0}
+ul,ol{margin:8px 0 8px 26px}
+li{margin:4px 0}
+hr{border:none;border-top:1px solid #e2e8f0;margin:24px 0}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:.9rem;box-shadow:0 1px 3px rgba(0,0,0,.06);border-radius:8px;overflow:hidden}
+th{background:#6366f1;color:#fff;text-align:left;padding:9px 12px;font-weight:600;font-size:.82rem}
+td{padding:9px 12px;border-top:1px solid #eef2f7;vertical-align:top}
+tr:nth-child(even) td{background:#f8fafc}
+.meta{color:#94a3b8;font-size:.8rem;margin-top:6px}
+@media print{body{background:#fff}.doc{max-width:100%}}
+</style>
+</head>
+<body>
+<div class="doc">
+${body}
+<hr>
+<p class="meta">Generated by Auto Spec Kit · ${esc(new Date().toLocaleString('en-US'))}</p>
+</div>
+</body>
+</html>`;
+}
+
 /** Cryptographically-random nonce for the webview Content-Security-Policy. */
 function randomNonce(): string {
   return crypto.randomBytes(16).toString('base64').replace(/[^A-Za-z0-9]/g, '');

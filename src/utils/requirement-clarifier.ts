@@ -100,7 +100,7 @@ export class RequirementClarifier {
         stream.markdown(`\n_Missing: ${assessment.missingAspects.join(', ')}._\n`);
       }
       stream.markdown(
-        `\n💡 Re-run with detail, e.g.: \`@autospec /build ${requirement} — <add specifics from above>\`\n`
+        `\n💡 Re-run with detail, e.g.: \`@protector_spec /build ${requirement} — <add specifics from above>\`\n`
       );
       return { proceed: false, requirement };
     }

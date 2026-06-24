@@ -14,13 +14,14 @@ import { updateKBStandalone } from './workflow/update-kb';
 import { askAboutCodebase } from './workflow/ask-kb';
 import { generateUserStories } from './workflow/generate-user-stories';
 import { visualizeKnowledgeBase } from './workflow/visualize-kb';
+import { writeDocument } from './workflow/write-document';
 import { registerChatParticipant } from './chat-participant';
 import { RequirementClarifier } from './utils/requirement-clarifier';
 
 export function activate(context: vscode.ExtensionContext): void {
   const ch = initChannel('Auto Spec Kit');
 
-  // ── Chat Participant: @autospec ──────────────────────────────────
+  // ── Chat Participant: @protector_spec ──────────────────────────────────
   registerChatParticipant(context);
 
   const getRoot = (): string | undefined => {
@@ -226,6 +227,32 @@ export function activate(context: vscode.ExtensionContext): void {
         log(`\n❌ ERROR: ${err?.message ?? err}`);
         vscode.window.showErrorMessage(`Auto Spec Kit Visualize: ${err?.message ?? err}`);
       }
+    })
+  );
+
+  // ── Command: Write Document (business ↔ code mapping → HTML) ─────
+  context.subscriptions.push(
+    vscode.commands.registerCommand('autoSpecKit.writeDocument', async () => {
+      const root = getRoot(); if (!root) { return; }
+      const model = await resolveModel(); if (!model) { return; }
+      const topic = await vscode.window.showInputBox({
+        title: '📝 Write Document — what to document?',
+        prompt: 'Feature / entity / module to document (business ↔ code mapping)',
+        placeHolder: 'e.g. Order checkout flow, User entity, Payment module',
+        ignoreFocusOut: true,
+      });
+      if (!topic?.trim()) { return; }
+      ch.show(true);
+      await withProgress('📝 Writing document...', async (_progress, token) => {
+        try {
+          await writeDocument(topic.trim(), root, model, token);
+        } catch (err: any) {
+          if (!token.isCancellationRequested) {
+            log(`\n❌ ERROR: ${err?.message ?? err}`);
+            vscode.window.showErrorMessage(`Auto Spec Kit Document: ${err?.message ?? err}`);
+          }
+        }
+      });
     })
   );
 

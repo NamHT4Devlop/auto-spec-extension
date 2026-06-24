@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Auto Spec Kit v1.10.0 — Manual Install Guide</title>
+<title>Auto Spec Kit v1.11.0 — Manual Install Guide</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #1e293b; min-height: 100vh; line-height: 1.6; }
@@ -78,8 +78,8 @@
   <h1>Manual Install Guide</h1>
   <p class="subtitle">Create the project from scratch on any machine — no git clone needed</p>
   <div style="margin-top:10px">
-    <span class="badge badge-blue">v1.10.0</span>
-    <span class="badge badge-green">59 files</span>
+    <span class="badge badge-blue">v1.11.0</span>
+    <span class="badge badge-green">60 files</span>
     <span class="badge badge-orange">Copy & Paste</span>
   </div>
 </header>
@@ -122,7 +122,7 @@ mkdir -p docs</code></pre>
   <div class="file-header" onclick="toggleFile('package-json')">
     <span class="file-name">package.json</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">9,762 bytes</span>
+      <span class="file-size">10,112 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('package-json',this)">Copy</button>
     </div>
   </div>
@@ -131,7 +131,7 @@ mkdir -p docs</code></pre>
   &quot;name&quot;: &quot;ai-dev-assistant&quot;,
   &quot;displayName&quot;: &quot;AI Dev Assistant&quot;,
   &quot;description&quot;: &quot;Automate the full development workflow: Requirement → Plan → Code → Review → Test → Evidence, powered by GitHub Copilot&quot;,
-  &quot;version&quot;: &quot;1.10.0&quot;,
+  &quot;version&quot;: &quot;1.11.0&quot;,
   &quot;publisher&quot;: &quot;internal-tools&quot;,
   &quot;author&quot;: {
     &quot;name&quot;: &quot;Internal Tools&quot;
@@ -154,8 +154,8 @@ mkdir -p docs</code></pre>
     &quot;chatParticipants&quot;: [
       {
         &quot;id&quot;: &quot;auto-spec-kit.autospec&quot;,
-        &quot;fullName&quot;: &quot;Auto Spec Kit&quot;,
-        &quot;name&quot;: &quot;autospec&quot;,
+        &quot;fullName&quot;: &quot;Protector Spec&quot;,
+        &quot;name&quot;: &quot;protector_spec&quot;,
         &quot;description&quot;: &quot;AI-powered development workflow: plan, code, review, test, generate KB &amp; user stories&quot;,
         &quot;isSticky&quot;: true,
         &quot;commands&quot;: [
@@ -166,6 +166,7 @@ mkdir -p docs</code></pre>
           { &quot;name&quot;: &quot;ask&quot;, &quot;description&quot;: &quot;Ask about codebase — natural language Q&amp;A powered by Knowledge Base&quot; },
           { &quot;name&quot;: &quot;plan&quot;, &quot;description&quot;: &quot;Plan user stories — Epic → Features → Impact Analysis → Sprint Plan (PO/BA)&quot; },
           { &quot;name&quot;: &quot;map&quot;, &quot;description&quot;: &quot;Map the codebase — interactive dependency graph with AI enrichment&quot; },
+          { &quot;name&quot;: &quot;document&quot;, &quot;description&quot;: &quot;Write a technical document — business ↔ code field-level mapping, exported as HTML&quot; },
           { &quot;name&quot;: &quot;help&quot;, &quot;description&quot;: &quot;Show all commands, KB status, and quick-start guide&quot; }
         ]
       }
@@ -178,7 +179,8 @@ mkdir -p docs</code></pre>
       { &quot;command&quot;: &quot;autoSpecKit.ask&quot;, &quot;title&quot;: &quot;💬 Auto Spec Kit: Ask About Codebase&quot;, &quot;category&quot;: &quot;Auto Spec Kit&quot; },
       { &quot;command&quot;: &quot;autoSpecKit.selectModel&quot;, &quot;title&quot;: &quot;🤖 Auto Spec Kit: Select Model&quot;, &quot;category&quot;: &quot;Auto Spec Kit&quot; },
       { &quot;command&quot;: &quot;autoSpecKit.generateUserStories&quot;, &quot;title&quot;: &quot;📋 Auto Spec Kit: Plan User Stories (PO/BA)&quot;, &quot;category&quot;: &quot;Auto Spec Kit&quot; },
-      { &quot;command&quot;: &quot;autoSpecKit.visualize&quot;, &quot;title&quot;: &quot;🔭 Auto Spec Kit: Map Codebase (dependency graph)&quot;, &quot;category&quot;: &quot;Auto Spec Kit&quot; }
+      { &quot;command&quot;: &quot;autoSpecKit.visualize&quot;, &quot;title&quot;: &quot;🔭 Auto Spec Kit: Map Codebase (dependency graph)&quot;, &quot;category&quot;: &quot;Auto Spec Kit&quot; },
+      { &quot;command&quot;: &quot;autoSpecKit.writeDocument&quot;, &quot;title&quot;: &quot;📝 Auto Spec Kit: Write Document (business ↔ code, HTML)&quot;, &quot;category&quot;: &quot;Auto Spec Kit&quot; }
     ],
     &quot;configuration&quot;: {
       &quot;title&quot;: &quot;Auto Spec Kit&quot;,
@@ -221,7 +223,8 @@ mkdir -p docs</code></pre>
         { &quot;command&quot;: &quot;autoSpecKit.ask&quot; },
         { &quot;command&quot;: &quot;autoSpecKit.selectModel&quot; },
         { &quot;command&quot;: &quot;autoSpecKit.generateUserStories&quot; },
-        { &quot;command&quot;: &quot;autoSpecKit.visualize&quot; }
+        { &quot;command&quot;: &quot;autoSpecKit.visualize&quot; },
+        { &quot;command&quot;: &quot;autoSpecKit.writeDocument&quot; }
       ],
       &quot;editor/context&quot;: [
         { &quot;command&quot;: &quot;autoSpecKit.reviewFile&quot;, &quot;group&quot;: &quot;autoSpecKit@1&quot;, &quot;when&quot;: &quot;editorIsOpen&quot; }
@@ -444,7 +447,7 @@ npm-debug.log*
   <div class="file-header" onclick="toggleFile('src-chat-participant-ts')">
     <span class="file-name">src/chat-participant.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">25,014 bytes</span>
+      <span class="file-size">26,509 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-chat-participant-ts',this)">Copy</button>
     </div>
   </div>
@@ -452,17 +455,17 @@ npm-debug.log*
     <pre><code id="code-src-chat-participant-ts">/**
  * chat-participant.ts — Copilot Chat Integration
  *
- * Registers @autospec as a Chat Participant in VS Code Copilot Chat.
+ * Registers @protector_spec as a Chat Participant in VS Code Copilot Chat.
  * Users can invoke:
- *   @autospec /build Add reset password feature
- *   @autospec /scan
- *   @autospec /rescan
- *   @autospec /review
- *   @autospec /ask Which module handles payment?
- *   @autospec /plan Epic: User onboarding redesign
- *   @autospec /map
- *   @autospec /help
- *   @autospec (free text → defaults to /ask)
+ *   @protector_spec /build Add reset password feature
+ *   @protector_spec /scan
+ *   @protector_spec /rescan
+ *   @protector_spec /review
+ *   @protector_spec /ask Which module handles payment?
+ *   @protector_spec /plan Epic: User onboarding redesign
+ *   @protector_spec /map
+ *   @protector_spec /help
+ *   @protector_spec (free text → defaults to /ask)
  *
  * Integrated systems:
  *   - SessionMemory     — persistent context across long chat sessions
@@ -482,6 +485,7 @@ import { updateKBStandalone } from &#x27;./workflow/update-kb&#x27;;
 import { askAboutCodebase } from &#x27;./workflow/ask-kb&#x27;;
 import { generateUserStories } from &#x27;./workflow/generate-user-stories&#x27;;
 import { visualizeKnowledgeBase } from &#x27;./workflow/visualize-kb&#x27;;
+import { writeDocument } from &#x27;./workflow/write-document&#x27;;
 import { SessionMemory } from &#x27;./utils/session-memory&#x27;;
 import { RequirementClarifier } from &#x27;./utils/requirement-clarifier&#x27;;
 import { ProjectProfileDetector } from &#x27;./utils/project-profile&#x27;;
@@ -531,7 +535,7 @@ async function handleChatRequest(
     return { metadata: { command: request.command ?? &#x27;none&#x27; } };
   }
 
-  log(`\n🤖 Chat: @autospec /${command} ${userPrompt}`);
+  log(`\n🤖 Chat: @protector_spec /${command} ${userPrompt}`);
 
   // ── Auto-sync: fetch + pull latest code before every command ──
   // Gated on workspace trust: auto-sync runs git against the project remote, which
@@ -566,6 +570,9 @@ async function handleChatRequest(
       case &#x27;map&#x27;:
         return await handleMap(root, stream, extensionContext);
 
+      case &#x27;document&#x27;:
+        return await handleDocument(root, userPrompt, stream, chatToken);
+
       case &#x27;help&#x27;:
         return showHelp(stream, root);
 
@@ -598,7 +605,7 @@ async function handleBuild(
   extContext: vscode.ExtensionContext,
 ): Promise&lt;vscode.ChatResult&gt; {
   if (!requirement) {
-    stream.markdown(&#x27;Please describe the feature to build.\n\n**Example:**\n```\n@autospec /build Add reset password feature using email OTP, expires after 10 minutes\n```&#x27;);
+    stream.markdown(&#x27;Please describe the feature to build.\n\n**Example:**\n```\n@protector_spec /build Add reset password feature using email OTP, expires after 10 minutes\n```&#x27;);
     return { metadata: { command: &#x27;build&#x27; } };
   }
 
@@ -709,7 +716,7 @@ async function handleReview(
 ): Promise&lt;vscode.ChatResult&gt; {
   const editor = vscode.window.activeTextEditor;
   if (!editor) {
-    stream.markdown(&#x27;⚠️ **No file open.** Please open a file in the editor first, then run `@autospec /review`.&#x27;);
+    stream.markdown(&#x27;⚠️ **No file open.** Please open a file in the editor first, then run `@protector_spec /review`.&#x27;);
     return { metadata: { command: &#x27;review&#x27; } };
   }
 
@@ -737,7 +744,7 @@ async function handleAsk(
   token: vscode.CancellationToken,
 ): Promise&lt;vscode.ChatResult&gt; {
   if (!question) {
-    stream.markdown(&#x27;Ask a question about your codebase.\n\n**Examples:**\n```\n@autospec /ask Which module handles payment?\n@autospec /ask What API endpoints require authentication?\n@autospec /ask How does the order flow work?\n```&#x27;);
+    stream.markdown(&#x27;Ask a question about your codebase.\n\n**Examples:**\n```\n@protector_spec /ask Which module handles payment?\n@protector_spec /ask What API endpoints require authentication?\n@protector_spec /ask How does the order flow work?\n```&#x27;);
     return { metadata: { command: &#x27;ask&#x27; } };
   }
 
@@ -764,7 +771,7 @@ async function handlePlan(
   token: vscode.CancellationToken,
 ): Promise&lt;vscode.ChatResult&gt; {
   if (!epicDescription) {
-    stream.markdown(&#x27;Please provide an Epic description.\n\n**Example:**\n```\n@autospec /plan User Onboarding Redesign: Simplify the registration process, add social login (Google, GitHub), implement email verification with OTP, and create a guided setup wizard for new users.\n```&#x27;);
+    stream.markdown(&#x27;Please provide an Epic description.\n\n**Example:**\n```\n@protector_spec /plan User Onboarding Redesign: Simplify the registration process, add social login (Google, GitHub), implement email verification with OTP, and create a guided setup wizard for new users.\n```&#x27;);
     return { metadata: { command: &#x27;plan&#x27; } };
   }
 
@@ -803,6 +810,33 @@ async function handleMap(
   stream.markdown(&#x27;\n\n✅ **Codebase map opened!** Check the webview panel and saved HTML file.&#x27;);
 
   return { metadata: { command: &#x27;map&#x27; } };
+}
+
+async function handleDocument(
+  root: string,
+  topic: string,
+  stream: vscode.ChatResponseStream,
+  token: vscode.CancellationToken,
+): Promise&lt;vscode.ChatResult&gt; {
+  if (!topic) {
+    stream.markdown(&#x27;Please say what to document.\n\n**Example:**\n```\n@protector_spec /document Order checkout flow\n@protector_spec /document User entity (field-level mapping)\n```&#x27;);
+    return { metadata: { command: &#x27;document&#x27; } };
+  }
+
+  const model = await resolveModel();
+  if (!model) {
+    stream.markdown(&#x27;⚠️ No Copilot model available.&#x27;);
+    return { metadata: { command: &#x27;document&#x27; } };
+  }
+
+  stream.progress(&#x27;Investigating &amp; writing document (business ↔ code)...&#x27;);
+  const result = await writeDocument(topic, root, model, token);
+
+  // Show the document in chat and point to the exported HTML.
+  stream.markdown(result.markdown);
+  stream.markdown(`\n\n---\n📄 **Exported HTML:** \`${result.htmlFile}\` (also opened in a panel — use &quot;Open HTML in Browser&quot; to view/print).`);
+
+  return { metadata: { command: &#x27;document&#x27; } };
 }
 
 async function handleRescan(
@@ -944,22 +978,23 @@ function showHelp(stream: vscode.ChatResponseStream, root?: string): vscode.Chat
 
 | Command | Description |
 |---------|-------------|
-| \`@autospec /build &lt;requirement&gt;\` | Build a feature — full 13-step pipeline |
-| \`@autospec /scan\` | Scan the project — generate Knowledge Base |
-| \`@autospec /rescan\` | Rescan latest changes — update Knowledge Base |
-| \`@autospec /review\` | Review current file — security, architecture, performance |
-| \`@autospec /ask &lt;question&gt;\` | Ask about codebase — Q&amp;A powered by KB |
-| \`@autospec /plan &lt;epic&gt;\` | Plan user stories — Epic → Stories → Sprint Plan |
-| \`@autospec /map\` | Map the codebase — interactive dependency graph |
-| \`@autospec /help\` | Show this help with status info |
+| \`@protector_spec /build &lt;requirement&gt;\` | Build a feature — full 13-step pipeline |
+| \`@protector_spec /scan\` | Scan the project — generate Knowledge Base |
+| \`@protector_spec /rescan\` | Rescan latest changes — update Knowledge Base |
+| \`@protector_spec /review\` | Review current file — security, architecture, performance |
+| \`@protector_spec /ask &lt;question&gt;\` | Ask about codebase — Q&amp;A powered by KB |
+| \`@protector_spec /plan &lt;epic&gt;\` | Plan user stories — Epic → Stories → Sprint Plan |
+| \`@protector_spec /map\` | Map the codebase — interactive dependency graph |
+| \`@protector_spec /document &lt;topic&gt;\` | Write a technical doc — business ↔ code field mapping, exported as HTML |
+| \`@protector_spec /help\` | Show this help with status info |
 
 ## Quick Start
 
-1. \`@autospec /scan\` — scan your project first (generates Knowledge Base)
-2. \`@autospec /build Add reset password feature\` — run the 13-step pipeline
-3. \`@autospec /review\` — review any open file with 4 AI agents
+1. \`@protector_spec /scan\` — scan your project first (generates Knowledge Base)
+2. \`@protector_spec /build Add reset password feature\` — run the 13-step pipeline
+3. \`@protector_spec /review\` — review any open file with 4 AI agents
 
-**Free text:** \`@autospec How does auth work?\` defaults to \`/ask\`.
+**Free text:** \`@protector_spec How does auth work?\` defaults to \`/ask\`.
 
 **Keyboard shortcuts:** \`Cmd+Shift+K\` (Build) · \`Cmd+Shift+B\` (Scan) · \`Cmd+Shift+U\` (Plan)
 `);
@@ -1048,7 +1083,7 @@ export function registerChatParticipant(context: vscode.ExtensionContext): void 
 
   participant.iconPath = vscode.Uri.joinPath(context.extensionUri, &#x27;resources&#x27;, &#x27;icon.png&#x27;);
 
-  log(&#x27;🤖 Chat Participant @autospec registered (with SessionMemory, Clarifier, Resolver)&#x27;);
+  log(&#x27;🤖 Chat Participant @protector_spec registered (with SessionMemory, Clarifier, Resolver)&#x27;);
   context.subscriptions.push(participant);
 }
 </code></pre>
@@ -1059,7 +1094,7 @@ export function registerChatParticipant(context: vscode.ExtensionContext): void 
   <div class="file-header" onclick="toggleFile('src-extension-ts')">
     <span class="file-name">src/extension.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">11,215 bytes</span>
+      <span class="file-size">12,408 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-extension-ts',this)">Copy</button>
     </div>
   </div>
@@ -1080,13 +1115,14 @@ import { updateKBStandalone } from &#x27;./workflow/update-kb&#x27;;
 import { askAboutCodebase } from &#x27;./workflow/ask-kb&#x27;;
 import { generateUserStories } from &#x27;./workflow/generate-user-stories&#x27;;
 import { visualizeKnowledgeBase } from &#x27;./workflow/visualize-kb&#x27;;
+import { writeDocument } from &#x27;./workflow/write-document&#x27;;
 import { registerChatParticipant } from &#x27;./chat-participant&#x27;;
 import { RequirementClarifier } from &#x27;./utils/requirement-clarifier&#x27;;
 
 export function activate(context: vscode.ExtensionContext): void {
   const ch = initChannel(&#x27;Auto Spec Kit&#x27;);
 
-  // ── Chat Participant: @autospec ──────────────────────────────────
+  // ── Chat Participant: @protector_spec ──────────────────────────────────
   registerChatParticipant(context);
 
   const getRoot = (): string | undefined =&gt; {
@@ -1292,6 +1328,32 @@ export function activate(context: vscode.ExtensionContext): void {
         log(`\n❌ ERROR: ${err?.message ?? err}`);
         vscode.window.showErrorMessage(`Auto Spec Kit Visualize: ${err?.message ?? err}`);
       }
+    })
+  );
+
+  // ── Command: Write Document (business ↔ code mapping → HTML) ─────
+  context.subscriptions.push(
+    vscode.commands.registerCommand(&#x27;autoSpecKit.writeDocument&#x27;, async () =&gt; {
+      const root = getRoot(); if (!root) { return; }
+      const model = await resolveModel(); if (!model) { return; }
+      const topic = await vscode.window.showInputBox({
+        title: &#x27;📝 Write Document — what to document?&#x27;,
+        prompt: &#x27;Feature / entity / module to document (business ↔ code mapping)&#x27;,
+        placeHolder: &#x27;e.g. Order checkout flow, User entity, Payment module&#x27;,
+        ignoreFocusOut: true,
+      });
+      if (!topic?.trim()) { return; }
+      ch.show(true);
+      await withProgress(&#x27;📝 Writing document...&#x27;, async (_progress, token) =&gt; {
+        try {
+          await writeDocument(topic.trim(), root, model, token);
+        } catch (err: any) {
+          if (!token.isCancellationRequested) {
+            log(`\n❌ ERROR: ${err?.message ?? err}`);
+            vscode.window.showErrorMessage(`Auto Spec Kit Document: ${err?.message ?? err}`);
+          }
+        }
+      });
     })
   );
 
@@ -4112,7 +4174,7 @@ interface ArchData {
   <div class="file-header" onclick="toggleFile('src-utils-html-builder-ts')">
     <span class="file-name">src/utils/html-builder.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">45,289 bytes</span>
+      <span class="file-size">51,128 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-utils-html-builder-ts',this)">Copy</button>
     </div>
   </div>
@@ -4663,6 +4725,140 @@ document.addEventListener(&#x27;keydown&#x27;, e =&gt; {
 
 import type { GraphData } from &#x27;./graph-builder&#x27;;
 import * as crypto from &#x27;crypto&#x27;;
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Markdown → safe HTML (small, dependency-free subset) + document page builder
+// Used by the /document command. All text is HTML-escaped before formatting.
+// ═══════════════════════════════════════════════════════════════════════════
+
+function mdInline(s: string): string {
+  let t = esc(s);
+  t = t.replace(/`([^`]+)`/g, (_m, c) =&gt; `&lt;code&gt;${c}&lt;/code&gt;`);
+  t = t.replace(/\*\*([^*]+)\*\*/g, &#x27;&lt;strong&gt;$1&lt;/strong&gt;&#x27;);
+  t = t.replace(/(^|[^_])_([^_]+)_(?!_)/g, &#x27;$1&lt;em&gt;$2&lt;/em&gt;&#x27;);
+  // Only allow http(s) links; everything else stays literal text.
+  t = t.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+    (_m, txt, url) =&gt; `&lt;a href=&quot;${url}&quot; rel=&quot;noopener noreferrer&quot; target=&quot;_blank&quot;&gt;${txt}&lt;/a&gt;`);
+  return t;
+}
+
+function renderMdTable(rows: string[]): string {
+  const parse = (line: string) =&gt;
+    line.trim().replace(/^\|/, &#x27;&#x27;).replace(/\|$/, &#x27;&#x27;).split(&#x27;|&#x27;).map(c =&gt; c.trim());
+  const header = parse(rows[0]);
+  const body = rows.slice(2).map(parse); // rows[1] is the |---|---| separator
+  let h = &#x27;&lt;table&gt;&lt;thead&gt;&lt;tr&gt;&#x27; + header.map(c =&gt; `&lt;th&gt;${mdInline(c)}&lt;/th&gt;`).join(&#x27;&#x27;) + &#x27;&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;&#x27;;
+  for (const r of body) { h += &#x27;&lt;tr&gt;&#x27; + r.map(c =&gt; `&lt;td&gt;${mdInline(c)}&lt;/td&gt;`).join(&#x27;&#x27;) + &#x27;&lt;/tr&gt;&#x27;; }
+  return h + &#x27;&lt;/tbody&gt;&lt;/table&gt;&#x27;;
+}
+
+export function markdownToHtml(md: string): string {
+  const lines = (md ?? &#x27;&#x27;).replace(/\r\n/g, &#x27;\n&#x27;).split(&#x27;\n&#x27;);
+  const out: string[] = [];
+  let i = 0;
+  let listType: &#x27;ul&#x27; | &#x27;ol&#x27; | null = null;
+  const closeList = () =&gt; { if (listType) { out.push(`&lt;/${listType}&gt;`); listType = null; } };
+
+  while (i &lt; lines.length) {
+    const line = lines[i];
+
+    // Code fence
+    const fence = line.match(/^\s*```(\w*)\s*$/);
+    if (fence) {
+      closeList();
+      const buf: string[] = [];
+      i++;
+      while (i &lt; lines.length &amp;&amp; !/^\s*```\s*$/.test(lines[i])) { buf.push(lines[i]); i++; }
+      i++; // skip closing fence
+      out.push(`&lt;pre&gt;&lt;code&gt;${esc(buf.join(&#x27;\n&#x27;))}&lt;/code&gt;&lt;/pre&gt;`);
+      continue;
+    }
+
+    // Table (current line + next look like a table with a separator row)
+    if (/^\s*\|.*\|\s*$/.test(line) &amp;&amp; i + 1 &lt; lines.length &amp;&amp; /^\s*\|?[\s:|-]+\|?\s*$/.test(lines[i + 1]) &amp;&amp; lines[i + 1].includes(&#x27;-&#x27;)) {
+      closeList();
+      const rows: string[] = [];
+      while (i &lt; lines.length &amp;&amp; /^\s*\|.*\|\s*$/.test(lines[i])) { rows.push(lines[i]); i++; }
+      out.push(renderMdTable(rows));
+      continue;
+    }
+
+    // Heading
+    const h = line.match(/^(#{1,6})\s+(.*)$/);
+    if (h) { closeList(); out.push(`&lt;h${h[1].length}&gt;${mdInline(h[2])}&lt;/h${h[1].length}&gt;`); i++; continue; }
+
+    // Horizontal rule
+    if (/^\s*([-*_])\1\1+\s*$/.test(line)) { closeList(); out.push(&#x27;&lt;hr&gt;&#x27;); i++; continue; }
+
+    // Unordered list
+    const ul = line.match(/^\s*[-*]\s+(.*)$/);
+    if (ul) {
+      if (listType !== &#x27;ul&#x27;) { closeList(); out.push(&#x27;&lt;ul&gt;&#x27;); listType = &#x27;ul&#x27;; }
+      out.push(`&lt;li&gt;${mdInline(ul[1])}&lt;/li&gt;`); i++; continue;
+    }
+    // Ordered list
+    const ol = line.match(/^\s*\d+\.\s+(.*)$/);
+    if (ol) {
+      if (listType !== &#x27;ol&#x27;) { closeList(); out.push(&#x27;&lt;ol&gt;&#x27;); listType = &#x27;ol&#x27;; }
+      out.push(`&lt;li&gt;${mdInline(ol[1])}&lt;/li&gt;`); i++; continue;
+    }
+
+    // Blank line
+    if (/^\s*$/.test(line)) { closeList(); i++; continue; }
+
+    // Paragraph
+    closeList();
+    out.push(`&lt;p&gt;${mdInline(line)}&lt;/p&gt;`);
+    i++;
+  }
+  closeList();
+  return out.join(&#x27;\n&#x27;);
+}
+
+export function buildDocumentHtml(topic: string, markdown: string): string {
+  const body = markdownToHtml(markdown);
+  const safeTopic = esc(topic);
+  return `&lt;!DOCTYPE html&gt;
+&lt;html lang=&quot;en&quot;&gt;
+&lt;head&gt;
+&lt;meta charset=&quot;UTF-8&quot;&gt;
+&lt;meta http-equiv=&quot;Content-Security-Policy&quot; content=&quot;default-src &#x27;none&#x27;; style-src &#x27;unsafe-inline&#x27;; img-src data:;&quot;&gt;
+&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
+&lt;title&gt;${safeTopic} — Document&lt;/title&gt;
+&lt;style&gt;
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,&#x27;Segoe UI&#x27;,sans-serif;color:#1e293b;line-height:1.65;background:#f8fafc}
+.doc{max-width:980px;margin:0 auto;padding:40px 32px 80px}
+h1{font-size:1.9rem;font-weight:750;margin:0 0 8px;color:#0f172a;border-bottom:3px solid #6366f1;padding-bottom:12px}
+h2{font-size:1.3rem;font-weight:700;margin:30px 0 10px;color:#1e293b}
+h3{font-size:1.05rem;font-weight:650;margin:20px 0 8px;color:#334155}
+h4{font-size:.95rem;font-weight:650;margin:16px 0 6px;color:#475569}
+p{margin:8px 0}
+em{color:#64748b}
+a{color:#6366f1}
+code{background:#eef2ff;color:#4338ca;padding:1px 6px;border-radius:5px;font-family:&#x27;Fira Code&#x27;,ui-monospace,monospace;font-size:.86em}
+pre{background:#0f172a;color:#e2e8f0;padding:14px 16px;border-radius:10px;overflow-x:auto;margin:12px 0}
+pre code{background:none;color:inherit;padding:0}
+ul,ol{margin:8px 0 8px 26px}
+li{margin:4px 0}
+hr{border:none;border-top:1px solid #e2e8f0;margin:24px 0}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:.9rem;box-shadow:0 1px 3px rgba(0,0,0,.06);border-radius:8px;overflow:hidden}
+th{background:#6366f1;color:#fff;text-align:left;padding:9px 12px;font-weight:600;font-size:.82rem}
+td{padding:9px 12px;border-top:1px solid #eef2f7;vertical-align:top}
+tr:nth-child(even) td{background:#f8fafc}
+.meta{color:#94a3b8;font-size:.8rem;margin-top:6px}
+@media print{body{background:#fff}.doc{max-width:100%}}
+&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;div class=&quot;doc&quot;&gt;
+${body}
+&lt;hr&gt;
+&lt;p class=&quot;meta&quot;&gt;Generated by Auto Spec Kit · ${esc(new Date().toLocaleString(&#x27;en-US&#x27;))}&lt;/p&gt;
+&lt;/div&gt;
+&lt;/body&gt;
+&lt;/html&gt;`;
+}
 
 /** Cryptographically-random nonce for the webview Content-Security-Policy. */
 function randomNonce(): string {
@@ -6344,7 +6540,7 @@ export function scanModule(root: string, relDir: string, options: ScanOptions = 
   <div class="file-header" onclick="toggleFile('src-utils-requirement-clarifier-ts')">
     <span class="file-name">src/utils/requirement-clarifier.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">9,799 bytes</span>
+      <span class="file-size">9,805 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-utils-requirement-clarifier-ts',this)">Copy</button>
     </div>
   </div>
@@ -6451,7 +6647,7 @@ export class RequirementClarifier {
         stream.markdown(`\n_Missing: ${assessment.missingAspects.join(&#x27;, &#x27;)}._\n`);
       }
       stream.markdown(
-        `\n💡 Re-run with detail, e.g.: \`@autospec /build ${requirement} — &lt;add specifics from above&gt;\`\n`
+        `\n💡 Re-run with detail, e.g.: \`@protector_spec /build ${requirement} — &lt;add specifics from above&gt;\`\n`
       );
       return { proceed: false, requirement };
     }
@@ -9723,6 +9919,154 @@ Files that may need updating: 04-business-overview.md, 05-domain-model.md, 06-mo
   </div>
 </div>
 
+<div class="file-block" id="file-src-workflow-write-document-ts">
+  <div class="file-header" onclick="toggleFile('src-workflow-write-document-ts')">
+    <span class="file-name">src/workflow/write-document.ts</span>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span class="file-size">5,452 bytes</span>
+      <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-workflow-write-document-ts',this)">Copy</button>
+    </div>
+  </div>
+  <div class="file-body" id="body-src-workflow-write-document-ts">
+    <pre><code id="code-src-workflow-write-document-ts">/**
+ * write-document.ts — Investigate &amp; Document (Business ↔ Code mapping)
+ *
+ * Produces a precise technical document for a feature/entity/module that maps
+ * BUSINESS concepts to CODE at the field level, grounded in the KB + real source.
+ * Exports a self-contained HTML file (and a Markdown copy) and opens a webview.
+ */
+
+import * as vscode from &#x27;vscode&#x27;;
+import * as path from &#x27;path&#x27;;
+import * as fs from &#x27;fs&#x27;;
+
+import { log, banner } from &#x27;../logger&#x27;;
+import { callCopilot } from &#x27;../utils/copilot&#x27;;
+import {
+  selectKBTopicsForQuestion,
+  loadKBForTopics,
+  loadMatchingModuleDocs,
+  SmartContextLoader,
+} from &#x27;../utils/smart-context&#x27;;
+import { buildDocumentHtml } from &#x27;../utils/html-builder&#x27;;
+
+export interface WriteDocumentResult {
+  markdown: string;
+  htmlFile: string;
+  mdFile: string;
+}
+
+export async function writeDocument(
+  topic: string,
+  workspaceRoot: string,
+  model: vscode.LanguageModelChat,
+  token: vscode.CancellationToken,
+): Promise&lt;WriteDocumentResult&gt; {
+  const cfg = vscode.workspace.getConfiguration(&#x27;autoSpecKit&#x27;);
+  const kbRelPath = cfg.get&lt;string&gt;(&#x27;knowledgeBasePath&#x27;, &#x27;knowledge-base&#x27;);
+  const sessionsDir = cfg.get&lt;string&gt;(&#x27;sessionsDir&#x27;, &#x27;spec-kit-sessions&#x27;);
+
+  banner([&#x27;📝 WRITE DOCUMENT&#x27;, `Topic: ${topic.slice(0, 60)}`]);
+  log(`ℹ  Topic: ${topic}\n`);
+
+  // ── 1. Knowledge-base context (topic + always business/domain/architecture) ──
+  const topics = [...new Set([...selectKBTopicsForQuestion(topic), &#x27;domain&#x27;, &#x27;business-rules&#x27;, &#x27;architecture&#x27;])];
+  const kb = loadKBForTopics(workspaceRoot, kbRelPath, topics, 20_000);
+  const moduleDocs = loadMatchingModuleDocs(workspaceRoot, kbRelPath, topic, 16_000);
+
+  // ── 2. Relevant source code (field-level grounding) ──
+  let sourceCtx = &#x27;&#x27;;
+  try {
+    const loader = new SmartContextLoader();
+    const { files, kbTopics } = await loader.discoverRelevantContext(topic, workspaceRoot, kbRelPath, model, token);
+    const smart = loader.loadContext(workspaceRoot, kbRelPath, files, kbTopics, 50_000);
+    sourceCtx = loader.buildAgentContext(smart.chunks, [&#x27;source&#x27;], undefined, 30_000);
+  } catch {
+    log(&#x27;⚠  Source discovery failed — documenting from KB only&#x27;);
+  }
+
+  const SYSTEM = `You are a senior business analyst AND software engineer producing precise technical documentation that maps BUSINESS to CODE at the FIELD level.
+Use ONLY the provided context. Cite real file paths, class/function names and field names. If something is not in the context, write &quot;(not found in codebase)&quot; — never invent.
+Output GitHub-Flavored Markdown with proper tables.`;
+
+  const prompt = `Write a complete, accurate technical document for: &quot;${topic}&quot;.
+
+Follow this exact structure (Markdown; use TABLES for all mappings):
+
+# &lt;Clear document title&gt;
+_Scope: ${topic} · generated by Auto Spec Kit_
+
+## 1. Business Overview
+What this does, who uses it, and the business value/problem it solves.
+
+## 2. Business ↔ Code Field Mapping
+For EACH relevant entity/model/DTO, output a table covering every important field:
+
+| Field | Type | Business Meaning | Validation / Business Rule | Source (file · class.field / DB column) |
+|-------|------|------------------|----------------------------|------------------------------------------|
+
+Be exhaustive and cite real names.
+
+## 3. Business Flows (mapped to code)
+Step-by-step. For each step, name the file + function that implements it.
+
+## 4. Business Rules &amp; Invariants
+| Rule | Where enforced (file · function) | Severity |
+|------|----------------------------------|----------|
+
+## 5. API / Entry Points (if any)
+| Method | Path | Purpose | Auth |
+|--------|------|---------|------|
+
+## 6. Assumptions &amp; Gaps
+List anything inferred, ambiguous, or &quot;(not found in codebase)&quot;.
+
+=== KNOWLEDGE BASE (relevant subset) ===
+${kb || &#x27;(no knowledge base — run Scan Project first for best results)&#x27;}
+${moduleDocs ? `\n=== MODULE DOCS ===\n${moduleDocs}` : &#x27;&#x27;}
+${sourceCtx ? `\n=== RELEVANT SOURCE CODE ===\n${sourceCtx}` : &#x27;&#x27;}`;
+
+  const markdown = await callCopilot(model, SYSTEM, prompt, token, &#x27;Write Document&#x27;);
+
+  // ── 3. Save Markdown + HTML ──
+  const outDir = path.join(workspaceRoot, sessionsDir, &#x27;documents&#x27;);
+  fs.mkdirSync(outDir, { recursive: true });
+  const slug = (topic.toLowerCase().replace(/[^a-z0-9]+/g, &#x27;-&#x27;).replace(/(^-|-$)/g, &#x27;&#x27;).slice(0, 50)) || &#x27;document&#x27;;
+  const ts = new Date().toISOString().slice(0, 10);
+  const mdFile = path.join(outDir, `${slug}-${ts}.md`);
+  const htmlFile = path.join(outDir, `${slug}-${ts}.html`);
+
+  fs.writeFileSync(mdFile, markdown, &#x27;utf-8&#x27;);
+  const html = buildDocumentHtml(topic, markdown);
+  fs.writeFileSync(htmlFile, html, &#x27;utf-8&#x27;);
+  log(`✅ Document saved: ${path.relative(workspaceRoot, htmlFile)}`);
+
+  // ── 4. Open as a (static, no-script) webview + offer browser ──
+  const panel = vscode.window.createWebviewPanel(
+    &#x27;autoSpecKitDoc&#x27;,
+    `📝 ${topic.slice(0, 40)}`,
+    vscode.ViewColumn.One,
+    { enableScripts: false, retainContextWhenHidden: true, localResourceRoots: [] },
+  );
+  panel.webview.html = html;
+
+  vscode.window.showInformationMessage(
+    `📝 Document generated: ${path.basename(htmlFile)}`,
+    &#x27;Open HTML in Browser&#x27;,
+  ).then(choice =&gt; {
+    if (choice === &#x27;Open HTML in Browser&#x27;) {
+      vscode.env.openExternal(vscode.Uri.file(htmlFile));
+    }
+  });
+
+  vscode.commands.executeCommand(&#x27;workbench.files.action.refreshFilesExplorer&#x27;);
+
+  return { markdown, htmlFile, mdFile };
+}
+</code></pre>
+  </div>
+</div>
+
 <div class="file-block" id="file-src-workflow-visualize-kb-ts">
   <div class="file-header" onclick="toggleFile('src-workflow-visualize-kb-ts')">
     <span class="file-name">src/workflow/visualize-kb.ts</span>
@@ -12624,7 +12968,7 @@ yarn compile
 yarn package
 
 # Install in VS Code
-code --install-extension ai-dev-assistant-1.10.0.vsix</code></pre>
+code --install-extension ai-dev-assistant-1.11.0.vsix</code></pre>
   <p>Or press <strong>F5</strong> in VS Code to launch the Extension Development Host for testing.</p>
 </div>
 
@@ -13049,8 +13393,8 @@ describe(&#x27;truncateToTokens&#x27;, () =&gt; {
   <ol>
     <li>Open any project in VS Code</li>
     <li>Open Copilot Chat (<code>Ctrl+Shift+I</code>)</li>
-    <li>Type <code>@autospec /help</code> — you should see the help menu</li>
-    <li>Run <code>@autospec /scan</code> to generate Knowledge Base</li>
+    <li>Type <code>@protector_spec /help</code> — you should see the help menu</li>
+    <li>Run <code>@protector_spec /scan</code> to generate Knowledge Base</li>
   </ol>
 </div>
 

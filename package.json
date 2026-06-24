@@ -2,7 +2,7 @@
   "name": "ai-dev-assistant",
   "displayName": "AI Dev Assistant",
   "description": "Automate the full development workflow: Requirement → Plan → Code → Review → Test → Evidence, powered by GitHub Copilot",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "publisher": "internal-tools",
   "author": {
     "name": "Internal Tools"
@@ -25,8 +25,8 @@
     "chatParticipants": [
       {
         "id": "auto-spec-kit.autospec",
-        "fullName": "Auto Spec Kit",
-        "name": "autospec",
+        "fullName": "Protector Spec",
+        "name": "protector_spec",
         "description": "AI-powered development workflow: plan, code, review, test, generate KB & user stories",
         "isSticky": true,
         "commands": [
@@ -37,6 +37,7 @@
           { "name": "ask", "description": "Ask about codebase — natural language Q&A powered by Knowledge Base" },
           { "name": "plan", "description": "Plan user stories — Epic → Features → Impact Analysis → Sprint Plan (PO/BA)" },
           { "name": "map", "description": "Map the codebase — interactive dependency graph with AI enrichment" },
+          { "name": "document", "description": "Write a technical document — business ↔ code field-level mapping, exported as HTML" },
           { "name": "help", "description": "Show all commands, KB status, and quick-start guide" }
         ]
       }
@@ -49,7 +50,8 @@
       { "command": "autoSpecKit.ask", "title": "💬 Auto Spec Kit: Ask About Codebase", "category": "Auto Spec Kit" },
       { "command": "autoSpecKit.selectModel", "title": "🤖 Auto Spec Kit: Select Model", "category": "Auto Spec Kit" },
       { "command": "autoSpecKit.generateUserStories", "title": "📋 Auto Spec Kit: Plan User Stories (PO/BA)", "category": "Auto Spec Kit" },
-      { "command": "autoSpecKit.visualize", "title": "🔭 Auto Spec Kit: Map Codebase (dependency graph)", "category": "Auto Spec Kit" }
+      { "command": "autoSpecKit.visualize", "title": "🔭 Auto Spec Kit: Map Codebase (dependency graph)", "category": "Auto Spec Kit" },
+      { "command": "autoSpecKit.writeDocument", "title": "📝 Auto Spec Kit: Write Document (business ↔ code, HTML)", "category": "Auto Spec Kit" }
     ],
     "configuration": {
       "title": "Auto Spec Kit",
@@ -92,7 +94,8 @@
         { "command": "autoSpecKit.ask" },
         { "command": "autoSpecKit.selectModel" },
         { "command": "autoSpecKit.generateUserStories" },
-        { "command": "autoSpecKit.visualize" }
+        { "command": "autoSpecKit.visualize" },
+        { "command": "autoSpecKit.writeDocument" }
       ],
       "editor/context": [
         { "command": "autoSpecKit.reviewFile", "group": "autoSpecKit@1", "when": "editorIsOpen" }
