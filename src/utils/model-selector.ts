@@ -11,53 +11,58 @@
 import * as vscode from 'vscode';
 import { log } from '../logger';
 
-// Known Copilot model families ranked by capability (higher = better for code tasks)
-// Updated 2026-05 — reflects GitHub Copilot supported model list
-// Closing-down models (GPT-4.1, GPT-5.2, GPT-5.2-Codex) kept at low priority so they're
-// still usable if explicitly requested but never auto-selected over a GA model.
+// Known Copilot model families ranked by capability (higher = better for code tasks).
+// Updated 2026-06 — reflects the GitHub Copilot supported model list.
+//
+// IMPORTANT (matching order): modelScore() returns the FIRST key whose substring is
+// contained in the model id/family. So MORE-SPECIFIC keys (…-mini, …-nano, …-codex,
+// …-fast) MUST appear BEFORE their base key, otherwise the base would match first.
 const MODEL_PRIORITY: Record<string, number> = {
-  // ── OpenAI GPT-5 family ──────────────────────────────────────────
-  'gpt-5.5':               100,   // GPT-5.5  — GA, flagship
-  'gpt-5.4':                96,   // GPT-5.4  — GA
-  'gpt-5.3-codex':          93,   // GPT-5.3-Codex — GA, code-specialized
-  'goldeneye':              88,   // Goldeneye — fine-tuned GPT-5.1-Codex (preview)
-  'gpt-5.4-mini':           84,   // GPT-5.4 mini — GA
-  'gpt-5-mini':             72,   // GPT-5 mini — GA
-  'raptor-mini':            68,   // Raptor mini — fine-tuned GPT-5 mini (preview)
-  'gpt-5.4-nano':           60,   // GPT-5.4 nano — GA, lightweight
-
-  // ── Anthropic Claude family ──────────────────────────────────────
-  'claude-opus-4-7':        97,   // Claude Opus 4.7 — GA, latest Opus
-  'claude-opus-4-6':        94,   // Claude Opus 4.6 — GA
-  'claude-opus-4-5':        89,   // Claude Opus 4.5 — GA
-  'claude-sonnet-4-6':      85,   // Claude Sonnet 4.6 — GA
-  'claude-sonnet-4-5':      82,   // Claude Sonnet 4.5 — GA
+  // ── Anthropic Claude (specific/variant keys first, then base) ────
+  'claude-opus-4-6-fast':   90,   // Claude Opus 4.6 (fast mode) — preview
+  'claude-opus-4-8':       100,   // Claude Opus 4.8 — GA, flagship
+  'claude-opus-4-7':        98,   // Claude Opus 4.7 — GA
+  'claude-opus-4-6':        95,   // Claude Opus 4.6 — GA
+  'claude-opus-4-5':        90,   // Claude Opus 4.5 — GA
+  'claude-sonnet-4-6':      86,   // Claude Sonnet 4.6 — GA
+  'claude-sonnet-4-5':      83,   // Claude Sonnet 4.5 — GA
   'claude-haiku-4-5':       58,   // Claude Haiku 4.5 — GA, fast/cheap
+  'claude-fable-5':         20,   // Claude Fable 5 — currently UNAVAILABLE; keep low so never auto-selected
 
-  // ── Google Gemini family ─────────────────────────────────────────
-  'gemini-3.1-pro':         87,   // Gemini 3.1 Pro — preview
+  // ── OpenAI GPT-5 (variant keys before base) ──────────────────────
+  'gpt-5.4-mini':           82,   // GPT-5.4 mini — GA
+  'gpt-5.4-nano':           60,   // GPT-5.4 nano — GA, lightweight
+  'gpt-5.3-codex':          93,   // GPT-5.3-Codex — GA, code-specialized
+  'gpt-5.5':                99,   // GPT-5.5 — GA, flagship
+  'gpt-5.4':                95,   // GPT-5.4 — GA
+  'gpt-5-mini':             72,   // GPT-5 mini — GA
+
+  // ── Google Gemini ────────────────────────────────────────────────
+  'gemini-3.1-pro':         88,   // Gemini 3.1 Pro — preview
   'gemini-3.5-flash':       75,   // Gemini 3.5 Flash — GA
   'gemini-3-flash':         70,   // Gemini 3 Flash — preview
-  'gemini-2.5-pro':         83,   // Gemini 2.5 Pro — GA
+  'gemini-2.5-pro':         84,   // Gemini 2.5 Pro — GA
 
-  // ── Closing-down / legacy (kept low so fallback avoids them) ─────
-  'gpt-4.1':                35,   // Closing 2026-06-01
-  'gpt-5.2-codex':          33,   // Closing 2026-06-01
-  'gpt-5.2':                32,   // Closing 2026-06-01
+  // ── Microsoft ────────────────────────────────────────────────────
+  'mai-code-1-flash':       66,   // MAI-Code-1-Flash — GA, code-focused flash
 
-  // ── Old models (pre-2026 compatibility) ──────────────────────────
+  // ── Fine-tuned (preview) ─────────────────────────────────────────
+  'raptor-mini':            68,   // Raptor mini — fine-tuned GPT-5 mini (preview)
+
+  // ── Old models (pre-2026 compatibility, kept low) ────────────────
+  'gpt-4.1':                35,
+  'gpt-4o-mini':            25,
   'gpt-4o':                 40,
-  'o3':                     45,
-  'o1':                     38,
   'o3-mini':                36,
+  'o3':                     45,
   'o1-mini':                34,
+  'o1':                     38,
   'gpt-4-turbo':            30,
   'gpt-4':                  28,
-  'gpt-4o-mini':            25,
   'gpt-3.5-turbo':          10,
 };
 
-function modelScore(m: vscode.LanguageModelChat): number {
+export function modelScore(m: { id?: string; family?: string }): number {
   // Check exact id match first, then family
   const id  = (m.id     ?? '').toLowerCase();
   const fam = (m.family ?? '').toLowerCase();

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Auto Spec Kit v1.9.0 — Manual Install Guide</title>
+<title>Auto Spec Kit v1.9.1 — Manual Install Guide</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #1e293b; min-height: 100vh; line-height: 1.6; }
@@ -78,7 +78,7 @@
   <h1>Manual Install Guide</h1>
   <p class="subtitle">Create the project from scratch on any machine — no git clone needed</p>
   <div style="margin-top:10px">
-    <span class="badge badge-blue">v1.9.0</span>
+    <span class="badge badge-blue">v1.9.1</span>
     <span class="badge badge-green">59 files</span>
     <span class="badge badge-orange">Copy & Paste</span>
   </div>
@@ -131,7 +131,7 @@ mkdir -p docs</code></pre>
   &quot;name&quot;: &quot;ai-dev-assistant&quot;,
   &quot;displayName&quot;: &quot;AI Dev Assistant&quot;,
   &quot;description&quot;: &quot;Automate the full development workflow: Requirement → Plan → Code → Review → Test → Evidence, powered by GitHub Copilot&quot;,
-  &quot;version&quot;: &quot;1.9.0&quot;,
+  &quot;version&quot;: &quot;1.9.1&quot;,
   &quot;publisher&quot;: &quot;internal-tools&quot;,
   &quot;author&quot;: {
     &quot;name&quot;: &quot;Internal Tools&quot;
@@ -5241,7 +5241,7 @@ export class LearningStore {
   <div class="file-header" onclick="toggleFile('src-utils-model-selector-ts')">
     <span class="file-name">src/utils/model-selector.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">8,095 bytes</span>
+      <span class="file-size">8,877 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-utils-model-selector-ts',this)">Copy</button>
     </div>
   </div>
@@ -5259,53 +5259,58 @@ export class LearningStore {
 import * as vscode from &#x27;vscode&#x27;;
 import { log } from &#x27;../logger&#x27;;
 
-// Known Copilot model families ranked by capability (higher = better for code tasks)
-// Updated 2026-05 — reflects GitHub Copilot supported model list
-// Closing-down models (GPT-4.1, GPT-5.2, GPT-5.2-Codex) kept at low priority so they&#x27;re
-// still usable if explicitly requested but never auto-selected over a GA model.
+// Known Copilot model families ranked by capability (higher = better for code tasks).
+// Updated 2026-06 — reflects the GitHub Copilot supported model list.
+//
+// IMPORTANT (matching order): modelScore() returns the FIRST key whose substring is
+// contained in the model id/family. So MORE-SPECIFIC keys (…-mini, …-nano, …-codex,
+// …-fast) MUST appear BEFORE their base key, otherwise the base would match first.
 const MODEL_PRIORITY: Record&lt;string, number&gt; = {
-  // ── OpenAI GPT-5 family ──────────────────────────────────────────
-  &#x27;gpt-5.5&#x27;:               100,   // GPT-5.5  — GA, flagship
-  &#x27;gpt-5.4&#x27;:                96,   // GPT-5.4  — GA
-  &#x27;gpt-5.3-codex&#x27;:          93,   // GPT-5.3-Codex — GA, code-specialized
-  &#x27;goldeneye&#x27;:              88,   // Goldeneye — fine-tuned GPT-5.1-Codex (preview)
-  &#x27;gpt-5.4-mini&#x27;:           84,   // GPT-5.4 mini — GA
-  &#x27;gpt-5-mini&#x27;:             72,   // GPT-5 mini — GA
-  &#x27;raptor-mini&#x27;:            68,   // Raptor mini — fine-tuned GPT-5 mini (preview)
-  &#x27;gpt-5.4-nano&#x27;:           60,   // GPT-5.4 nano — GA, lightweight
-
-  // ── Anthropic Claude family ──────────────────────────────────────
-  &#x27;claude-opus-4-7&#x27;:        97,   // Claude Opus 4.7 — GA, latest Opus
-  &#x27;claude-opus-4-6&#x27;:        94,   // Claude Opus 4.6 — GA
-  &#x27;claude-opus-4-5&#x27;:        89,   // Claude Opus 4.5 — GA
-  &#x27;claude-sonnet-4-6&#x27;:      85,   // Claude Sonnet 4.6 — GA
-  &#x27;claude-sonnet-4-5&#x27;:      82,   // Claude Sonnet 4.5 — GA
+  // ── Anthropic Claude (specific/variant keys first, then base) ────
+  &#x27;claude-opus-4-6-fast&#x27;:   90,   // Claude Opus 4.6 (fast mode) — preview
+  &#x27;claude-opus-4-8&#x27;:       100,   // Claude Opus 4.8 — GA, flagship
+  &#x27;claude-opus-4-7&#x27;:        98,   // Claude Opus 4.7 — GA
+  &#x27;claude-opus-4-6&#x27;:        95,   // Claude Opus 4.6 — GA
+  &#x27;claude-opus-4-5&#x27;:        90,   // Claude Opus 4.5 — GA
+  &#x27;claude-sonnet-4-6&#x27;:      86,   // Claude Sonnet 4.6 — GA
+  &#x27;claude-sonnet-4-5&#x27;:      83,   // Claude Sonnet 4.5 — GA
   &#x27;claude-haiku-4-5&#x27;:       58,   // Claude Haiku 4.5 — GA, fast/cheap
+  &#x27;claude-fable-5&#x27;:         20,   // Claude Fable 5 — currently UNAVAILABLE; keep low so never auto-selected
 
-  // ── Google Gemini family ─────────────────────────────────────────
-  &#x27;gemini-3.1-pro&#x27;:         87,   // Gemini 3.1 Pro — preview
+  // ── OpenAI GPT-5 (variant keys before base) ──────────────────────
+  &#x27;gpt-5.4-mini&#x27;:           82,   // GPT-5.4 mini — GA
+  &#x27;gpt-5.4-nano&#x27;:           60,   // GPT-5.4 nano — GA, lightweight
+  &#x27;gpt-5.3-codex&#x27;:          93,   // GPT-5.3-Codex — GA, code-specialized
+  &#x27;gpt-5.5&#x27;:                99,   // GPT-5.5 — GA, flagship
+  &#x27;gpt-5.4&#x27;:                95,   // GPT-5.4 — GA
+  &#x27;gpt-5-mini&#x27;:             72,   // GPT-5 mini — GA
+
+  // ── Google Gemini ────────────────────────────────────────────────
+  &#x27;gemini-3.1-pro&#x27;:         88,   // Gemini 3.1 Pro — preview
   &#x27;gemini-3.5-flash&#x27;:       75,   // Gemini 3.5 Flash — GA
   &#x27;gemini-3-flash&#x27;:         70,   // Gemini 3 Flash — preview
-  &#x27;gemini-2.5-pro&#x27;:         83,   // Gemini 2.5 Pro — GA
+  &#x27;gemini-2.5-pro&#x27;:         84,   // Gemini 2.5 Pro — GA
 
-  // ── Closing-down / legacy (kept low so fallback avoids them) ─────
-  &#x27;gpt-4.1&#x27;:                35,   // Closing 2026-06-01
-  &#x27;gpt-5.2-codex&#x27;:          33,   // Closing 2026-06-01
-  &#x27;gpt-5.2&#x27;:                32,   // Closing 2026-06-01
+  // ── Microsoft ────────────────────────────────────────────────────
+  &#x27;mai-code-1-flash&#x27;:       66,   // MAI-Code-1-Flash — GA, code-focused flash
 
-  // ── Old models (pre-2026 compatibility) ──────────────────────────
+  // ── Fine-tuned (preview) ─────────────────────────────────────────
+  &#x27;raptor-mini&#x27;:            68,   // Raptor mini — fine-tuned GPT-5 mini (preview)
+
+  // ── Old models (pre-2026 compatibility, kept low) ────────────────
+  &#x27;gpt-4.1&#x27;:                35,
+  &#x27;gpt-4o-mini&#x27;:            25,
   &#x27;gpt-4o&#x27;:                 40,
-  &#x27;o3&#x27;:                     45,
-  &#x27;o1&#x27;:                     38,
   &#x27;o3-mini&#x27;:                36,
+  &#x27;o3&#x27;:                     45,
   &#x27;o1-mini&#x27;:                34,
+  &#x27;o1&#x27;:                     38,
   &#x27;gpt-4-turbo&#x27;:            30,
   &#x27;gpt-4&#x27;:                  28,
-  &#x27;gpt-4o-mini&#x27;:            25,
   &#x27;gpt-3.5-turbo&#x27;:          10,
 };
 
-function modelScore(m: vscode.LanguageModelChat): number {
+export function modelScore(m: { id?: string; family?: string }): number {
   // Check exact id match first, then family
   const id  = (m.id     ?? &#x27;&#x27;).toLowerCase();
   const fam = (m.family ?? &#x27;&#x27;).toLowerCase();
@@ -5469,7 +5474,7 @@ export async function runSelectModel(): Promise&lt;void&gt; {
   <div class="file-header" onclick="toggleFile('src-utils-project-profile-ts')">
     <span class="file-name">src/utils/project-profile.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">18,152 bytes</span>
+      <span class="file-size">20,929 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-utils-project-profile-ts',this)">Copy</button>
     </div>
   </div>
@@ -5521,6 +5526,8 @@ export interface ProjectProfile {
   entryPoints: string[];
   /** DB type if detectable */
   database?: string;
+  /** All tech stacks detected in the repo (polyglot/monorepo aware), e.g. [&quot;Java/Maven&quot;,&quot;Ruby/Rails&quot;] */
+  additionalStacks?: string[];
   /** Docker/container detected */
   hasDocker: boolean;
   /** CI/CD detected */
@@ -5575,6 +5582,9 @@ export class ProjectProfileDetector {
     if (profile.linter) { parts.push(`Linter: ${profile.linter}`); }
     if (profile.formatter) { parts.push(`Formatter: ${profile.formatter}`); }
     if (profile.database) { parts.push(`Database: ${profile.database}`); }
+    if (profile.additionalStacks &amp;&amp; profile.additionalStacks.length &gt; 1) {
+      parts.push(`Polyglot stacks: ${profile.additionalStacks.join(&#x27;, &#x27;)}`);
+    }
     if (profile.hasDocker) { parts.push(&#x27;Docker: yes&#x27;); }
     if (profile.cicd) { parts.push(`CI/CD: ${profile.cicd}`); }
     parts.push(`File naming: ${profile.fileNaming}`);
@@ -5751,19 +5761,27 @@ export class ProjectProfileDetector {
     else if (this.grepFile(&#x27;package.json&#x27;, &#x27;mongoose&#x27;) || this.grepFile(&#x27;package.json&#x27;, &#x27;mongodb&#x27;)) { database = &#x27;MongoDB&#x27;; }
     else if (this.grepFile(&#x27;package.json&#x27;, &#x27;mysql2&#x27;)) { database = &#x27;MySQL&#x27;; }
     else if (has(&#x27;config/database.yml&#x27;)) { database = &#x27;PostgreSQL (Rails)&#x27;; }
-    // Java enterprise DB detection
-    else if (has(&#x27;application.properties&#x27;) || has(&#x27;application.yml&#x27;)) {
-      const appConfig = has(&#x27;application.properties&#x27;)
-        ? fs.readFileSync(path.join(this.root, &#x27;application.properties&#x27;), &#x27;utf-8&#x27;)
-        : fs.readFileSync(path.join(this.root, &#x27;application.yml&#x27;), &#x27;utf-8&#x27;);
-      if (appConfig.includes(&#x27;postgresql&#x27;) || appConfig.includes(&#x27;postgres&#x27;)) { database = &#x27;PostgreSQL&#x27;; }
-      else if (appConfig.includes(&#x27;mysql&#x27;)) { database = &#x27;MySQL&#x27;; }
-      else if (appConfig.includes(&#x27;oracle&#x27;)) { database = &#x27;Oracle&#x27;; }
-      else if (appConfig.includes(&#x27;sqlserver&#x27;) || appConfig.includes(&#x27;mssql&#x27;)) { database = &#x27;SQL Server&#x27;; }
-      else if (appConfig.includes(&#x27;h2&#x27;)) { database = &#x27;H2 (embedded)&#x27;; }
-      else if (appConfig.includes(&#x27;mongodb&#x27;)) { database = &#x27;MongoDB&#x27;; }
-      else if (appConfig.includes(&#x27;redis&#x27;)) { database = &#x27;Redis&#x27;; }
+    // Java enterprise DB detection (config usually lives under src/main/resources/)
+    else {
+      const appConfig = this.readFirst([
+        &#x27;application.properties&#x27;, &#x27;application.yml&#x27;, &#x27;application.yaml&#x27;,
+        &#x27;src/main/resources/application.properties&#x27;,
+        &#x27;src/main/resources/application.yml&#x27;,
+        &#x27;src/main/resources/application.yaml&#x27;,
+      ]).toLowerCase();
+      if (appConfig) {
+        if (appConfig.includes(&#x27;postgresql&#x27;) || appConfig.includes(&#x27;postgres&#x27;)) { database = &#x27;PostgreSQL&#x27;; }
+        else if (appConfig.includes(&#x27;mysql&#x27;) || appConfig.includes(&#x27;mariadb&#x27;)) { database = &#x27;MySQL&#x27;; }
+        else if (appConfig.includes(&#x27;oracle&#x27;)) { database = &#x27;Oracle&#x27;; }
+        else if (appConfig.includes(&#x27;sqlserver&#x27;) || appConfig.includes(&#x27;mssql&#x27;)) { database = &#x27;SQL Server&#x27;; }
+        else if (appConfig.includes(&#x27;h2&#x27;)) { database = &#x27;H2 (embedded)&#x27;; }
+        else if (appConfig.includes(&#x27;mongodb&#x27;)) { database = &#x27;MongoDB&#x27;; }
+        else if (appConfig.includes(&#x27;redis&#x27;)) { database = &#x27;Redis&#x27;; }
+      }
     }
+
+    // ── Polyglot / monorepo stacks (manifests anywhere within depth 2) ──
+    const additionalStacks = this.detectStacks();
 
     // ── Docker &amp; CI/CD ──
     const hasDocker = has(&#x27;Dockerfile&#x27;) || has(&#x27;docker-compose.yml&#x27;) || has(&#x27;docker-compose.yaml&#x27;);
@@ -5787,11 +5805,53 @@ export class ProjectProfileDetector {
       generatedAt: new Date().toISOString(),
       language, framework, buildTool, testFramework, packageManager,
       monorepoTool, linter, formatter, folderPatterns, fileNaming,
-      entryPoints, database, hasDocker, cicd,
+      entryPoints, database, additionalStacks, hasDocker, cicd,
     };
 
     log(`📋 ProjectProfile: ${language} / ${framework} / ${testFramework}`);
+    if (additionalStacks.length &gt; 1) {
+      log(`📋 ProjectProfile: polyglot repo — stacks: ${additionalStacks.join(&#x27;, &#x27;)}`);
+    }
     return profile;
+  }
+
+  /** Read the first existing file from a list of candidate relative paths. */
+  private readFirst(relPaths: string[]): string {
+    for (const rel of relPaths) {
+      try {
+        const full = path.join(this.root, rel);
+        if (fs.existsSync(full)) { return fs.readFileSync(full, &#x27;utf-8&#x27;); }
+      } catch { /* next */ }
+    }
+    return &#x27;&#x27;;
+  }
+
+  /** Detect all tech stacks present (root + immediate sub-dirs) for polyglot/monorepo repos. */
+  private detectStacks(): string[] {
+    const probe: Record&lt;string, string&gt; = {
+      &#x27;pom.xml&#x27;: &#x27;Java/Maven&#x27;, &#x27;build.gradle&#x27;: &#x27;Java/Gradle&#x27;, &#x27;build.gradle.kts&#x27;: &#x27;Kotlin/Gradle&#x27;,
+      &#x27;package.json&#x27;: &#x27;Node/TypeScript&#x27;, &#x27;Gemfile&#x27;: &#x27;Ruby/Rails&#x27;, &#x27;go.mod&#x27;: &#x27;Go&#x27;,
+      &#x27;requirements.txt&#x27;: &#x27;Python&#x27;, &#x27;pyproject.toml&#x27;: &#x27;Python&#x27;, &#x27;composer.json&#x27;: &#x27;PHP&#x27;, &#x27;Cargo.toml&#x27;: &#x27;Rust&#x27;,
+    };
+    const skip = new Set([
+      &#x27;node_modules&#x27;, &#x27;.git&#x27;, &#x27;dist&#x27;, &#x27;build&#x27;, &#x27;out&#x27;, &#x27;target&#x27;, &#x27;vendor&#x27;,
+      &#x27;coverage&#x27;, &#x27;.gradle&#x27;, &#x27;.idea&#x27;, &#x27;.vscode&#x27;, &#x27;spec-kit-sessions&#x27;, &#x27;knowledge-base&#x27;,
+    ]);
+    const found = new Set&lt;string&gt;();
+    const walk = (dir: string, depth: number) =&gt; {
+      if (depth &gt; 2) { return; }
+      let entries: fs.Dirent[];
+      try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
+      for (const e of entries) {
+        if (e.isFile()) {
+          if (probe[e.name]) { found.add(probe[e.name]); }
+        } else if (e.isDirectory() &amp;&amp; !e.name.startsWith(&#x27;.&#x27;) &amp;&amp; !skip.has(e.name)) {
+          walk(path.join(dir, e.name), depth + 1);
+        }
+      }
+    };
+    walk(this.root, 0);
+    return [...found];
   }
 
   private save(profile: ProjectProfile): void {
@@ -7947,7 +8007,7 @@ ${answer}
   <div class="file-header" onclick="toggleFile('src-workflow-generate-kb-ts')">
     <span class="file-name">src/workflow/generate-kb.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">32,560 bytes</span>
+      <span class="file-size">34,151 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-workflow-generate-kb-ts',this)">Copy</button>
     </div>
   </div>
@@ -8336,6 +8396,20 @@ export async function generateKnowledgeBase(
   }
   if (fw.includes(&#x27;kafka&#x27;)) {
     techHints.push(&#x27;- Analyze Kafka producers/consumers: topics, consumer groups, message formats, error handling, dead-letter queues&#x27;);
+  }
+  if (fw.includes(&#x27;aws&#x27;) || fw.includes(&#x27;sqs&#x27;) || fw.includes(&#x27;sns&#x27;)) {
+    techHints.push(&#x27;- Map AWS messaging/storage integration: SQS queues (producers/consumers, message schema, visibility timeout, DLQ), SNS topics, S3 buckets — document each integration point and its business trigger&#x27;);
+  }
+  if (fw.includes(&#x27;rails&#x27;) || profile.language === &#x27;ruby&#x27;) {
+    techHints.push(&#x27;- Ruby on Rails: analyze app/models (ActiveRecord — validations, associations, callbacks, scopes = business rules), app/controllers (actions, strong params, before_actions), config/routes.rb (endpoints), db/migrate (schema evolution), and app/services / app/jobs for business logic. RSpec/Minitest specs reveal intent.&#x27;);
+  }
+  const dbLower = (profile.database ?? &#x27;&#x27;).toLowerCase();
+  if (dbLower.includes(&#x27;mysql&#x27;) || dbLower.includes(&#x27;postgres&#x27;) || dbLower.includes(&#x27;oracle&#x27;) || dbLower.includes(&#x27;sql server&#x27;)) {
+    techHints.push(`- Database is ${profile.database}: analyze schema/migrations (tables, columns, constraints, indexes, foreign keys) and link them to entities — DB constraints (unique, not-null, check) are enforced business rules`);
+  }
+  // Polyglot / monorepo: tell the analyst to treat each stack separately.
+  if (profile.additionalStacks &amp;&amp; profile.additionalStacks.length &gt; 1) {
+    techHints.push(`- POLYGLOT REPO — multiple stacks detected: ${profile.additionalStacks.join(&#x27;, &#x27;)}. Analyze EACH stack/module on its own terms (don&#x27;t assume one language); the per-module KB docs cover each module. Document how the stacks integrate (shared DB, queues/SQS, HTTP/gRPC, events).`);
   }
   if (profile.language === &#x27;kotlin&#x27;) {
     techHints.push(&#x27;- This is a Kotlin project: look for data classes, sealed classes, coroutines, extension functions, companion objects&#x27;);
@@ -12466,7 +12540,7 @@ yarn compile
 yarn package
 
 # Install in VS Code
-code --install-extension ai-dev-assistant-1.9.0.vsix</code></pre>
+code --install-extension ai-dev-assistant-1.9.1.vsix</code></pre>
   <p>Or press <strong>F5</strong> in VS Code to launch the Extension Development Host for testing.</p>
 </div>
 

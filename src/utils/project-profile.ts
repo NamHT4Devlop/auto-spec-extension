@@ -45,6 +45,8 @@ export interface ProjectProfile {
   entryPoints: string[];
   /** DB type if detectable */
   database?: string;
+  /** All tech stacks detected in the repo (polyglot/monorepo aware), e.g. ["Java/Maven","Ruby/Rails"] */
+  additionalStacks?: string[];
   /** Docker/container detected */
   hasDocker: boolean;
   /** CI/CD detected */
@@ -99,6 +101,9 @@ export class ProjectProfileDetector {
     if (profile.linter) { parts.push(`Linter: ${profile.linter}`); }
     if (profile.formatter) { parts.push(`Formatter: ${profile.formatter}`); }
     if (profile.database) { parts.push(`Database: ${profile.database}`); }
+    if (profile.additionalStacks && profile.additionalStacks.length > 1) {
+      parts.push(`Polyglot stacks: ${profile.additionalStacks.join(', ')}`);
+    }
     if (profile.hasDocker) { parts.push('Docker: yes'); }
     if (profile.cicd) { parts.push(`CI/CD: ${profile.cicd}`); }
     parts.push(`File naming: ${profile.fileNaming}`);
@@ -275,19 +280,27 @@ export class ProjectProfileDetector {
     else if (this.grepFile('package.json', 'mongoose') || this.grepFile('package.json', 'mongodb')) { database = 'MongoDB'; }
     else if (this.grepFile('package.json', 'mysql2')) { database = 'MySQL'; }
     else if (has('config/database.yml')) { database = 'PostgreSQL (Rails)'; }
-    // Java enterprise DB detection
-    else if (has('application.properties') || has('application.yml')) {
-      const appConfig = has('application.properties')
-        ? fs.readFileSync(path.join(this.root, 'application.properties'), 'utf-8')
-        : fs.readFileSync(path.join(this.root, 'application.yml'), 'utf-8');
-      if (appConfig.includes('postgresql') || appConfig.includes('postgres')) { database = 'PostgreSQL'; }
-      else if (appConfig.includes('mysql')) { database = 'MySQL'; }
-      else if (appConfig.includes('oracle')) { database = 'Oracle'; }
-      else if (appConfig.includes('sqlserver') || appConfig.includes('mssql')) { database = 'SQL Server'; }
-      else if (appConfig.includes('h2')) { database = 'H2 (embedded)'; }
-      else if (appConfig.includes('mongodb')) { database = 'MongoDB'; }
-      else if (appConfig.includes('redis')) { database = 'Redis'; }
+    // Java enterprise DB detection (config usually lives under src/main/resources/)
+    else {
+      const appConfig = this.readFirst([
+        'application.properties', 'application.yml', 'application.yaml',
+        'src/main/resources/application.properties',
+        'src/main/resources/application.yml',
+        'src/main/resources/application.yaml',
+      ]).toLowerCase();
+      if (appConfig) {
+        if (appConfig.includes('postgresql') || appConfig.includes('postgres')) { database = 'PostgreSQL'; }
+        else if (appConfig.includes('mysql') || appConfig.includes('mariadb')) { database = 'MySQL'; }
+        else if (appConfig.includes('oracle')) { database = 'Oracle'; }
+        else if (appConfig.includes('sqlserver') || appConfig.includes('mssql')) { database = 'SQL Server'; }
+        else if (appConfig.includes('h2')) { database = 'H2 (embedded)'; }
+        else if (appConfig.includes('mongodb')) { database = 'MongoDB'; }
+        else if (appConfig.includes('redis')) { database = 'Redis'; }
+      }
     }
+
+    // ── Polyglot / monorepo stacks (manifests anywhere within depth 2) ──
+    const additionalStacks = this.detectStacks();
 
     // ── Docker & CI/CD ──
     const hasDocker = has('Dockerfile') || has('docker-compose.yml') || has('docker-compose.yaml');
@@ -311,11 +324,53 @@ export class ProjectProfileDetector {
       generatedAt: new Date().toISOString(),
       language, framework, buildTool, testFramework, packageManager,
       monorepoTool, linter, formatter, folderPatterns, fileNaming,
-      entryPoints, database, hasDocker, cicd,
+      entryPoints, database, additionalStacks, hasDocker, cicd,
     };
 
     log(`📋 ProjectProfile: ${language} / ${framework} / ${testFramework}`);
+    if (additionalStacks.length > 1) {
+      log(`📋 ProjectProfile: polyglot repo — stacks: ${additionalStacks.join(', ')}`);
+    }
     return profile;
+  }
+
+  /** Read the first existing file from a list of candidate relative paths. */
+  private readFirst(relPaths: string[]): string {
+    for (const rel of relPaths) {
+      try {
+        const full = path.join(this.root, rel);
+        if (fs.existsSync(full)) { return fs.readFileSync(full, 'utf-8'); }
+      } catch { /* next */ }
+    }
+    return '';
+  }
+
+  /** Detect all tech stacks present (root + immediate sub-dirs) for polyglot/monorepo repos. */
+  private detectStacks(): string[] {
+    const probe: Record<string, string> = {
+      'pom.xml': 'Java/Maven', 'build.gradle': 'Java/Gradle', 'build.gradle.kts': 'Kotlin/Gradle',
+      'package.json': 'Node/TypeScript', 'Gemfile': 'Ruby/Rails', 'go.mod': 'Go',
+      'requirements.txt': 'Python', 'pyproject.toml': 'Python', 'composer.json': 'PHP', 'Cargo.toml': 'Rust',
+    };
+    const skip = new Set([
+      'node_modules', '.git', 'dist', 'build', 'out', 'target', 'vendor',
+      'coverage', '.gradle', '.idea', '.vscode', 'spec-kit-sessions', 'knowledge-base',
+    ]);
+    const found = new Set<string>();
+    const walk = (dir: string, depth: number) => {
+      if (depth > 2) { return; }
+      let entries: fs.Dirent[];
+      try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
+      for (const e of entries) {
+        if (e.isFile()) {
+          if (probe[e.name]) { found.add(probe[e.name]); }
+        } else if (e.isDirectory() && !e.name.startsWith('.') && !skip.has(e.name)) {
+          walk(path.join(dir, e.name), depth + 1);
+        }
+      }
+    };
+    walk(this.root, 0);
+    return [...found];
   }
 
   private save(profile: ProjectProfile): void {

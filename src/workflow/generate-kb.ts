@@ -383,6 +383,20 @@ export async function generateKnowledgeBase(
   if (fw.includes('kafka')) {
     techHints.push('- Analyze Kafka producers/consumers: topics, consumer groups, message formats, error handling, dead-letter queues');
   }
+  if (fw.includes('aws') || fw.includes('sqs') || fw.includes('sns')) {
+    techHints.push('- Map AWS messaging/storage integration: SQS queues (producers/consumers, message schema, visibility timeout, DLQ), SNS topics, S3 buckets — document each integration point and its business trigger');
+  }
+  if (fw.includes('rails') || profile.language === 'ruby') {
+    techHints.push('- Ruby on Rails: analyze app/models (ActiveRecord — validations, associations, callbacks, scopes = business rules), app/controllers (actions, strong params, before_actions), config/routes.rb (endpoints), db/migrate (schema evolution), and app/services / app/jobs for business logic. RSpec/Minitest specs reveal intent.');
+  }
+  const dbLower = (profile.database ?? '').toLowerCase();
+  if (dbLower.includes('mysql') || dbLower.includes('postgres') || dbLower.includes('oracle') || dbLower.includes('sql server')) {
+    techHints.push(`- Database is ${profile.database}: analyze schema/migrations (tables, columns, constraints, indexes, foreign keys) and link them to entities — DB constraints (unique, not-null, check) are enforced business rules`);
+  }
+  // Polyglot / monorepo: tell the analyst to treat each stack separately.
+  if (profile.additionalStacks && profile.additionalStacks.length > 1) {
+    techHints.push(`- POLYGLOT REPO — multiple stacks detected: ${profile.additionalStacks.join(', ')}. Analyze EACH stack/module on its own terms (don't assume one language); the per-module KB docs cover each module. Document how the stacks integrate (shared DB, queues/SQS, HTTP/gRPC, events).`);
+  }
   if (profile.language === 'kotlin') {
     techHints.push('- This is a Kotlin project: look for data classes, sealed classes, coroutines, extension functions, companion objects');
   }
