@@ -585,6 +585,21 @@ function buildStaticGraph(rootDir: string): {
     fileMap.set(pf.relPath, pf);
   }
 
+  // Symbol maps so NON-relative imports (Java `import com.app.UserService;`,
+  // Ruby `require 'app/user_service'`, Python `from app.services import X`) still
+  // produce edges — otherwise polyglot graphs look disconnected.
+  const classNameToFileId = new Map<string, string>();
+  const basenameToFileId = new Map<string, string>();
+  for (const pf of parsedFiles) {
+    const fid = `file:${pf.relPath}`;
+    const base = path.basename(pf.relPath, path.extname(pf.relPath)).toLowerCase();
+    if (!basenameToFileId.has(base)) { basenameToFileId.set(base, fid); }
+    for (const c of pf.classes) {
+      if (!classNameToFileId.has(c.name)) { classNameToFileId.set(c.name, fid); }
+      classNameToFileId.set(c.name.toLowerCase(), fid);
+    }
+  }
+
   for (const pf of parsedFiles) {
     const layer = inferLayer(pf.relPath, pf);
     const fileId = `file:${pf.relPath}`;
@@ -671,6 +686,17 @@ function buildStaticGraph(rootDir: string): {
       const resolved = resolveImport(pf.relPath, imp, fileMap);
       if (resolved) {
         edges.push({ source: fileId, target: `file:${resolved}`, type: 'imports' });
+        continue;
+      }
+      // Non-relative import (Java/Ruby/Python/C#/PHP): resolve by last symbol/basename.
+      const seg = imp.split(/[.\/:\\]/).filter(Boolean).pop();
+      if (!seg) { continue; }
+      const targetFileId =
+        classNameToFileId.get(seg) ||
+        classNameToFileId.get(seg.toLowerCase()) ||
+        basenameToFileId.get(seg.toLowerCase());
+      if (targetFileId && targetFileId !== fileId) {
+        edges.push({ source: fileId, target: targetFileId, type: 'imports' });
       }
     }
 

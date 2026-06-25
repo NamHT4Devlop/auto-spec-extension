@@ -2,7 +2,7 @@
   "name": "ai-dev-assistant",
   "displayName": "AI Dev Assistant",
   "description": "Automate the full development workflow: Requirement → Plan → Code → Review → Test → Evidence, powered by GitHub Copilot",
-  "version": "1.11.4",
+  "version": "1.12.0",
   "publisher": "internal-tools",
   "author": {
     "name": "Internal Tools"

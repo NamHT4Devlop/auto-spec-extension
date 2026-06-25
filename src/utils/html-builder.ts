@@ -589,7 +589,13 @@ export function markdownToHtml(md: string): string {
       i++;
       while (i < lines.length && !/^\s*```\s*$/.test(lines[i])) { buf.push(lines[i]); i++; }
       i++; // skip closing fence
-      out.push(`<pre><code>${esc(buf.join('\n'))}</code></pre>`);
+      const lang = (fence[1] || '').toLowerCase();
+      if (lang === 'mermaid') {
+        // Mermaid renders the div's text as a diagram. Strip any tags defensively.
+        out.push(`<div class="mermaid">${buf.join('\n').replace(/<[^>]*>/g, '')}</div>`);
+      } else {
+        out.push(`<pre><code>${esc(buf.join('\n'))}</code></pre>`);
+      }
       continue;
     }
 
@@ -637,13 +643,23 @@ export function markdownToHtml(md: string): string {
 export function buildDocumentHtml(topic: string, markdown: string): string {
   const body = markdownToHtml(markdown);
   const safeTopic = esc(topic);
+  const hasMermaid = /class="mermaid"/.test(body);
+  const nonce = randomNonce();
+  const csp = hasMermaid
+    ? `default-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src data: https:; script-src 'nonce-${nonce}' https://cdnjs.cloudflare.com;`
+    : `default-src 'none'; style-src 'unsafe-inline'; img-src data:;`;
+  const mermaidTags = hasMermaid
+    ? `<script nonce="${nonce}" src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.1/mermaid.min.js"></script>
+<script nonce="${nonce}">try{mermaid.initialize({startOnLoad:true,theme:'neutral',securityLevel:'strict'});}catch(e){}</script>`
+    : '';
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:;">
+<meta http-equiv="Content-Security-Policy" content="${csp}">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${safeTopic} — Document</title>
+${mermaidTags}
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1e293b;line-height:1.65;background:#f8fafc}
@@ -666,6 +682,7 @@ th{background:#6366f1;color:#fff;text-align:left;padding:9px 12px;font-weight:60
 td{padding:9px 12px;border-top:1px solid #eef2f7;vertical-align:top}
 tr:nth-child(even) td{background:#f8fafc}
 .meta{color:#94a3b8;font-size:.8rem;margin-top:6px}
+.mermaid{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:16px;margin:14px 0;text-align:center;overflow-x:auto}
 @media print{body{background:#fff}.doc{max-width:100%}}
 </style>
 </head>
@@ -762,6 +779,10 @@ export function buildKnowledgeGraphHtml(graph: GraphData): string {
   .detail-content .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; color: #fff; margin-bottom: 10px; }
   .detail-content .desc { font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 12px; }
   .detail-content .details-raw { font-size: 11px; color: var(--text-muted); background: var(--surface2); border-radius: 6px; padding: 10px; font-family: monospace; white-space: pre-wrap; word-break: break-word; max-height: 220px; overflow-y: auto; border: 1px solid var(--border); }
+  .detail-content .node-meta { font-size: 11px; color: var(--text-muted); margin: 0 0 10px; font-family: monospace; word-break: break-word; }
+  .detail-content .chip-list { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+  .detail-content .chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 5px; padding: 2px 7px; font-size: 11px; font-family: monospace; color: var(--accent2); }
+  .detail-content .chip-field { color: #d8b4fe; }
   .detail-content .open-file { margin-top: 10px; display: inline-block; padding: 5px 12px; background: var(--accent); color: #fff; border-radius: var(--radius); font-size: 12px; cursor: pointer; border: none; text-decoration: none; }
   .detail-content .open-file:hover { background: #79b8ff; }
   .detail-content h3 { font-size: 12px; color: var(--text-muted); margin: 12px 0 6px; text-transform: uppercase; letter-spacing: .5px; }
@@ -1012,21 +1033,44 @@ function selectNode(id, simNodes, simEdges) {
     ? '<button class="open-file" data-file="' + esc(node.file) + '">📂 Open File</button>'
     : '';
 
-  const inHtml = incoming.slice(0, 8).map(c =>
+  const inHtml = incoming.slice(0, 12).map(c =>
     '<li>← <span>' + esc(c.name) + '</span> <small>(' + c.label + ')</small></li>'
   ).join('');
-  const outHtml = outgoing.slice(0, 8).map(c =>
+  const outHtml = outgoing.slice(0, 12).map(c =>
     '<li>→ <span>' + esc(c.name) + '</span> <small>(' + c.label + ')</small></li>'
   ).join('');
+
+  // Meta line: type · language · file:line
+  const metaBits = [];
+  if (node.type) { metaBits.push(esc(node.type)); }
+  if (node.language && node.language !== 'unknown') { metaBits.push(esc(node.language)); }
+  if (node.file) { metaBits.push(esc(node.file) + (node.line ? ':' + node.line : '')); }
+  const metaHtml = metaBits.length ? '<div class="node-meta">' + metaBits.join(' · ') + '</div>' : '';
+
+  // Methods / fields (these are captured by the static scan but were not shown before)
+  const methods = Array.isArray(node.methods) ? node.methods.filter(Boolean) : [];
+  const fields = Array.isArray(node.fields) ? node.fields.filter(Boolean) : [];
+  const methodsHtml = methods.length
+    ? '<h3>Methods (' + methods.length + ')</h3><div class="chip-list">' +
+      methods.slice(0, 40).map(m => '<span class="chip">' + esc(m) + '()</span>').join('') + '</div>'
+    : '';
+  const fieldsHtml = fields.length
+    ? '<h3>Fields (' + fields.length + ')</h3><div class="chip-list">' +
+      fields.slice(0, 40).map(f => '<span class="chip chip-field">' + esc(f) + '</span>').join('') + '</div>'
+    : '';
 
   content.innerHTML = [
     '<h2>' + esc(node.label) + '</h2>',
     '<span class="badge" style="background:' + color + '">' + node.layer + '</span>',
+    metaHtml,
     '<p class="desc">' + esc(node.description || '') + '</p>',
-    node.details ? '<pre class="details-raw">' + esc(node.details.slice(0, 500)) + '</pre>' : '',
     fileHtml,
-    incoming.length ? '<h3>Incoming (' + incoming.length + ')</h3><ul class="conn-list">' + inHtml + '</ul>' : '',
-    outgoing.length ? '<h3>Outgoing (' + outgoing.length + ')</h3><ul class="conn-list">' + outHtml + '</ul>' : '',
+    methodsHtml,
+    fieldsHtml,
+    node.details ? '<h3>Details</h3><pre class="details-raw">' + esc(node.details.slice(0, 600)) + '</pre>' : '',
+    incoming.length ? '<h3>Used by / Incoming (' + incoming.length + ')</h3><ul class="conn-list">' + inHtml + '</ul>' : '',
+    outgoing.length ? '<h3>Uses / Outgoing (' + outgoing.length + ')</h3><ul class="conn-list">' + outHtml + '</ul>' : '',
+    (!incoming.length && !outgoing.length) ? '<p class="desc" style="color:var(--text-muted)">No links detected for this node. Tip: run AI enrichment (re-open Map → "Enrich with AI") for cross-file business flows.</p>' : '',
   ].join('');
 }
 

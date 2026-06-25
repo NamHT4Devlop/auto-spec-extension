@@ -11,7 +11,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 
 import { log, banner } from '../logger';
-import { callCopilot } from '../utils/copilot';
+import { callCopilot, resetTokenMeter, formatTokenUsage } from '../utils/copilot';
 import {
   selectKBTopicsForQuestion,
   loadKBForTopics,
@@ -36,6 +36,7 @@ export async function writeDocument(
   const kbRelPath = cfg.get<string>('knowledgeBasePath', 'knowledge-base');
   const sessionsDir = cfg.get<string>('sessionsDir', 'spec-kit-sessions');
 
+  resetTokenMeter();
   banner(['📝 WRITE DOCUMENT', `Topic: ${topic.slice(0, 60)}`]);
   log(`ℹ  Topic: ${topic}\n`);
 
@@ -96,7 +97,11 @@ ${kb || '(no knowledge base — run Scan Project first for best results)'}
 ${moduleDocs ? `\n=== MODULE DOCS ===\n${moduleDocs}` : ''}
 ${sourceCtx ? `\n=== RELEVANT SOURCE CODE ===\n${sourceCtx}` : ''}`;
 
-  const markdown = await callCopilot(model, SYSTEM, prompt, token, 'Write Document');
+  let markdown = await callCopilot(model, SYSTEM, prompt, token, 'Write Document');
+
+  const usage = formatTokenUsage();
+  log(`\n📊 Token usage (this document): ${usage}`);
+  markdown = `${markdown}\n\n---\n_Token usage: ${usage}_\n`;
 
   // ── 3. Save Markdown + HTML ──
   const outDir = path.join(workspaceRoot, sessionsDir, 'documents');

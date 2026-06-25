@@ -32,6 +32,7 @@ import { askAboutCodebase } from './workflow/ask-kb';
 import { generateUserStories } from './workflow/generate-user-stories';
 import { visualizeKnowledgeBase } from './workflow/visualize-kb';
 import { writeDocument } from './workflow/write-document';
+import { formatTokenUsage } from './utils/copilot';
 import { SessionMemory } from './utils/session-memory';
 import { RequirementClarifier } from './utils/requirement-clarifier';
 import { ProjectProfileDetector } from './utils/project-profile';
@@ -209,7 +210,7 @@ async function handleBuild(
   sessionMemory.addMilestone('Build pipeline completed');
   sessionMemory.endSession();
 
-  stream.markdown('\n\n✅ **Build completed!** Check the Output panel (`Auto Spec Kit`) for full details.\n\nGenerated files are in your `spec-kit-sessions/` folder.');
+  stream.markdown(`\n\n✅ **Build completed!** Check the Output panel (\`Auto Spec Kit\`) for full details.\n\nGenerated files are in your \`spec-kit-sessions/\` folder.\n\n📊 **${formatTokenUsage()}**`);
 
   return { metadata: { command: 'build' } };
 }
@@ -305,7 +306,7 @@ async function handleAsk(
 
   await askAboutCodebase(question, root, model, token);
 
-  stream.markdown('\n\n✅ Check the Output panel for the full answer (based on your Knowledge Base).');
+  stream.markdown(`\n\n✅ Answer opened (HTML with diagram + Markdown). 📊 **${formatTokenUsage()}**`);
 
   return { metadata: { command: 'ask' } };
 }

@@ -31,6 +31,24 @@ function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+// ─── Token meter ───────────────────────────────────────────────────────────────
+// Accumulates token usage so each task can report how much it spent.
+interface TokenMeter { inputTokens: number; outputTokens: number; calls: number; }
+let _meter: TokenMeter = { inputTokens: 0, outputTokens: 0, calls: 0 };
+
+/** Reset the token meter at the start of a task. */
+export function resetTokenMeter(): void { _meter = { inputTokens: 0, outputTokens: 0, calls: 0 }; }
+
+/** Read the accumulated token usage for the current task. */
+export function getTokenMeter(): TokenMeter { return { ..._meter }; }
+
+/** Human-readable summary of token usage so far. */
+export function formatTokenUsage(): string {
+  const { inputTokens, outputTokens, calls } = _meter;
+  const total = inputTokens + outputTokens;
+  return `~${total.toLocaleString()} tokens (${inputTokens.toLocaleString()} in / ${outputTokens.toLocaleString()} out) across ${calls} AI call${calls === 1 ? '' : 's'}`;
+}
+
 /** Check if error is a token/context-limit error (so we can shrink & retry). */
 function isTokenLimitError(err: any): boolean {
   const msg = (err?.message ?? '').toLowerCase();
@@ -142,7 +160,10 @@ export async function callCopilot(
       log('·'.repeat(64));
 
       const outputTokens = estimateTokens(result);
-      log(`ℹ  Tokens: ~${built.tokens.toLocaleString()} in / ~${outputTokens.toLocaleString()} out`);
+      _meter.inputTokens += built.tokens;
+      _meter.outputTokens += outputTokens;
+      _meter.calls += 1;
+      log(`ℹ  Tokens: ~${built.tokens.toLocaleString()} in / ~${outputTokens.toLocaleString()} out  ·  task total: ~${(_meter.inputTokens + _meter.outputTokens).toLocaleString()}`);
 
       return result;
     } catch (err: any) {

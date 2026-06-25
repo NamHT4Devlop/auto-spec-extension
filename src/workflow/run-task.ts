@@ -10,6 +10,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import { log } from '../logger';
+import { resetTokenMeter, formatTokenUsage } from '../utils/copilot';
 import { loadKnowledgeBase } from '../utils/file-utils';
 import { estimateTokens, truncateToTokens } from '../utils/token-budget';
 import { PipelineRunner, PipelineContext, ALL_STEPS } from './pipeline';
@@ -60,6 +61,7 @@ export async function runWorkflow(
   enrichment?: EnrichmentContext,
 ): Promise<void> {
 
+  resetTokenMeter();
   // ── Config (use effective config from .autospec.yml if available) ──
   const cfg = vscode.workspace.getConfiguration('autoSpecKit');
   const lang = enrichment?.effectiveConfig?.language ?? cfg.get<string>('language', 'typescript');
@@ -175,11 +177,14 @@ ${enrichmentSections.join('\n\n')}
 
   const covStr = coverage !== null && coverage !== undefined
     ? `${coverage.toFixed(1)}%` : 'N/A';
-  const msg = testPassed
+  const tokenUsage = formatTokenUsage();
+  log(`\n📊 Token usage (this build): ${tokenUsage}`);
+
+  const msg = (testPassed
     ? `🎉 DONE! Tests PASSED | Coverage: ${covStr}`
     : testSkipped
       ? `✅ Workflow complete (tests skipped — configure testCommand)`
-      : `❌ Tests failed — check Evidence for details`;
+      : `❌ Tests failed — check Evidence for details`) + `  ·  ${tokenUsage}`;
 
   const action = await vscode.window.showInformationMessage(msg, 'Open Session Folder');
   if (action === 'Open Session Folder') {

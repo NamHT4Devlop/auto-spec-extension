@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Auto Spec Kit v1.11.4 — Manual Install Guide</title>
+<title>Auto Spec Kit v1.12.0 — Manual Install Guide</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #1e293b; min-height: 100vh; line-height: 1.6; }
@@ -78,7 +78,7 @@
   <h1>Manual Install Guide</h1>
   <p class="subtitle">Create the project from scratch on any machine — no git clone needed</p>
   <div style="margin-top:10px">
-    <span class="badge badge-blue">v1.11.4</span>
+    <span class="badge badge-blue">v1.12.0</span>
     <span class="badge badge-green">61 files</span>
     <span class="badge badge-orange">Copy & Paste</span>
   </div>
@@ -131,7 +131,7 @@ mkdir -p docs</code></pre>
   &quot;name&quot;: &quot;ai-dev-assistant&quot;,
   &quot;displayName&quot;: &quot;AI Dev Assistant&quot;,
   &quot;description&quot;: &quot;Automate the full development workflow: Requirement → Plan → Code → Review → Test → Evidence, powered by GitHub Copilot&quot;,
-  &quot;version&quot;: &quot;1.11.4&quot;,
+  &quot;version&quot;: &quot;1.12.0&quot;,
   &quot;publisher&quot;: &quot;internal-tools&quot;,
   &quot;author&quot;: {
     &quot;name&quot;: &quot;Internal Tools&quot;
@@ -450,7 +450,7 @@ npm-debug.log*
   <div class="file-header" onclick="toggleFile('src-chat-participant-ts')">
     <span class="file-name">src/chat-participant.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">26,509 bytes</span>
+      <span class="file-size">26,601 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-chat-participant-ts',this)">Copy</button>
     </div>
   </div>
@@ -489,6 +489,7 @@ import { askAboutCodebase } from &#x27;./workflow/ask-kb&#x27;;
 import { generateUserStories } from &#x27;./workflow/generate-user-stories&#x27;;
 import { visualizeKnowledgeBase } from &#x27;./workflow/visualize-kb&#x27;;
 import { writeDocument } from &#x27;./workflow/write-document&#x27;;
+import { formatTokenUsage } from &#x27;./utils/copilot&#x27;;
 import { SessionMemory } from &#x27;./utils/session-memory&#x27;;
 import { RequirementClarifier } from &#x27;./utils/requirement-clarifier&#x27;;
 import { ProjectProfileDetector } from &#x27;./utils/project-profile&#x27;;
@@ -666,7 +667,7 @@ async function handleBuild(
   sessionMemory.addMilestone(&#x27;Build pipeline completed&#x27;);
   sessionMemory.endSession();
 
-  stream.markdown(&#x27;\n\n✅ **Build completed!** Check the Output panel (`Auto Spec Kit`) for full details.\n\nGenerated files are in your `spec-kit-sessions/` folder.&#x27;);
+  stream.markdown(`\n\n✅ **Build completed!** Check the Output panel (\`Auto Spec Kit\`) for full details.\n\nGenerated files are in your \`spec-kit-sessions/\` folder.\n\n📊 **${formatTokenUsage()}**`);
 
   return { metadata: { command: &#x27;build&#x27; } };
 }
@@ -762,7 +763,7 @@ async function handleAsk(
 
   await askAboutCodebase(question, root, model, token);
 
-  stream.markdown(&#x27;\n\n✅ Check the Output panel for the full answer (based on your Knowledge Base).&#x27;);
+  stream.markdown(`\n\n✅ Answer opened (HTML with diagram + Markdown). 📊 **${formatTokenUsage()}**`);
 
   return { metadata: { command: &#x27;ask&#x27; } };
 }
@@ -2098,7 +2099,7 @@ export async function askComment(label: string): Promise&lt;string | undefined&g
   <div class="file-header" onclick="toggleFile('src-utils-copilot-ts')">
     <span class="file-name">src/utils/copilot.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">6,933 bytes</span>
+      <span class="file-size">8,223 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-utils-copilot-ts',this)">Copy</button>
     </div>
   </div>
@@ -2134,6 +2135,24 @@ const DEFAULT_RETRY: RetryConfig = {
 /** Sleep helper */
 function sleep(ms: number): Promise&lt;void&gt; {
   return new Promise(resolve =&gt; setTimeout(resolve, ms));
+}
+
+// ─── Token meter ───────────────────────────────────────────────────────────────
+// Accumulates token usage so each task can report how much it spent.
+interface TokenMeter { inputTokens: number; outputTokens: number; calls: number; }
+let _meter: TokenMeter = { inputTokens: 0, outputTokens: 0, calls: 0 };
+
+/** Reset the token meter at the start of a task. */
+export function resetTokenMeter(): void { _meter = { inputTokens: 0, outputTokens: 0, calls: 0 }; }
+
+/** Read the accumulated token usage for the current task. */
+export function getTokenMeter(): TokenMeter { return { ..._meter }; }
+
+/** Human-readable summary of token usage so far. */
+export function formatTokenUsage(): string {
+  const { inputTokens, outputTokens, calls } = _meter;
+  const total = inputTokens + outputTokens;
+  return `~${total.toLocaleString()} tokens (${inputTokens.toLocaleString()} in / ${outputTokens.toLocaleString()} out) across ${calls} AI call${calls === 1 ? &#x27;&#x27; : &#x27;s&#x27;}`;
 }
 
 /** Check if error is a token/context-limit error (so we can shrink &amp; retry). */
@@ -2247,7 +2266,10 @@ export async function callCopilot(
       log(&#x27;·&#x27;.repeat(64));
 
       const outputTokens = estimateTokens(result);
-      log(`ℹ  Tokens: ~${built.tokens.toLocaleString()} in / ~${outputTokens.toLocaleString()} out`);
+      _meter.inputTokens += built.tokens;
+      _meter.outputTokens += outputTokens;
+      _meter.calls += 1;
+      log(`ℹ  Tokens: ~${built.tokens.toLocaleString()} in / ~${outputTokens.toLocaleString()} out  ·  task total: ~${(_meter.inputTokens + _meter.outputTokens).toLocaleString()}`);
 
       return result;
     } catch (err: any) {
@@ -2950,7 +2972,7 @@ export function formatGitContextForPrompt(ctx: GitContext): string {
   <div class="file-header" onclick="toggleFile('src-utils-graph-builder-ts')">
     <span class="file-name">src/utils/graph-builder.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">33,411 bytes</span>
+      <span class="file-size">38,592 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-utils-graph-builder-ts',this)">Copy</button>
     </div>
   </div>
@@ -3542,6 +3564,21 @@ function buildStaticGraph(rootDir: string): {
     fileMap.set(pf.relPath, pf);
   }
 
+  // Symbol maps so NON-relative imports (Java `import com.app.UserService;`,
+  // Ruby `require &#x27;app/user_service&#x27;`, Python `from app.services import X`) still
+  // produce edges — otherwise polyglot graphs look disconnected.
+  const classNameToFileId = new Map&lt;string, string&gt;();
+  const basenameToFileId = new Map&lt;string, string&gt;();
+  for (const pf of parsedFiles) {
+    const fid = `file:${pf.relPath}`;
+    const base = path.basename(pf.relPath, path.extname(pf.relPath)).toLowerCase();
+    if (!basenameToFileId.has(base)) { basenameToFileId.set(base, fid); }
+    for (const c of pf.classes) {
+      if (!classNameToFileId.has(c.name)) { classNameToFileId.set(c.name, fid); }
+      classNameToFileId.set(c.name.toLowerCase(), fid);
+    }
+  }
+
   for (const pf of parsedFiles) {
     const layer = inferLayer(pf.relPath, pf);
     const fileId = `file:${pf.relPath}`;
@@ -3628,6 +3665,17 @@ function buildStaticGraph(rootDir: string): {
       const resolved = resolveImport(pf.relPath, imp, fileMap);
       if (resolved) {
         edges.push({ source: fileId, target: `file:${resolved}`, type: &#x27;imports&#x27; });
+        continue;
+      }
+      // Non-relative import (Java/Ruby/Python/C#/PHP): resolve by last symbol/basename.
+      const seg = imp.split(/[.\/:\\]/).filter(Boolean).pop();
+      if (!seg) { continue; }
+      const targetFileId =
+        classNameToFileId.get(seg) ||
+        classNameToFileId.get(seg.toLowerCase()) ||
+        basenameToFileId.get(seg.toLowerCase());
+      if (targetFileId &amp;&amp; targetFileId !== fileId) {
+        edges.push({ source: fileId, target: targetFileId, type: &#x27;imports&#x27; });
       }
     }
 
@@ -4247,7 +4295,7 @@ interface ArchData {
   <div class="file-header" onclick="toggleFile('src-utils-html-builder-ts')">
     <span class="file-name">src/utils/html-builder.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">51,128 bytes</span>
+      <span class="file-size">54,017 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-utils-html-builder-ts',this)">Copy</button>
     </div>
   </div>
@@ -4843,7 +4891,13 @@ export function markdownToHtml(md: string): string {
       i++;
       while (i &lt; lines.length &amp;&amp; !/^\s*```\s*$/.test(lines[i])) { buf.push(lines[i]); i++; }
       i++; // skip closing fence
-      out.push(`&lt;pre&gt;&lt;code&gt;${esc(buf.join(&#x27;\n&#x27;))}&lt;/code&gt;&lt;/pre&gt;`);
+      const lang = (fence[1] || &#x27;&#x27;).toLowerCase();
+      if (lang === &#x27;mermaid&#x27;) {
+        // Mermaid renders the div&#x27;s text as a diagram. Strip any tags defensively.
+        out.push(`&lt;div class=&quot;mermaid&quot;&gt;${buf.join(&#x27;\n&#x27;).replace(/&lt;[^&gt;]*&gt;/g, &#x27;&#x27;)}&lt;/div&gt;`);
+      } else {
+        out.push(`&lt;pre&gt;&lt;code&gt;${esc(buf.join(&#x27;\n&#x27;))}&lt;/code&gt;&lt;/pre&gt;`);
+      }
       continue;
     }
 
@@ -4891,13 +4945,23 @@ export function markdownToHtml(md: string): string {
 export function buildDocumentHtml(topic: string, markdown: string): string {
   const body = markdownToHtml(markdown);
   const safeTopic = esc(topic);
+  const hasMermaid = /class=&quot;mermaid&quot;/.test(body);
+  const nonce = randomNonce();
+  const csp = hasMermaid
+    ? `default-src &#x27;none&#x27;; style-src &#x27;unsafe-inline&#x27;; img-src data:; font-src data: https:; script-src &#x27;nonce-${nonce}&#x27; https://cdnjs.cloudflare.com;`
+    : `default-src &#x27;none&#x27;; style-src &#x27;unsafe-inline&#x27;; img-src data:;`;
+  const mermaidTags = hasMermaid
+    ? `&lt;script nonce=&quot;${nonce}&quot; src=&quot;https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.1/mermaid.min.js&quot;&gt;&lt;/script&gt;
+&lt;script nonce=&quot;${nonce}&quot;&gt;try{mermaid.initialize({startOnLoad:true,theme:&#x27;neutral&#x27;,securityLevel:&#x27;strict&#x27;});}catch(e){}&lt;/script&gt;`
+    : &#x27;&#x27;;
   return `&lt;!DOCTYPE html&gt;
 &lt;html lang=&quot;en&quot;&gt;
 &lt;head&gt;
 &lt;meta charset=&quot;UTF-8&quot;&gt;
-&lt;meta http-equiv=&quot;Content-Security-Policy&quot; content=&quot;default-src &#x27;none&#x27;; style-src &#x27;unsafe-inline&#x27;; img-src data:;&quot;&gt;
+&lt;meta http-equiv=&quot;Content-Security-Policy&quot; content=&quot;${csp}&quot;&gt;
 &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
 &lt;title&gt;${safeTopic} — Document&lt;/title&gt;
+${mermaidTags}
 &lt;style&gt;
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,&#x27;Segoe UI&#x27;,sans-serif;color:#1e293b;line-height:1.65;background:#f8fafc}
@@ -4920,6 +4984,7 @@ th{background:#6366f1;color:#fff;text-align:left;padding:9px 12px;font-weight:60
 td{padding:9px 12px;border-top:1px solid #eef2f7;vertical-align:top}
 tr:nth-child(even) td{background:#f8fafc}
 .meta{color:#94a3b8;font-size:.8rem;margin-top:6px}
+.mermaid{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:16px;margin:14px 0;text-align:center;overflow-x:auto}
 @media print{body{background:#fff}.doc{max-width:100%}}
 &lt;/style&gt;
 &lt;/head&gt;
@@ -5016,6 +5081,10 @@ export function buildKnowledgeGraphHtml(graph: GraphData): string {
   .detail-content .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; color: #fff; margin-bottom: 10px; }
   .detail-content .desc { font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 12px; }
   .detail-content .details-raw { font-size: 11px; color: var(--text-muted); background: var(--surface2); border-radius: 6px; padding: 10px; font-family: monospace; white-space: pre-wrap; word-break: break-word; max-height: 220px; overflow-y: auto; border: 1px solid var(--border); }
+  .detail-content .node-meta { font-size: 11px; color: var(--text-muted); margin: 0 0 10px; font-family: monospace; word-break: break-word; }
+  .detail-content .chip-list { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+  .detail-content .chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 5px; padding: 2px 7px; font-size: 11px; font-family: monospace; color: var(--accent2); }
+  .detail-content .chip-field { color: #d8b4fe; }
   .detail-content .open-file { margin-top: 10px; display: inline-block; padding: 5px 12px; background: var(--accent); color: #fff; border-radius: var(--radius); font-size: 12px; cursor: pointer; border: none; text-decoration: none; }
   .detail-content .open-file:hover { background: #79b8ff; }
   .detail-content h3 { font-size: 12px; color: var(--text-muted); margin: 12px 0 6px; text-transform: uppercase; letter-spacing: .5px; }
@@ -5266,21 +5335,44 @@ function selectNode(id, simNodes, simEdges) {
     ? &#x27;&lt;button class=&quot;open-file&quot; data-file=&quot;&#x27; + esc(node.file) + &#x27;&quot;&gt;📂 Open File&lt;/button&gt;&#x27;
     : &#x27;&#x27;;
 
-  const inHtml = incoming.slice(0, 8).map(c =&gt;
+  const inHtml = incoming.slice(0, 12).map(c =&gt;
     &#x27;&lt;li&gt;← &lt;span&gt;&#x27; + esc(c.name) + &#x27;&lt;/span&gt; &lt;small&gt;(&#x27; + c.label + &#x27;)&lt;/small&gt;&lt;/li&gt;&#x27;
   ).join(&#x27;&#x27;);
-  const outHtml = outgoing.slice(0, 8).map(c =&gt;
+  const outHtml = outgoing.slice(0, 12).map(c =&gt;
     &#x27;&lt;li&gt;→ &lt;span&gt;&#x27; + esc(c.name) + &#x27;&lt;/span&gt; &lt;small&gt;(&#x27; + c.label + &#x27;)&lt;/small&gt;&lt;/li&gt;&#x27;
   ).join(&#x27;&#x27;);
+
+  // Meta line: type · language · file:line
+  const metaBits = [];
+  if (node.type) { metaBits.push(esc(node.type)); }
+  if (node.language &amp;&amp; node.language !== &#x27;unknown&#x27;) { metaBits.push(esc(node.language)); }
+  if (node.file) { metaBits.push(esc(node.file) + (node.line ? &#x27;:&#x27; + node.line : &#x27;&#x27;)); }
+  const metaHtml = metaBits.length ? &#x27;&lt;div class=&quot;node-meta&quot;&gt;&#x27; + metaBits.join(&#x27; · &#x27;) + &#x27;&lt;/div&gt;&#x27; : &#x27;&#x27;;
+
+  // Methods / fields (these are captured by the static scan but were not shown before)
+  const methods = Array.isArray(node.methods) ? node.methods.filter(Boolean) : [];
+  const fields = Array.isArray(node.fields) ? node.fields.filter(Boolean) : [];
+  const methodsHtml = methods.length
+    ? &#x27;&lt;h3&gt;Methods (&#x27; + methods.length + &#x27;)&lt;/h3&gt;&lt;div class=&quot;chip-list&quot;&gt;&#x27; +
+      methods.slice(0, 40).map(m =&gt; &#x27;&lt;span class=&quot;chip&quot;&gt;&#x27; + esc(m) + &#x27;()&lt;/span&gt;&#x27;).join(&#x27;&#x27;) + &#x27;&lt;/div&gt;&#x27;
+    : &#x27;&#x27;;
+  const fieldsHtml = fields.length
+    ? &#x27;&lt;h3&gt;Fields (&#x27; + fields.length + &#x27;)&lt;/h3&gt;&lt;div class=&quot;chip-list&quot;&gt;&#x27; +
+      fields.slice(0, 40).map(f =&gt; &#x27;&lt;span class=&quot;chip chip-field&quot;&gt;&#x27; + esc(f) + &#x27;&lt;/span&gt;&#x27;).join(&#x27;&#x27;) + &#x27;&lt;/div&gt;&#x27;
+    : &#x27;&#x27;;
 
   content.innerHTML = [
     &#x27;&lt;h2&gt;&#x27; + esc(node.label) + &#x27;&lt;/h2&gt;&#x27;,
     &#x27;&lt;span class=&quot;badge&quot; style=&quot;background:&#x27; + color + &#x27;&quot;&gt;&#x27; + node.layer + &#x27;&lt;/span&gt;&#x27;,
+    metaHtml,
     &#x27;&lt;p class=&quot;desc&quot;&gt;&#x27; + esc(node.description || &#x27;&#x27;) + &#x27;&lt;/p&gt;&#x27;,
-    node.details ? &#x27;&lt;pre class=&quot;details-raw&quot;&gt;&#x27; + esc(node.details.slice(0, 500)) + &#x27;&lt;/pre&gt;&#x27; : &#x27;&#x27;,
     fileHtml,
-    incoming.length ? &#x27;&lt;h3&gt;Incoming (&#x27; + incoming.length + &#x27;)&lt;/h3&gt;&lt;ul class=&quot;conn-list&quot;&gt;&#x27; + inHtml + &#x27;&lt;/ul&gt;&#x27; : &#x27;&#x27;,
-    outgoing.length ? &#x27;&lt;h3&gt;Outgoing (&#x27; + outgoing.length + &#x27;)&lt;/h3&gt;&lt;ul class=&quot;conn-list&quot;&gt;&#x27; + outHtml + &#x27;&lt;/ul&gt;&#x27; : &#x27;&#x27;,
+    methodsHtml,
+    fieldsHtml,
+    node.details ? &#x27;&lt;h3&gt;Details&lt;/h3&gt;&lt;pre class=&quot;details-raw&quot;&gt;&#x27; + esc(node.details.slice(0, 600)) + &#x27;&lt;/pre&gt;&#x27; : &#x27;&#x27;,
+    incoming.length ? &#x27;&lt;h3&gt;Used by / Incoming (&#x27; + incoming.length + &#x27;)&lt;/h3&gt;&lt;ul class=&quot;conn-list&quot;&gt;&#x27; + inHtml + &#x27;&lt;/ul&gt;&#x27; : &#x27;&#x27;,
+    outgoing.length ? &#x27;&lt;h3&gt;Uses / Outgoing (&#x27; + outgoing.length + &#x27;)&lt;/h3&gt;&lt;ul class=&quot;conn-list&quot;&gt;&#x27; + outHtml + &#x27;&lt;/ul&gt;&#x27; : &#x27;&#x27;,
+    (!incoming.length &amp;&amp; !outgoing.length) ? &#x27;&lt;p class=&quot;desc&quot; style=&quot;color:var(--text-muted)&quot;&gt;No links detected for this node. Tip: run AI enrichment (re-open Map → &quot;Enrich with AI&quot;) for cross-file business flows.&lt;/p&gt;&#x27; : &#x27;&#x27;,
   ].join(&#x27;&#x27;);
 }
 
@@ -8259,18 +8351,21 @@ export class WorkspaceResolver {
   <div class="file-header" onclick="toggleFile('src-workflow-ask-kb-ts')">
     <span class="file-name">src/workflow/ask-kb.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">3,926 bytes</span>
+      <span class="file-size">5,881 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-workflow-ask-kb-ts',this)">Copy</button>
     </div>
   </div>
   <div class="file-body" id="body-src-workflow-ask-kb-ts">
     <pre><code id="code-src-workflow-ask-kb-ts">import * as vscode from &#x27;vscode&#x27;;
+import * as path from &#x27;path&#x27;;
+import * as fs from &#x27;fs&#x27;;
 
 import { log, banner } from &#x27;../logger&#x27;;
-import { callCopilot } from &#x27;../utils/copilot&#x27;;
+import { callCopilot, resetTokenMeter, formatTokenUsage } from &#x27;../utils/copilot&#x27;;
 import { loadKnowledgeBase } from &#x27;../utils/file-utils&#x27;;
 import { selectKBTopicsForQuestion, loadKBForTopics, isVagueQuestion, loadMatchingModuleDocs } from &#x27;../utils/smart-context&#x27;;
 import { estimateTokens, truncateToTokens } from &#x27;../utils/token-budget&#x27;;
+import { buildDocumentHtml } from &#x27;../utils/html-builder&#x27;;
 
 export async function askAboutCodebase(
   question: string,
@@ -8279,8 +8374,10 @@ export async function askAboutCodebase(
   token: vscode.CancellationToken
 ): Promise&lt;void&gt; {
 
+  resetTokenMeter();
   const cfg       = vscode.workspace.getConfiguration(&#x27;autoSpecKit&#x27;);
   const kbRelPath = cfg.get&lt;string&gt;(&#x27;knowledgeBasePath&#x27;, &#x27;knowledge-base&#x27;);
+  const sessionsDir = cfg.get&lt;string&gt;(&#x27;sessionsDir&#x27;, &#x27;spec-kit-sessions&#x27;);
   // Token budget for the KB context injected into a single question.
   const maxKbTokens = cfg.get&lt;number&gt;(&#x27;ask.maxContextTokens&#x27;, 24_000);
 
@@ -8309,16 +8406,23 @@ export async function askAboutCodebase(
 
   // Ambiguity-safe answering handled in ONE call (no extra model round-trip):
   // the model must surface its interpretation/assumptions and never fabricate.
-  const SYSTEM = `You are an expert on this codebase. Answer questions using ONLY the knowledge base below.
+  const SYSTEM = `You are a Business Analyst AND engineer explaining this codebase to a MIXED audience (business + technical). Answer using ONLY the knowledge base below.
 
-=== ANSWERING RULES ===
-1. Ground every claim in the knowledge base. If it does not contain the answer, say so explicitly — never invent files, APIs, or behavior.
-2. Cite concrete names from the KB (files, modules, endpoints, entities) where relevant.
-3. If the question is ambiguous or under-specified:
-   a) First, briefly state how you INTERPRET the question and the ASSUMPTIONS you are making.
-   b) Then answer the most likely intent as best the KB allows.
-   c) Finally, list 2–3 specific CLARIFYING QUESTIONS (or alternative interpretations) so the user can refine.
-4. Prefer a precise, scoped answer over a broad, hedged one.
+Structure every answer in this order:
+
+## In plain language
+Explain for a NON-technical reader (a BA / product / business person): what it is, why it matters, and how it behaves — in everyday business terms, no jargon. Use an analogy if helpful.
+
+## Diagram
+Draw a Mermaid diagram that fits the question (flowchart for a flow, erDiagram for data/fields, sequenceDiagram for an interaction). Wrap it EXACTLY in a \`\`\`mermaid code block with valid Mermaid syntax. Keep node labels short and plain. If a diagram truly does not apply, write &quot;(no diagram needed)&quot;.
+
+## Technical detail
+The precise technical answer, citing concrete names from the KB (files, modules, endpoints, entities, fields).
+
+=== RULES ===
+1. Ground every claim in the knowledge base. If it does not contain the answer, say so explicitly — never invent files, APIs, fields or behavior.
+2. When mapping business ↔ code, name the exact field/file/function.
+3. If the question is ambiguous, first state your interpretation + assumptions, answer the most likely intent, then ask 2–3 clarifying questions.
 
 === KNOWLEDGE BASE (relevant subset) ===
 ${kb}`;
@@ -8332,18 +8436,42 @@ ${kb}`;
 
   const answer = await callCopilot(model, SYSTEM, userMessage, token, &#x27;Ask About Codebase&#x27;);
 
-  const content = `# 💬 Answer: ${question.slice(0, 80)}
+  const usage = formatTokenUsage();
+  log(`\n📊 Token usage (this question): ${usage}`);
+
+  const md = `# 💬 ${question.slice(0, 90)}
 _${new Date().toLocaleString(&#x27;en-US&#x27;)}_
 
----
-
 ${answer}
+
+---
+_Token usage: ${usage}_
 `;
 
-  const doc = await vscode.workspace.openTextDocument({ content, language: &#x27;markdown&#x27; });
-  await vscode.window.showTextDocument(doc, { preview: false, viewColumn: vscode.ViewColumn.Beside });
+  // Render to HTML (with the Mermaid diagram drawn) and open a webview, plus offer browser.
+  const outDir = path.join(workspaceRoot, sessionsDir, &#x27;answers&#x27;);
+  fs.mkdirSync(outDir, { recursive: true });
+  const slug = (question.toLowerCase().replace(/[^a-z0-9]+/g, &#x27;-&#x27;).replace(/(^-|-$)/g, &#x27;&#x27;).slice(0, 50)) || &#x27;answer&#x27;;
+  const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, &#x27;-&#x27;);
+  const htmlFile = path.join(outDir, `${slug}-${ts}.html`);
+  const html = buildDocumentHtml(question, md);
+  fs.writeFileSync(htmlFile, html, &#x27;utf-8&#x27;);
 
-  log(`\n✅ Answer displayed in new document.`);
+  const panel = vscode.window.createWebviewPanel(
+    &#x27;autoSpecKitAnswer&#x27;, `💬 ${question.slice(0, 40)}`, vscode.ViewColumn.Beside,
+    { enableScripts: true, retainContextWhenHidden: true, localResourceRoots: [] },
+  );
+  panel.webview.html = html;
+
+  // Also open the Markdown for quick copy/editing.
+  const doc = await vscode.workspace.openTextDocument({ content: md, language: &#x27;markdown&#x27; });
+  await vscode.window.showTextDocument(doc, { preview: false, viewColumn: vscode.ViewColumn.Two });
+
+  vscode.window.showInformationMessage(
+    `💬 Answer ready · ${usage}`, &#x27;Open HTML in Browser&#x27;,
+  ).then(c =&gt; { if (c === &#x27;Open HTML in Browser&#x27;) { vscode.env.openExternal(vscode.Uri.file(htmlFile)); } });
+
+  log(`\n✅ Answer displayed (HTML: ${path.relative(workspaceRoot, htmlFile)}).`);
 }
 </code></pre>
   </div>
@@ -8353,7 +8481,7 @@ ${answer}
   <div class="file-header" onclick="toggleFile('src-workflow-generate-kb-ts')">
     <span class="file-name">src/workflow/generate-kb.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">35,188 bytes</span>
+      <span class="file-size">35,367 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-workflow-generate-kb-ts',this)">Copy</button>
     </div>
   </div>
@@ -8385,7 +8513,7 @@ import * as path from &#x27;path&#x27;;
 import * as fs from &#x27;fs&#x27;;
 
 import { log, kbHeader, banner } from &#x27;../logger&#x27;;
-import { callCopilot } from &#x27;../utils/copilot&#x27;;
+import { callCopilot, resetTokenMeter, formatTokenUsage } from &#x27;../utils/copilot&#x27;;
 import { scanProject, scanModule, discoverModules, ScanOptions, ProjectModule } from &#x27;../utils/project-scanner&#x27;;
 import { AgentOrchestrator, SubAgent } from &#x27;../utils/agent-orchestrator&#x27;;
 import { estimateTokens, truncateToTokens, modelInputBudget } from &#x27;../utils/token-budget&#x27;;
@@ -8599,6 +8727,7 @@ export async function generateKnowledgeBase(
   scanOptions?: ScanOptions,
 ): Promise&lt;void&gt; {
 
+  resetTokenMeter();
   const cfg = vscode.workspace.getConfiguration(&#x27;autoSpecKit&#x27;);
   const kbRelPath = cfg.get&lt;string&gt;(&#x27;knowledgeBasePath&#x27;, &#x27;knowledge-base&#x27;);
   const maxParallel = cfg.get&lt;number&gt;(&#x27;agents.maxParallel&#x27;, 3);
@@ -9004,9 +9133,12 @@ ${profileSummary}
   }
 
   // ── Summary ────────────────────────────────────────────────────
+  const kbTokenUsage = formatTokenUsage();
+  log(`\n📊 Token usage (KB generation): ${kbTokenUsage}`);
   banner([
     &#x27;✅  KNOWLEDGE BASE GENERATION COMPLETE!&#x27;,
     `${completedSteps} files · ${moduleCount} module docs · Multi-Agent Deep Analysis`,
+    kbTokenUsage,
   ]);
   log(`\n🌟 Most important files (generated with multi-agent deep analysis):`);
   log(`   → ${kbRelPath}/04-business-domain.md   — product brief, user roles, core features`);
@@ -9663,7 +9795,7 @@ ${reviewResult}
   <div class="file-header" onclick="toggleFile('src-workflow-run-task-ts')">
     <span class="file-name">src/workflow/run-task.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">9,008 bytes</span>
+      <span class="file-size">9,224 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-workflow-run-task-ts',this)">Copy</button>
     </div>
   </div>
@@ -9680,6 +9812,7 @@ import * as vscode from &#x27;vscode&#x27;;
 import * as path from &#x27;path&#x27;;
 import * as fs from &#x27;fs&#x27;;
 import { log } from &#x27;../logger&#x27;;
+import { resetTokenMeter, formatTokenUsage } from &#x27;../utils/copilot&#x27;;
 import { loadKnowledgeBase } from &#x27;../utils/file-utils&#x27;;
 import { estimateTokens, truncateToTokens } from &#x27;../utils/token-budget&#x27;;
 import { PipelineRunner, PipelineContext, ALL_STEPS } from &#x27;./pipeline&#x27;;
@@ -9730,6 +9863,7 @@ export async function runWorkflow(
   enrichment?: EnrichmentContext,
 ): Promise&lt;void&gt; {
 
+  resetTokenMeter();
   // ── Config (use effective config from .autospec.yml if available) ──
   const cfg = vscode.workspace.getConfiguration(&#x27;autoSpecKit&#x27;);
   const lang = enrichment?.effectiveConfig?.language ?? cfg.get&lt;string&gt;(&#x27;language&#x27;, &#x27;typescript&#x27;);
@@ -9845,11 +9979,14 @@ ${enrichmentSections.join(&#x27;\n\n&#x27;)}
 
   const covStr = coverage !== null &amp;&amp; coverage !== undefined
     ? `${coverage.toFixed(1)}%` : &#x27;N/A&#x27;;
-  const msg = testPassed
+  const tokenUsage = formatTokenUsage();
+  log(`\n📊 Token usage (this build): ${tokenUsage}`);
+
+  const msg = (testPassed
     ? `🎉 DONE! Tests PASSED | Coverage: ${covStr}`
     : testSkipped
       ? `✅ Workflow complete (tests skipped — configure testCommand)`
-      : `❌ Tests failed — check Evidence for details`;
+      : `❌ Tests failed — check Evidence for details`) + `  ·  ${tokenUsage}`;
 
   const action = await vscode.window.showInformationMessage(msg, &#x27;Open Session Folder&#x27;);
   if (action === &#x27;Open Session Folder&#x27;) {
@@ -10035,7 +10172,7 @@ Files that may need updating: 04-business-overview.md, 05-domain-model.md, 06-mo
   <div class="file-header" onclick="toggleFile('src-workflow-write-document-ts')">
     <span class="file-name">src/workflow/write-document.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">5,452 bytes</span>
+      <span class="file-size">5,660 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-workflow-write-document-ts',this)">Copy</button>
     </div>
   </div>
@@ -10053,7 +10190,7 @@ import * as path from &#x27;path&#x27;;
 import * as fs from &#x27;fs&#x27;;
 
 import { log, banner } from &#x27;../logger&#x27;;
-import { callCopilot } from &#x27;../utils/copilot&#x27;;
+import { callCopilot, resetTokenMeter, formatTokenUsage } from &#x27;../utils/copilot&#x27;;
 import {
   selectKBTopicsForQuestion,
   loadKBForTopics,
@@ -10078,6 +10215,7 @@ export async function writeDocument(
   const kbRelPath = cfg.get&lt;string&gt;(&#x27;knowledgeBasePath&#x27;, &#x27;knowledge-base&#x27;);
   const sessionsDir = cfg.get&lt;string&gt;(&#x27;sessionsDir&#x27;, &#x27;spec-kit-sessions&#x27;);
 
+  resetTokenMeter();
   banner([&#x27;📝 WRITE DOCUMENT&#x27;, `Topic: ${topic.slice(0, 60)}`]);
   log(`ℹ  Topic: ${topic}\n`);
 
@@ -10138,7 +10276,11 @@ ${kb || &#x27;(no knowledge base — run Scan Project first for best results)&#x
 ${moduleDocs ? `\n=== MODULE DOCS ===\n${moduleDocs}` : &#x27;&#x27;}
 ${sourceCtx ? `\n=== RELEVANT SOURCE CODE ===\n${sourceCtx}` : &#x27;&#x27;}`;
 
-  const markdown = await callCopilot(model, SYSTEM, prompt, token, &#x27;Write Document&#x27;);
+  let markdown = await callCopilot(model, SYSTEM, prompt, token, &#x27;Write Document&#x27;);
+
+  const usage = formatTokenUsage();
+  log(`\n📊 Token usage (this document): ${usage}`);
+  markdown = `${markdown}\n\n---\n_Token usage: ${usage}_\n`;
 
   // ── 3. Save Markdown + HTML ──
   const outDir = path.join(workspaceRoot, sessionsDir, &#x27;documents&#x27;);
@@ -13114,7 +13256,7 @@ yarn compile
 yarn package
 
 # Install in VS Code
-code --install-extension ai-dev-assistant-1.11.4.vsix</code></pre>
+code --install-extension ai-dev-assistant-1.12.0.vsix</code></pre>
   <p>Or press <strong>F5</strong> in VS Code to launch the Extension Development Host for testing.</p>
 </div>
 

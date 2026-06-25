@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Auto Spec Kit v1.11.4 — Documentation</title>
+<title>Auto Spec Kit v1.12.0 — Documentation</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #1e293b; min-height: 100vh; }
@@ -88,7 +88,7 @@
   <h1>Auto Spec Kit</h1>
   <p class="subtitle">Automate the full development workflow: Requirement → Plan → Code → Review → Test → Evidence</p>
   <div style="margin-top:10px">
-    <span class="badge badge-blue">v1.11.4</span>
+    <span class="badge badge-blue">v1.12.0</span>
     <span class="badge badge-green">Multi-Agent</span>
     <span class="badge badge-purple">Adaptive Intelligence</span>
     <span class="badge badge-orange">No API Key</span>
@@ -113,11 +113,24 @@
 <div id="overview" class="panel active">
 
 <div class="card">
+  <h2>📊 BA Answers, Richer Map, Token Visibility — v1.12.0</h2>
+  <p>Answers anyone can read, a map you can actually explore, and token usage shown for every task.</p>
+  <table>
+    <tr><th>Area</th><th>What's new</th></tr>
+    <tr><td><strong>Ask = BA + diagram</strong></td><td><code>/ask</code> now answers in 3 parts: <em>Plain language</em> (business terms, no jargon), a <strong>Mermaid diagram</strong> (flow / ER / sequence), then the technical detail with exact field/file names. Opens as an HTML view with the diagram drawn (and Markdown).</td></tr>
+    <tr><td><strong>Map — node detail</strong></td><td>Clicking a node now shows its <strong>methods, fields, type, language, file:line</strong> and links (the data was there but hidden before).</td></tr>
+    <tr><td><strong>Map — polyglot edges</strong></td><td>Non-relative imports now create edges: Java <code>import com.app.UserService</code>, Ruby <code>require</code>, Python <code>from … import</code> are resolved by class/file — so Java + Ruby graphs are connected, not isolated dots.</td></tr>
+    <tr><td><strong>Token visibility</strong></td><td>Every task (ask, build, document, KB gen/update) reports <strong>~tokens used (in / out, # calls)</strong> in the Output panel, chat, and the saved file — so you can see and tune cost per task.</td></tr>
+  </table>
+  <p style="margin-top:8px;font-size:13px;color:#94a3b8">Tip: for the most detailed map, re-open Map → "Enrich with AI" — it adds business-flow and entity-relationship edges on top of the static graph.</p>
+</div>
+
+<div class="card">
   <h2>♾️ No Limits, No Hangs — Any Task — v1.11.4</h2>
   <p>A universal guard makes <strong>every</strong> task limit-safe and hang-proof: build, review, plan, ask, document, map, KB generate/update.</p>
   <table>
     <tr><th>Area</th><th>Fix</th></tr>
-    <tr><td><strong>No more hangs (v1.11.4)</strong></td><td>Each AI request has an idle timeout (<code>callTimeoutMs</code>, default 150s): if the model sends nothing for that long, the request is aborted and retried instead of freezing the run for hours. The timer resets on every streamed chunk, so slow-but-progressing responses are never killed.</td></tr>
+    <tr><td><strong>No more hangs (v1.12.0)</strong></td><td>Each AI request has an idle timeout (<code>callTimeoutMs</code>, default 150s): if the model sends nothing for that long, the request is aborted and retried instead of freezing the run for hours. The timer resets on every streamed chunk, so slow-but-progressing responses are never killed.</td></tr>
     <tr><td><strong>Universal guard</strong></td><td>Every AI call auto-fits the model's real input limit before sending (the user prompt is kept, context is trimmed to fit). If a limit error still slips through, it shrinks the budget and retries — self-healing.</td></tr>
     <tr><td><strong>Model-aware budget</strong></td><td>Uses the live API limit, falling back to a per-model table (Claude Opus 4.8 / GPT-5.5 = 200k). Pick Opus 4.8 to use the most context.</td></tr>
     <tr><td><strong>KB generate/update</strong></td><td>Project scan + loaded KB are capped to the model budget (<code>kb.systemScanTokens</code>, default 70k, auto-limited). Full scan still lives in <code>_project-scan.md</code> + per-module docs.</td></tr>
@@ -301,7 +314,7 @@
 
   <h3>Option A — From VSIX (recommended)</h3>
   <ol class="step-list">
-    <li>Download <code>ai-dev-assistant-1.11.4.vsix</code></li>
+    <li>Download <code>ai-dev-assistant-1.12.0.vsix</code></li>
     <li>Open VS Code → Extensions panel (<kbd>Ctrl+Shift+X</kbd>)</li>
     <li>Click <strong>⋯ → Install from VSIX…</strong></li>
     <li>Select the downloaded file</li>
@@ -1282,7 +1295,7 @@ autoSync:
     <li class="green">Run <code>yarn install</code> to install dependencies</li>
     <li class="green">Run <code>yarn compile</code> to build</li>
     <li class="purple">Run <code>yarn package</code> to create <code>.vsix</code></li>
-    <li class="purple">Install: <code>code --install-extension ai-dev-assistant-1.11.4.vsix</code></li>
+    <li class="purple">Install: <code>code --install-extension ai-dev-assistant-1.12.0.vsix</code></li>
   </ol>
 
   <div class="sep"></div>

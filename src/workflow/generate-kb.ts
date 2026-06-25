@@ -25,7 +25,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 
 import { log, kbHeader, banner } from '../logger';
-import { callCopilot } from '../utils/copilot';
+import { callCopilot, resetTokenMeter, formatTokenUsage } from '../utils/copilot';
 import { scanProject, scanModule, discoverModules, ScanOptions, ProjectModule } from '../utils/project-scanner';
 import { AgentOrchestrator, SubAgent } from '../utils/agent-orchestrator';
 import { estimateTokens, truncateToTokens, modelInputBudget } from '../utils/token-budget';
@@ -239,6 +239,7 @@ export async function generateKnowledgeBase(
   scanOptions?: ScanOptions,
 ): Promise<void> {
 
+  resetTokenMeter();
   const cfg = vscode.workspace.getConfiguration('autoSpecKit');
   const kbRelPath = cfg.get<string>('knowledgeBasePath', 'knowledge-base');
   const maxParallel = cfg.get<number>('agents.maxParallel', 3);
@@ -644,9 +645,12 @@ ${profileSummary}
   }
 
   // ── Summary ────────────────────────────────────────────────────
+  const kbTokenUsage = formatTokenUsage();
+  log(`\n📊 Token usage (KB generation): ${kbTokenUsage}`);
   banner([
     '✅  KNOWLEDGE BASE GENERATION COMPLETE!',
     `${completedSteps} files · ${moduleCount} module docs · Multi-Agent Deep Analysis`,
+    kbTokenUsage,
   ]);
   log(`\n🌟 Most important files (generated with multi-agent deep analysis):`);
   log(`   → ${kbRelPath}/04-business-domain.md   — product brief, user roles, core features`);
