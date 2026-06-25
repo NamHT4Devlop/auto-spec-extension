@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Auto Spec Kit v1.11.1 — Documentation</title>
+<title>Auto Spec Kit v1.11.2 — Documentation</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #1e293b; min-height: 100vh; }
@@ -88,7 +88,7 @@
   <h1>Auto Spec Kit</h1>
   <p class="subtitle">Automate the full development workflow: Requirement → Plan → Code → Review → Test → Evidence</p>
   <div style="margin-top:10px">
-    <span class="badge badge-blue">v1.11.1</span>
+    <span class="badge badge-blue">v1.11.2</span>
     <span class="badge badge-green">Multi-Agent</span>
     <span class="badge badge-purple">Adaptive Intelligence</span>
     <span class="badge badge-orange">No API Key</span>
@@ -111,6 +111,18 @@
 
 <!-- ═══════════════════════════════ OVERVIEW ═══════════════════════════════ -->
 <div id="overview" class="panel active">
+
+<div class="card">
+  <h2>♾️ No More Token-Limit Errors — v1.11.2</h2>
+  <p>KB generation and update now auto-fit the selected model's input limit, so big repos no longer fail with "Message exceeds token limit".</p>
+  <table>
+    <tr><th>Area</th><th>Fix</th></tr>
+    <tr><td><strong>Model-aware budget</strong></td><td>Every KB-generation step caps the embedded project source to the model's real input limit (uses the live API limit, falls back to a per-model table — Claude Opus 4.8 / GPT-5.5 = 200k). Pick Opus 4.8 to use the most context.</td></tr>
+    <tr><td><strong>KB scan cap</strong></td><td>The full scan still lives in <code>_project-scan.md</code> and per-module docs; the prompt only carries a safe, capped slice (<code>kb.systemScanTokens</code>, default 70k, auto-limited to the model).</td></tr>
+    <tr><td><strong>Update KB</strong></td><td>Rescan caps the loaded KB to the model budget too — no more overflow on large knowledge bases.</td></tr>
+    <tr><td><strong>Coverage</strong></td><td>Depth comes from the per-module phase (each module analyzed separately), so capping the project-level prompt doesn't lose information.</td></tr>
+  </table>
+</div>
 
 <div class="card">
   <h2>📝 Document Command &amp; Rename — v1.11.0</h2>
@@ -288,7 +300,7 @@
 
   <h3>Option A — From VSIX (recommended)</h3>
   <ol class="step-list">
-    <li>Download <code>ai-dev-assistant-1.11.1.vsix</code></li>
+    <li>Download <code>ai-dev-assistant-1.11.2.vsix</code></li>
     <li>Open VS Code → Extensions panel (<kbd>Ctrl+Shift+X</kbd>)</li>
     <li>Click <strong>⋯ → Install from VSIX…</strong></li>
     <li>Select the downloaded file</li>
@@ -1269,7 +1281,7 @@ autoSync:
     <li class="green">Run <code>yarn install</code> to install dependencies</li>
     <li class="green">Run <code>yarn compile</code> to build</li>
     <li class="purple">Run <code>yarn package</code> to create <code>.vsix</code></li>
-    <li class="purple">Install: <code>code --install-extension ai-dev-assistant-1.11.1.vsix</code></li>
+    <li class="purple">Install: <code>code --install-extension ai-dev-assistant-1.11.2.vsix</code></li>
   </ol>
 
   <div class="sep"></div>

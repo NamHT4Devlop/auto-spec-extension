@@ -1,4 +1,21 @@
-import { estimateTokens, getModelLimit, allocateBudget, truncateToTokens } from '../utils/token-budget';
+import { estimateTokens, getModelLimit, allocateBudget, truncateToTokens, modelInputBudget } from '../utils/token-budget';
+
+describe('getModelLimit / modelInputBudget', () => {
+  it('knows Claude Opus 4.8 (200k)', () => {
+    expect(getModelLimit('claude-opus-4-8')).toBe(200_000);
+  });
+  it('falls back to default for unknown models', () => {
+    expect(getModelLimit('totally-unknown')).toBe(128_000);
+  });
+  it('prefers the live API limit when smaller than the table', () => {
+    const b = modelInputBudget({ id: 'claude-opus-4-8', maxInputTokens: 32_000 }, 8_000);
+    expect(b).toBeLessThan(32_000);
+    expect(b).toBeGreaterThan(8_000);
+  });
+  it('uses the table when no API limit is provided', () => {
+    expect(modelInputBudget({ id: 'claude-opus-4-8' })).toBeGreaterThan(150_000);
+  });
+});
 
 describe('estimateTokens', () => {
   it('should return 0 for empty string', () => {

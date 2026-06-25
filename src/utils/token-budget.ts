@@ -16,27 +16,50 @@ export function estimateTokens(text: string): number {
 
 /** Model token limits (input) — conservative estimates */
 const MODEL_LIMITS: Record<string, number> = {
-  'gpt-5.5':          200_000,
-  'gpt-5.4':          200_000,
-  'gpt-5':            128_000,
-  'claude-opus-4-7':  200_000,
-  'claude-opus-4-6':  200_000,
+  'gpt-5.5':           200_000,
+  'gpt-5.4':           200_000,
+  'gpt-5.3':           200_000,
+  'gpt-5':             128_000,
+  'claude-opus-4-8':   200_000,
+  'claude-opus-4-7':   200_000,
+  'claude-opus-4-6':   200_000,
+  'claude-opus-4-5':   200_000,
   'claude-sonnet-4-6': 200_000,
-  'claude-haiku-4-5': 200_000,
-  'gemini-2.5-pro':   1_000_000,
-  'o3':               200_000,
-  'o4-mini':          128_000,
-  'gpt-4o':           128_000,
-  'default':          128_000,
+  'claude-sonnet-4-5': 200_000,
+  'claude-haiku-4-5':  200_000,
+  'gemini-3.1-pro':    1_000_000,
+  'gemini-3':          1_000_000,
+  'gemini-2.5-pro':    1_000_000,
+  'mai-code':          128_000,
+  'o3':                200_000,
+  'o4-mini':           128_000,
+  'gpt-4o':            128_000,
+  'default':           128_000,
 };
 
 /** Get the token limit for a model ID */
 export function getModelLimit(modelId: string): number {
-  const id = modelId.toLowerCase();
+  const id = (modelId ?? '').toLowerCase();
   for (const [key, limit] of Object.entries(MODEL_LIMITS)) {
-    if (id.includes(key)) { return limit; }
+    if (key !== 'default' && id.includes(key)) { return limit; }
   }
   return MODEL_LIMITS['default'];
+}
+
+/**
+ * Safe INPUT token budget for a model, using the live API limit when available
+ * and our table otherwise (whichever is smaller), minus an output reserve and a
+ * 10% safety margin. Use this to cap large context (scans, KB) before a call so
+ * we never hit "Message exceeds token limit".
+ */
+export function modelInputBudget(
+  model: { id?: string; maxInputTokens?: number },
+  reserveOutput = 16_000,
+): number {
+  const byTable = getModelLimit(model.id ?? '');
+  const byApi = model.maxInputTokens && model.maxInputTokens > 0 ? model.maxInputTokens : byTable;
+  const limit = Math.min(byTable, byApi);
+  return Math.max(8_000, Math.floor(limit * 0.9) - reserveOutput);
 }
 
 export interface BudgetAllocation {

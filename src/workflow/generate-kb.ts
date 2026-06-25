@@ -28,6 +28,7 @@ import { log, kbHeader, banner } from '../logger';
 import { callCopilot } from '../utils/copilot';
 import { scanProject, scanModule, discoverModules, ScanOptions, ProjectModule } from '../utils/project-scanner';
 import { AgentOrchestrator, SubAgent } from '../utils/agent-orchestrator';
+import { estimateTokens, truncateToTokens, modelInputBudget } from '../utils/token-budget';
 import { ProjectProfileDetector } from '../utils/project-profile';
 import { KB_STEPS, KbStep } from '../constants/kb-steps';
 
@@ -430,8 +431,17 @@ ${profileSummary}
 6. Analyze ALL file types: source code, XML config, .properties, SQL migrations, YAML — each carries business context.
 7. For XML-based configurations (Spring, MyBatis, Camel): these are AS IMPORTANT as code — document what they configure and why.${techHintBlock}`;
 
-  // Full = base + whole-project source. Used by the project-level batch steps.
-  const KB_SYSTEM = `${KB_SYSTEM_BASE}\n\n=== PROJECT FILES ===\n${projectScan}`;
+  // Full = base + project source, but CAPPED to the model's token budget so we never
+  // exceed the input limit (the full scan also lives in _project-scan.md and per-module docs).
+  const inputBudget = modelInputBudget(model as any);
+  const cfgSystemScan = cfg.get<number>('kb.systemScanTokens', 70_000);
+  // Reserve headroom for the per-step prompt + merge (agent outputs) + base context.
+  const systemScanBudget = Math.max(8_000, Math.min(cfgSystemScan, inputBudget - 50_000));
+  const scanForSystem = estimateTokens(projectScan) > systemScanBudget
+    ? truncateToTokens(projectScan, systemScanBudget, 'project scan (see _project-scan.md & modules/ for full coverage)')
+    : projectScan;
+  log(`ℹ  Model input budget ~${inputBudget.toLocaleString()} tokens · system scan capped to ~${estimateTokens(scanForSystem).toLocaleString()} tokens`);
+  const KB_SYSTEM = `${KB_SYSTEM_BASE}\n\n=== PROJECT FILES (most relevant; full scan in _project-scan.md & modules/) ===\n${scanForSystem}`;
 
   const total = KB_STEPS.length + 1; // +1 for review-skills
   let completedSteps = 0;

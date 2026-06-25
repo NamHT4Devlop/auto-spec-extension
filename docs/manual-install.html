@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Auto Spec Kit v1.11.1 — Manual Install Guide</title>
+<title>Auto Spec Kit v1.11.2 — Manual Install Guide</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #1e293b; min-height: 100vh; line-height: 1.6; }
@@ -78,7 +78,7 @@
   <h1>Manual Install Guide</h1>
   <p class="subtitle">Create the project from scratch on any machine — no git clone needed</p>
   <div style="margin-top:10px">
-    <span class="badge badge-blue">v1.11.1</span>
+    <span class="badge badge-blue">v1.11.2</span>
     <span class="badge badge-green">61 files</span>
     <span class="badge badge-orange">Copy & Paste</span>
   </div>
@@ -122,7 +122,7 @@ mkdir -p docs</code></pre>
   <div class="file-header" onclick="toggleFile('package-json')">
     <span class="file-name">package.json</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">10,160 bytes</span>
+      <span class="file-size">10,498 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('package-json',this)">Copy</button>
     </div>
   </div>
@@ -131,7 +131,7 @@ mkdir -p docs</code></pre>
   &quot;name&quot;: &quot;ai-dev-assistant&quot;,
   &quot;displayName&quot;: &quot;AI Dev Assistant&quot;,
   &quot;description&quot;: &quot;Automate the full development workflow: Requirement → Plan → Code → Review → Test → Evidence, powered by GitHub Copilot&quot;,
-  &quot;version&quot;: &quot;1.11.1&quot;,
+  &quot;version&quot;: &quot;1.11.2&quot;,
   &quot;publisher&quot;: &quot;internal-tools&quot;,
   &quot;author&quot;: {
     &quot;name&quot;: &quot;Internal Tools&quot;
@@ -206,6 +206,7 @@ mkdir -p docs</code></pre>
         &quot;autoSpecKit.kb.perModule&quot;: { &quot;type&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;description&quot;: &quot;Generate a deep per-module Knowledge Base doc (knowledge-base/modules/&lt;module&gt;.md) for each business module, plus an index. Recommended for large projects with many flows/rules.&quot; },
         &quot;autoSpecKit.kb.maxModules&quot;: { &quot;type&quot;: &quot;number&quot;, &quot;default&quot;: 24, &quot;description&quot;: &quot;Maximum number of modules to deep-analyze in the per-module KB phase (largest modules first).&quot; },
         &quot;autoSpecKit.kb.moduleMaxKB&quot;: { &quot;type&quot;: &quot;number&quot;, &quot;default&quot;: 220, &quot;description&quot;: &quot;Max KB of source fed into each module&#x27;s deep analysis.&quot; },
+        &quot;autoSpecKit.kb.systemScanTokens&quot;: { &quot;type&quot;: &quot;number&quot;, &quot;default&quot;: 70000, &quot;description&quot;: &quot;Max tokens of project source embedded in the KB-generation system prompt. Auto-capped to the selected model&#x27;s input limit (so it never exceeds — e.g. Opus 4.8 allows more). Raise for deeper project-level steps on large-context models.&quot; },
         &quot;autoSpecKit.autoSync&quot;: { &quot;type&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;description&quot;: &quot;Auto-fetch and pull latest code before every command (read-only — never pushes or commits)&quot; },
         &quot;autoSpecKit.autoSyncKBUpdate&quot;: { &quot;type&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;description&quot;: &quot;Auto-update Knowledge Base when pulled code contains source changes&quot; }
       }
@@ -7627,7 +7628,7 @@ Return ONLY the JSON, no other text:
   <div class="file-header" onclick="toggleFile('src-utils-token-budget-ts')">
     <span class="file-name">src/utils/token-budget.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">3,815 bytes</span>
+      <span class="file-size">4,773 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-utils-token-budget-ts',this)">Copy</button>
     </div>
   </div>
@@ -7650,27 +7651,50 @@ export function estimateTokens(text: string): number {
 
 /** Model token limits (input) — conservative estimates */
 const MODEL_LIMITS: Record&lt;string, number&gt; = {
-  &#x27;gpt-5.5&#x27;:          200_000,
-  &#x27;gpt-5.4&#x27;:          200_000,
-  &#x27;gpt-5&#x27;:            128_000,
-  &#x27;claude-opus-4-7&#x27;:  200_000,
-  &#x27;claude-opus-4-6&#x27;:  200_000,
+  &#x27;gpt-5.5&#x27;:           200_000,
+  &#x27;gpt-5.4&#x27;:           200_000,
+  &#x27;gpt-5.3&#x27;:           200_000,
+  &#x27;gpt-5&#x27;:             128_000,
+  &#x27;claude-opus-4-8&#x27;:   200_000,
+  &#x27;claude-opus-4-7&#x27;:   200_000,
+  &#x27;claude-opus-4-6&#x27;:   200_000,
+  &#x27;claude-opus-4-5&#x27;:   200_000,
   &#x27;claude-sonnet-4-6&#x27;: 200_000,
-  &#x27;claude-haiku-4-5&#x27;: 200_000,
-  &#x27;gemini-2.5-pro&#x27;:   1_000_000,
-  &#x27;o3&#x27;:               200_000,
-  &#x27;o4-mini&#x27;:          128_000,
-  &#x27;gpt-4o&#x27;:           128_000,
-  &#x27;default&#x27;:          128_000,
+  &#x27;claude-sonnet-4-5&#x27;: 200_000,
+  &#x27;claude-haiku-4-5&#x27;:  200_000,
+  &#x27;gemini-3.1-pro&#x27;:    1_000_000,
+  &#x27;gemini-3&#x27;:          1_000_000,
+  &#x27;gemini-2.5-pro&#x27;:    1_000_000,
+  &#x27;mai-code&#x27;:          128_000,
+  &#x27;o3&#x27;:                200_000,
+  &#x27;o4-mini&#x27;:           128_000,
+  &#x27;gpt-4o&#x27;:            128_000,
+  &#x27;default&#x27;:           128_000,
 };
 
 /** Get the token limit for a model ID */
 export function getModelLimit(modelId: string): number {
-  const id = modelId.toLowerCase();
+  const id = (modelId ?? &#x27;&#x27;).toLowerCase();
   for (const [key, limit] of Object.entries(MODEL_LIMITS)) {
-    if (id.includes(key)) { return limit; }
+    if (key !== &#x27;default&#x27; &amp;&amp; id.includes(key)) { return limit; }
   }
   return MODEL_LIMITS[&#x27;default&#x27;];
+}
+
+/**
+ * Safe INPUT token budget for a model, using the live API limit when available
+ * and our table otherwise (whichever is smaller), minus an output reserve and a
+ * 10% safety margin. Use this to cap large context (scans, KB) before a call so
+ * we never hit &quot;Message exceeds token limit&quot;.
+ */
+export function modelInputBudget(
+  model: { id?: string; maxInputTokens?: number },
+  reserveOutput = 16_000,
+): number {
+  const byTable = getModelLimit(model.id ?? &#x27;&#x27;);
+  const byApi = model.maxInputTokens &amp;&amp; model.maxInputTokens &gt; 0 ? model.maxInputTokens : byTable;
+  const limit = Math.min(byTable, byApi);
+  return Math.max(8_000, Math.floor(limit * 0.9) - reserveOutput);
 }
 
 export interface BudgetAllocation {
@@ -8258,7 +8282,7 @@ ${answer}
   <div class="file-header" onclick="toggleFile('src-workflow-generate-kb-ts')">
     <span class="file-name">src/workflow/generate-kb.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">34,262 bytes</span>
+      <span class="file-size">35,188 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-workflow-generate-kb-ts',this)">Copy</button>
     </div>
   </div>
@@ -8293,6 +8317,7 @@ import { log, kbHeader, banner } from &#x27;../logger&#x27;;
 import { callCopilot } from &#x27;../utils/copilot&#x27;;
 import { scanProject, scanModule, discoverModules, ScanOptions, ProjectModule } from &#x27;../utils/project-scanner&#x27;;
 import { AgentOrchestrator, SubAgent } from &#x27;../utils/agent-orchestrator&#x27;;
+import { estimateTokens, truncateToTokens, modelInputBudget } from &#x27;../utils/token-budget&#x27;;
 import { ProjectProfileDetector } from &#x27;../utils/project-profile&#x27;;
 import { KB_STEPS, KbStep } from &#x27;../constants/kb-steps&#x27;;
 
@@ -8695,8 +8720,17 @@ ${profileSummary}
 6. Analyze ALL file types: source code, XML config, .properties, SQL migrations, YAML — each carries business context.
 7. For XML-based configurations (Spring, MyBatis, Camel): these are AS IMPORTANT as code — document what they configure and why.${techHintBlock}`;
 
-  // Full = base + whole-project source. Used by the project-level batch steps.
-  const KB_SYSTEM = `${KB_SYSTEM_BASE}\n\n=== PROJECT FILES ===\n${projectScan}`;
+  // Full = base + project source, but CAPPED to the model&#x27;s token budget so we never
+  // exceed the input limit (the full scan also lives in _project-scan.md and per-module docs).
+  const inputBudget = modelInputBudget(model as any);
+  const cfgSystemScan = cfg.get&lt;number&gt;(&#x27;kb.systemScanTokens&#x27;, 70_000);
+  // Reserve headroom for the per-step prompt + merge (agent outputs) + base context.
+  const systemScanBudget = Math.max(8_000, Math.min(cfgSystemScan, inputBudget - 50_000));
+  const scanForSystem = estimateTokens(projectScan) &gt; systemScanBudget
+    ? truncateToTokens(projectScan, systemScanBudget, &#x27;project scan (see _project-scan.md &amp; modules/ for full coverage)&#x27;)
+    : projectScan;
+  log(`ℹ  Model input budget ~${inputBudget.toLocaleString()} tokens · system scan capped to ~${estimateTokens(scanForSystem).toLocaleString()} tokens`);
+  const KB_SYSTEM = `${KB_SYSTEM_BASE}\n\n=== PROJECT FILES (most relevant; full scan in _project-scan.md &amp; modules/) ===\n${scanForSystem}`;
 
   const total = KB_STEPS.length + 1; // +1 for review-skills
   let completedSteps = 0;
@@ -9759,7 +9793,7 @@ ${enrichmentSections.join(&#x27;\n\n&#x27;)}
   <div class="file-header" onclick="toggleFile('src-workflow-update-kb-ts')">
     <span class="file-name">src/workflow/update-kb.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">5,376 bytes</span>
+      <span class="file-size">5,925 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-workflow-update-kb-ts',this)">Copy</button>
     </div>
   </div>
@@ -9773,6 +9807,7 @@ import { promisify } from &#x27;util&#x27;;
 import { log, kbHeader, getChannel } from &#x27;../logger&#x27;;
 import { callCopilot } from &#x27;../utils/copilot&#x27;;
 import { loadKnowledgeBase } from &#x27;../utils/file-utils&#x27;;
+import { estimateTokens, truncateToTokens, modelInputBudget } from &#x27;../utils/token-budget&#x27;;
 
 const execAsync = promisify(exec);
 
@@ -9822,8 +9857,13 @@ export async function updateKBStandalone(
     log(&#x27;ℹ  Git diff not available — proceeding with user description only&#x27;);
   }
 
-  // 5. Load KB
-  const kb = loadKnowledgeBase(workspaceRoot, kbRelPath);
+  // 5. Load KB (capped to the model&#x27;s token budget to avoid input-limit errors)
+  const kbFull = loadKnowledgeBase(workspaceRoot, kbRelPath);
+  const kbBudget = Math.max(8_000, modelInputBudget(model as any) - 20_000); // reserve for prompt + diff + output
+  const kb = estimateTokens(kbFull) &gt; kbBudget
+    ? truncateToTokens(kbFull, kbBudget, &#x27;knowledge-base&#x27;)
+    : kbFull;
+  log(`ℹ  KB context ~${estimateTokens(kb).toLocaleString()} tokens (budget ~${kbBudget.toLocaleString()})`);
 
   // 6. Build SYSTEM with KB context
   const SYSTEM = `\
@@ -13003,7 +13043,7 @@ yarn compile
 yarn package
 
 # Install in VS Code
-code --install-extension ai-dev-assistant-1.11.1.vsix</code></pre>
+code --install-extension ai-dev-assistant-1.11.2.vsix</code></pre>
   <p>Or press <strong>F5</strong> in VS Code to launch the Extension Development Host for testing.</p>
 </div>
 

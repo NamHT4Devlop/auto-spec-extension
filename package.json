@@ -2,7 +2,7 @@
   "name": "ai-dev-assistant",
   "displayName": "AI Dev Assistant",
   "description": "Automate the full development workflow: Requirement → Plan → Code → Review → Test → Evidence, powered by GitHub Copilot",
-  "version": "1.11.1",
+  "version": "1.11.2",
   "publisher": "internal-tools",
   "author": {
     "name": "Internal Tools"
@@ -77,6 +77,7 @@
         "autoSpecKit.kb.perModule": { "type": "boolean", "default": true, "description": "Generate a deep per-module Knowledge Base doc (knowledge-base/modules/<module>.md) for each business module, plus an index. Recommended for large projects with many flows/rules." },
         "autoSpecKit.kb.maxModules": { "type": "number", "default": 24, "description": "Maximum number of modules to deep-analyze in the per-module KB phase (largest modules first)." },
         "autoSpecKit.kb.moduleMaxKB": { "type": "number", "default": 220, "description": "Max KB of source fed into each module's deep analysis." },
+        "autoSpecKit.kb.systemScanTokens": { "type": "number", "default": 70000, "description": "Max tokens of project source embedded in the KB-generation system prompt. Auto-capped to the selected model's input limit (so it never exceeds — e.g. Opus 4.8 allows more). Raise for deeper project-level steps on large-context models." },
         "autoSpecKit.autoSync": { "type": "boolean", "default": true, "description": "Auto-fetch and pull latest code before every command (read-only — never pushes or commits)" },
         "autoSpecKit.autoSyncKBUpdate": { "type": "boolean", "default": true, "description": "Auto-update Knowledge Base when pulled code contains source changes" }
       }

@@ -7,6 +7,7 @@ import { promisify } from 'util';
 import { log, kbHeader, getChannel } from '../logger';
 import { callCopilot } from '../utils/copilot';
 import { loadKnowledgeBase } from '../utils/file-utils';
+import { estimateTokens, truncateToTokens, modelInputBudget } from '../utils/token-budget';
 
 const execAsync = promisify(exec);
 
@@ -56,8 +57,13 @@ export async function updateKBStandalone(
     log('ℹ  Git diff not available — proceeding with user description only');
   }
 
-  // 5. Load KB
-  const kb = loadKnowledgeBase(workspaceRoot, kbRelPath);
+  // 5. Load KB (capped to the model's token budget to avoid input-limit errors)
+  const kbFull = loadKnowledgeBase(workspaceRoot, kbRelPath);
+  const kbBudget = Math.max(8_000, modelInputBudget(model as any) - 20_000); // reserve for prompt + diff + output
+  const kb = estimateTokens(kbFull) > kbBudget
+    ? truncateToTokens(kbFull, kbBudget, 'knowledge-base')
+    : kbFull;
+  log(`ℹ  KB context ~${estimateTokens(kb).toLocaleString()} tokens (budget ~${kbBudget.toLocaleString()})`);
 
   // 6. Build SYSTEM with KB context
   const SYSTEM = `\
