@@ -75,6 +75,14 @@ export async function callCopilot(
   const overhead = 60; // wrapper/labels below
   let effBudget = modelInputBudget(model as any);
 
+  // Idle timeout: abort a stalled request if no stream activity for this long.
+  // Resets on every chunk, so slow-but-progressing responses are NOT killed —
+  // only true hangs (which previously froze the whole run for hours).
+  const idleMs = Math.max(
+    20_000,
+    vscode.workspace.getConfiguration('autoSpecKit').get<number>('callTimeoutMs', 150_000),
+  );
+
   /** Fit system + user into the current budget; returns the combined message text. */
   const buildMessage = (): { text: string; tokens: number } => {
     let sysCtx = systemContext;
@@ -104,16 +112,29 @@ export async function callCopilot(
 
     const messages = [vscode.LanguageModelChatMessage.User(built.text)];
 
+    // Per-attempt idle-timeout watchdog (cancels a stalled request).
+    const cts = new vscode.CancellationTokenSource();
+    const outerSub = token.onCancellationRequested(() => cts.cancel());
+    let timedOut = false;
+    let idleTimer: ReturnType<typeof setTimeout> | undefined;
+    const armIdle = () => {
+      if (idleTimer) { clearTimeout(idleTimer); }
+      idleTimer = setTimeout(() => { timedOut = true; cts.cancel(); }, idleMs);
+    };
+
     try {
-      const response = await model.sendRequest(messages, {}, token);
+      armIdle();
+      const response = await model.sendRequest(messages, {}, cts.token);
 
       let result = '';
       for await (const chunk of response.stream) {
+        armIdle(); // activity → reset the idle watchdog
         if (chunk instanceof vscode.LanguageModelTextPart) {
           result += chunk.value;
           logRaw(chunk.value);
         }
       }
+      if (idleTimer) { clearTimeout(idleTimer); }
 
       // Ensure newline after streaming
       const { getChannel } = await import('../logger');
@@ -125,14 +146,18 @@ export async function callCopilot(
 
       return result;
     } catch (err: any) {
-      lastError = err;
+      if (idleTimer) { clearTimeout(idleTimer); }
 
-      if (token.isCancellationRequested) {
+      // Real user cancellation (not our watchdog) → propagate.
+      if (token.isCancellationRequested && !timedOut) {
         throw err;
       }
 
-      // Self-heal: if a token-limit error still slips past the estimate, shrink the
-      // budget aggressively and rebuild the message, then retry.
+      lastError = timedOut
+        ? new Error(`No response for ${Math.round(idleMs / 1000)}s — request stalled`)
+        : err;
+
+      // Self-heal: token-limit slipped past the estimate → shrink and retry.
       if (attempt < retryConfig.maxAttempts && isTokenLimitError(err)) {
         effBudget = Math.max(2_000, Math.floor(effBudget * 0.5));
         built = buildMessage();
@@ -140,12 +165,12 @@ export async function callCopilot(
         continue;
       }
 
-      if (attempt < retryConfig.maxAttempts && isRetryable(err)) {
-        const delay = Math.min(
-          retryConfig.baseDelayMs * Math.pow(2, attempt - 1),
-          retryConfig.maxDelayMs,
-        );
-        log(`⚠  Attempt ${attempt}/${retryConfig.maxAttempts} failed: ${err.message}`);
+      // Stalled request or transient error → retry.
+      if (attempt < retryConfig.maxAttempts && (timedOut || isRetryable(err))) {
+        const delay = timedOut
+          ? 1500
+          : Math.min(retryConfig.baseDelayMs * Math.pow(2, attempt - 1), retryConfig.maxDelayMs);
+        log(`⚠  Attempt ${attempt}/${retryConfig.maxAttempts} failed: ${lastError.message}`);
         log(`   Retrying in ${(delay / 1000).toFixed(1)}s...`);
         await sleep(delay);
         continue;
@@ -153,6 +178,9 @@ export async function callCopilot(
 
       // Non-retryable or max attempts reached
       break;
+    } finally {
+      outerSub.dispose();
+      cts.dispose();
     }
   }
 

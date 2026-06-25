@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Auto Spec Kit v1.11.3 — Manual Install Guide</title>
+<title>Auto Spec Kit v1.11.4 — Manual Install Guide</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #1e293b; min-height: 100vh; line-height: 1.6; }
@@ -78,7 +78,7 @@
   <h1>Manual Install Guide</h1>
   <p class="subtitle">Create the project from scratch on any machine — no git clone needed</p>
   <div style="margin-top:10px">
-    <span class="badge badge-blue">v1.11.3</span>
+    <span class="badge badge-blue">v1.11.4</span>
     <span class="badge badge-green">61 files</span>
     <span class="badge badge-orange">Copy & Paste</span>
   </div>
@@ -122,7 +122,7 @@ mkdir -p docs</code></pre>
   <div class="file-header" onclick="toggleFile('package-json')">
     <span class="file-name">package.json</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">10,498 bytes</span>
+      <span class="file-size">10,803 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('package-json',this)">Copy</button>
     </div>
   </div>
@@ -131,7 +131,7 @@ mkdir -p docs</code></pre>
   &quot;name&quot;: &quot;ai-dev-assistant&quot;,
   &quot;displayName&quot;: &quot;AI Dev Assistant&quot;,
   &quot;description&quot;: &quot;Automate the full development workflow: Requirement → Plan → Code → Review → Test → Evidence, powered by GitHub Copilot&quot;,
-  &quot;version&quot;: &quot;1.11.3&quot;,
+  &quot;version&quot;: &quot;1.11.4&quot;,
   &quot;publisher&quot;: &quot;internal-tools&quot;,
   &quot;author&quot;: {
     &quot;name&quot;: &quot;Internal Tools&quot;
@@ -195,6 +195,7 @@ mkdir -p docs</code></pre>
         &quot;autoSpecKit.askModelOnStart&quot;: { &quot;type&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;description&quot;: &quot;Show model Quick Pick before every command run so you can choose the model each time. Set to false to skip and use autoSpecKit.model (or auto-select the best available).&quot; },
         &quot;autoSpecKit.agents.maxParallel&quot;: { &quot;type&quot;: &quot;number&quot;, &quot;default&quot;: 3, &quot;minimum&quot;: 1, &quot;maximum&quot;: 6, &quot;description&quot;: &quot;Max sub-agents to run in parallel per step. Lower = fewer API calls, higher = faster but may hit rate limits.&quot; },
         &quot;autoSpecKit.agents.timeout&quot;: { &quot;type&quot;: &quot;number&quot;, &quot;default&quot;: 90000, &quot;description&quot;: &quot;Timeout per sub-agent in milliseconds (default: 90s)&quot; },
+        &quot;autoSpecKit.callTimeoutMs&quot;: { &quot;type&quot;: &quot;number&quot;, &quot;default&quot;: 150000, &quot;description&quot;: &quot;Idle timeout (ms) for any single AI request: if the model sends no output for this long, the request is aborted and retried (prevents runs hanging for hours on a stalled call). Resets on every streamed chunk.&quot; },
         &quot;autoSpecKit.agents.mergeStrategy&quot;: { &quot;type&quot;: &quot;string&quot;, &quot;default&quot;: &quot;auto&quot;, &quot;enum&quot;: [&quot;auto&quot;, &quot;ai&quot;, &quot;concat&quot;, &quot;structured&quot;], &quot;description&quot;: &quot;How to merge sub-agent outputs. &#x27;auto&#x27; (recommended) = review steps use deterministic merge (no extra model call), generative steps use AI merge. &#x27;ai&#x27; = always LLM merge (most tokens), &#x27;concat&#x27; = simple join (cheapest), &#x27;structured&#x27; = section-based join.&quot; },
         &quot;autoSpecKit.agents.contextStrategy&quot;: { &quot;type&quot;: &quot;string&quot;, &quot;default&quot;: &quot;smart&quot;, &quot;enum&quot;: [&quot;smart&quot;, &quot;full&quot;, &quot;minimal&quot;], &quot;description&quot;: &quot;Build context size. &#x27;smart&#x27; (recommended) = discover relevant files + cap the knowledge base in the system prompt, &#x27;full&#x27; = inject the entire KB (most tokens), &#x27;minimal&#x27; = requirement only, no file discovery (fewest tokens).&quot; },
         &quot;autoSpecKit.agents.systemKbTokens&quot;: { &quot;type&quot;: &quot;number&quot;, &quot;default&quot;: 10000, &quot;description&quot;: &quot;Token budget for the knowledge base embedded in the build system prompt when contextStrategy = &#x27;smart&#x27;. Lower = cheaper builds.&quot; },
@@ -2097,7 +2098,7 @@ export async function askComment(label: string): Promise&lt;string | undefined&g
   <div class="file-header" onclick="toggleFile('src-utils-copilot-ts')">
     <span class="file-name">src/utils/copilot.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">5,672 bytes</span>
+      <span class="file-size">6,933 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-utils-copilot-ts',this)">Copy</button>
     </div>
   </div>
@@ -2179,6 +2180,14 @@ export async function callCopilot(
   const overhead = 60; // wrapper/labels below
   let effBudget = modelInputBudget(model as any);
 
+  // Idle timeout: abort a stalled request if no stream activity for this long.
+  // Resets on every chunk, so slow-but-progressing responses are NOT killed —
+  // only true hangs (which previously froze the whole run for hours).
+  const idleMs = Math.max(
+    20_000,
+    vscode.workspace.getConfiguration(&#x27;autoSpecKit&#x27;).get&lt;number&gt;(&#x27;callTimeoutMs&#x27;, 150_000),
+  );
+
   /** Fit system + user into the current budget; returns the combined message text. */
   const buildMessage = (): { text: string; tokens: number } =&gt; {
     let sysCtx = systemContext;
@@ -2208,16 +2217,29 @@ export async function callCopilot(
 
     const messages = [vscode.LanguageModelChatMessage.User(built.text)];
 
+    // Per-attempt idle-timeout watchdog (cancels a stalled request).
+    const cts = new vscode.CancellationTokenSource();
+    const outerSub = token.onCancellationRequested(() =&gt; cts.cancel());
+    let timedOut = false;
+    let idleTimer: ReturnType&lt;typeof setTimeout&gt; | undefined;
+    const armIdle = () =&gt; {
+      if (idleTimer) { clearTimeout(idleTimer); }
+      idleTimer = setTimeout(() =&gt; { timedOut = true; cts.cancel(); }, idleMs);
+    };
+
     try {
-      const response = await model.sendRequest(messages, {}, token);
+      armIdle();
+      const response = await model.sendRequest(messages, {}, cts.token);
 
       let result = &#x27;&#x27;;
       for await (const chunk of response.stream) {
+        armIdle(); // activity → reset the idle watchdog
         if (chunk instanceof vscode.LanguageModelTextPart) {
           result += chunk.value;
           logRaw(chunk.value);
         }
       }
+      if (idleTimer) { clearTimeout(idleTimer); }
 
       // Ensure newline after streaming
       const { getChannel } = await import(&#x27;../logger&#x27;);
@@ -2229,14 +2251,18 @@ export async function callCopilot(
 
       return result;
     } catch (err: any) {
-      lastError = err;
+      if (idleTimer) { clearTimeout(idleTimer); }
 
-      if (token.isCancellationRequested) {
+      // Real user cancellation (not our watchdog) → propagate.
+      if (token.isCancellationRequested &amp;&amp; !timedOut) {
         throw err;
       }
 
-      // Self-heal: if a token-limit error still slips past the estimate, shrink the
-      // budget aggressively and rebuild the message, then retry.
+      lastError = timedOut
+        ? new Error(`No response for ${Math.round(idleMs / 1000)}s — request stalled`)
+        : err;
+
+      // Self-heal: token-limit slipped past the estimate → shrink and retry.
       if (attempt &lt; retryConfig.maxAttempts &amp;&amp; isTokenLimitError(err)) {
         effBudget = Math.max(2_000, Math.floor(effBudget * 0.5));
         built = buildMessage();
@@ -2244,12 +2270,12 @@ export async function callCopilot(
         continue;
       }
 
-      if (attempt &lt; retryConfig.maxAttempts &amp;&amp; isRetryable(err)) {
-        const delay = Math.min(
-          retryConfig.baseDelayMs * Math.pow(2, attempt - 1),
-          retryConfig.maxDelayMs,
-        );
-        log(`⚠  Attempt ${attempt}/${retryConfig.maxAttempts} failed: ${err.message}`);
+      // Stalled request or transient error → retry.
+      if (attempt &lt; retryConfig.maxAttempts &amp;&amp; (timedOut || isRetryable(err))) {
+        const delay = timedOut
+          ? 1500
+          : Math.min(retryConfig.baseDelayMs * Math.pow(2, attempt - 1), retryConfig.maxDelayMs);
+        log(`⚠  Attempt ${attempt}/${retryConfig.maxAttempts} failed: ${lastError.message}`);
         log(`   Retrying in ${(delay / 1000).toFixed(1)}s...`);
         await sleep(delay);
         continue;
@@ -2257,6 +2283,9 @@ export async function callCopilot(
 
       // Non-retryable or max attempts reached
       break;
+    } finally {
+      outerSub.dispose();
+      cts.dispose();
     }
   }
 
@@ -13085,7 +13114,7 @@ yarn compile
 yarn package
 
 # Install in VS Code
-code --install-extension ai-dev-assistant-1.11.3.vsix</code></pre>
+code --install-extension ai-dev-assistant-1.11.4.vsix</code></pre>
   <p>Or press <strong>F5</strong> in VS Code to launch the Extension Development Host for testing.</p>
 </div>
 

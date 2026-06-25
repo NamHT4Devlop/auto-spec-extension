@@ -2,7 +2,7 @@
   "name": "ai-dev-assistant",
   "displayName": "AI Dev Assistant",
   "description": "Automate the full development workflow: Requirement → Plan → Code → Review → Test → Evidence, powered by GitHub Copilot",
-  "version": "1.11.3",
+  "version": "1.11.4",
   "publisher": "internal-tools",
   "author": {
     "name": "Internal Tools"
@@ -66,6 +66,7 @@
         "autoSpecKit.askModelOnStart": { "type": "boolean", "default": true, "description": "Show model Quick Pick before every command run so you can choose the model each time. Set to false to skip and use autoSpecKit.model (or auto-select the best available)." },
         "autoSpecKit.agents.maxParallel": { "type": "number", "default": 3, "minimum": 1, "maximum": 6, "description": "Max sub-agents to run in parallel per step. Lower = fewer API calls, higher = faster but may hit rate limits." },
         "autoSpecKit.agents.timeout": { "type": "number", "default": 90000, "description": "Timeout per sub-agent in milliseconds (default: 90s)" },
+        "autoSpecKit.callTimeoutMs": { "type": "number", "default": 150000, "description": "Idle timeout (ms) for any single AI request: if the model sends no output for this long, the request is aborted and retried (prevents runs hanging for hours on a stalled call). Resets on every streamed chunk." },
         "autoSpecKit.agents.mergeStrategy": { "type": "string", "default": "auto", "enum": ["auto", "ai", "concat", "structured"], "description": "How to merge sub-agent outputs. 'auto' (recommended) = review steps use deterministic merge (no extra model call), generative steps use AI merge. 'ai' = always LLM merge (most tokens), 'concat' = simple join (cheapest), 'structured' = section-based join." },
         "autoSpecKit.agents.contextStrategy": { "type": "string", "default": "smart", "enum": ["smart", "full", "minimal"], "description": "Build context size. 'smart' (recommended) = discover relevant files + cap the knowledge base in the system prompt, 'full' = inject the entire KB (most tokens), 'minimal' = requirement only, no file discovery (fewest tokens)." },
         "autoSpecKit.agents.systemKbTokens": { "type": "number", "default": 10000, "description": "Token budget for the knowledge base embedded in the build system prompt when contextStrategy = 'smart'. Lower = cheaper builds." },
