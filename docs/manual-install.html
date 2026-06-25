@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Auto Spec Kit v1.11.2 — Manual Install Guide</title>
+<title>Auto Spec Kit v1.11.3 — Manual Install Guide</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #1e293b; min-height: 100vh; line-height: 1.6; }
@@ -78,7 +78,7 @@
   <h1>Manual Install Guide</h1>
   <p class="subtitle">Create the project from scratch on any machine — no git clone needed</p>
   <div style="margin-top:10px">
-    <span class="badge badge-blue">v1.11.2</span>
+    <span class="badge badge-blue">v1.11.3</span>
     <span class="badge badge-green">61 files</span>
     <span class="badge badge-orange">Copy & Paste</span>
   </div>
@@ -131,7 +131,7 @@ mkdir -p docs</code></pre>
   &quot;name&quot;: &quot;ai-dev-assistant&quot;,
   &quot;displayName&quot;: &quot;AI Dev Assistant&quot;,
   &quot;description&quot;: &quot;Automate the full development workflow: Requirement → Plan → Code → Review → Test → Evidence, powered by GitHub Copilot&quot;,
-  &quot;version&quot;: &quot;1.11.2&quot;,
+  &quot;version&quot;: &quot;1.11.3&quot;,
   &quot;publisher&quot;: &quot;internal-tools&quot;,
   &quot;author&quot;: {
     &quot;name&quot;: &quot;Internal Tools&quot;
@@ -2097,7 +2097,7 @@ export async function askComment(label: string): Promise&lt;string | undefined&g
   <div class="file-header" onclick="toggleFile('src-utils-copilot-ts')">
     <span class="file-name">src/utils/copilot.ts</span>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="file-size">3,314 bytes</span>
+      <span class="file-size">5,672 bytes</span>
       <button class="copy-btn" onclick="event.stopPropagation();copyFile('src-utils-copilot-ts',this)">Copy</button>
     </div>
   </div>
@@ -2115,7 +2115,7 @@ export async function askComment(label: string): Promise&lt;string | undefined&g
 
 import * as vscode from &#x27;vscode&#x27;;
 import { log, logRaw } from &#x27;../logger&#x27;;
-import { estimateTokens } from &#x27;./token-budget&#x27;;
+import { estimateTokens, truncateToTokens, modelInputBudget } from &#x27;./token-budget&#x27;;
 
 /** Configuration for retry behavior */
 interface RetryConfig {
@@ -2133,6 +2133,20 @@ const DEFAULT_RETRY: RetryConfig = {
 /** Sleep helper */
 function sleep(ms: number): Promise&lt;void&gt; {
   return new Promise(resolve =&gt; setTimeout(resolve, ms));
+}
+
+/** Check if error is a token/context-limit error (so we can shrink &amp; retry). */
+function isTokenLimitError(err: any): boolean {
+  const msg = (err?.message ?? &#x27;&#x27;).toLowerCase();
+  return (
+    msg.includes(&#x27;token limit&#x27;) ||
+    msg.includes(&#x27;exceeds token&#x27;) ||
+    msg.includes(&#x27;context length&#x27;) ||
+    msg.includes(&#x27;context window&#x27;) ||
+    msg.includes(&#x27;too long&#x27;) ||
+    msg.includes(&#x27;maximum context&#x27;) ||
+    msg.includes(&#x27;input is too large&#x27;)
+  );
 }
 
 /** Check if error is retryable */
@@ -2158,15 +2172,32 @@ export async function callCopilot(
   stepLabel: string,
   retryConfig: RetryConfig = DEFAULT_RETRY,
 ): Promise&lt;string&gt; {
-  const inputTokens = estimateTokens(systemContext + userPrompt);
-  log(`\nℹ  AI › ${stepLabel} (~${inputTokens.toLocaleString()} input tokens)`);
-  log(&#x27;·&#x27;.repeat(64));
+  // ── Universal token-limit guard ──────────────────────────────────────────────
+  // EVERY task goes through callCopilot, so fitting here makes ALL tasks limit-safe:
+  // no call can exceed the model&#x27;s input limit (→ no &quot;Message exceeds token limit&quot;).
+  // `effBudget` shrinks if a limit error still slips past the estimate (self-healing).
+  const overhead = 60; // wrapper/labels below
+  let effBudget = modelInputBudget(model as any);
 
-  const messages = [
-    vscode.LanguageModelChatMessage.User(
-      `SYSTEM CONTEXT (follow strictly):\n${systemContext}\n\n---\n\nUSER REQUEST:\n${userPrompt}`
-    ),
-  ];
+  /** Fit system + user into the current budget; returns the combined message text. */
+  const buildMessage = (): { text: string; tokens: number } =&gt; {
+    let sysCtx = systemContext;
+    let usrPrompt = userPrompt;
+    if (estimateTokens(sysCtx) + estimateTokens(usrPrompt) + overhead &gt; effBudget) {
+      const before = estimateTokens(sysCtx) + estimateTokens(usrPrompt);
+      const usrCap = Math.min(estimateTokens(usrPrompt), Math.floor(effBudget * 0.6));
+      usrPrompt = truncateToTokens(usrPrompt, usrCap, &#x27;prompt&#x27;);
+      const sysCap = Math.max(500, effBudget - estimateTokens(usrPrompt) - overhead);
+      sysCtx = truncateToTokens(sysCtx, sysCap, &#x27;context&#x27;);
+      log(`⚠  ${stepLabel}: context ~${before.toLocaleString()} tok &gt; budget ~${effBudget.toLocaleString()} — auto-trimmed to fit.`);
+    }
+    const text = `SYSTEM CONTEXT (follow strictly):\n${sysCtx}\n\n---\n\nUSER REQUEST:\n${usrPrompt}`;
+    return { text, tokens: estimateTokens(text) };
+  };
+
+  let built = buildMessage();
+  log(`\nℹ  AI › ${stepLabel} (~${built.tokens.toLocaleString()} input tokens)`);
+  log(&#x27;·&#x27;.repeat(64));
 
   let lastError: any;
 
@@ -2174,6 +2205,8 @@ export async function callCopilot(
     if (token.isCancellationRequested) {
       throw new Error(&#x27;Cancelled by user&#x27;);
     }
+
+    const messages = [vscode.LanguageModelChatMessage.User(built.text)];
 
     try {
       const response = await model.sendRequest(messages, {}, token);
@@ -2192,7 +2225,7 @@ export async function callCopilot(
       log(&#x27;·&#x27;.repeat(64));
 
       const outputTokens = estimateTokens(result);
-      log(`ℹ  Tokens: ~${inputTokens.toLocaleString()} in / ~${outputTokens.toLocaleString()} out`);
+      log(`ℹ  Tokens: ~${built.tokens.toLocaleString()} in / ~${outputTokens.toLocaleString()} out`);
 
       return result;
     } catch (err: any) {
@@ -2200,6 +2233,15 @@ export async function callCopilot(
 
       if (token.isCancellationRequested) {
         throw err;
+      }
+
+      // Self-heal: if a token-limit error still slips past the estimate, shrink the
+      // budget aggressively and rebuild the message, then retry.
+      if (attempt &lt; retryConfig.maxAttempts &amp;&amp; isTokenLimitError(err)) {
+        effBudget = Math.max(2_000, Math.floor(effBudget * 0.5));
+        built = buildMessage();
+        log(`⚠  ${stepLabel}: token-limit hit — shrinking context to ~${effBudget.toLocaleString()} tok and retrying...`);
+        continue;
       }
 
       if (attempt &lt; retryConfig.maxAttempts &amp;&amp; isRetryable(err)) {
@@ -13043,7 +13085,7 @@ yarn compile
 yarn package
 
 # Install in VS Code
-code --install-extension ai-dev-assistant-1.11.2.vsix</code></pre>
+code --install-extension ai-dev-assistant-1.11.3.vsix</code></pre>
   <p>Or press <strong>F5</strong> in VS Code to launch the Extension Development Host for testing.</p>
 </div>
 

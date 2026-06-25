@@ -11,7 +11,7 @@
 
 import * as vscode from 'vscode';
 import { log, logRaw } from '../logger';
-import { estimateTokens } from './token-budget';
+import { estimateTokens, truncateToTokens, modelInputBudget } from './token-budget';
 
 /** Configuration for retry behavior */
 interface RetryConfig {
@@ -29,6 +29,20 @@ const DEFAULT_RETRY: RetryConfig = {
 /** Sleep helper */
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/** Check if error is a token/context-limit error (so we can shrink & retry). */
+function isTokenLimitError(err: any): boolean {
+  const msg = (err?.message ?? '').toLowerCase();
+  return (
+    msg.includes('token limit') ||
+    msg.includes('exceeds token') ||
+    msg.includes('context length') ||
+    msg.includes('context window') ||
+    msg.includes('too long') ||
+    msg.includes('maximum context') ||
+    msg.includes('input is too large')
+  );
 }
 
 /** Check if error is retryable */
@@ -54,15 +68,32 @@ export async function callCopilot(
   stepLabel: string,
   retryConfig: RetryConfig = DEFAULT_RETRY,
 ): Promise<string> {
-  const inputTokens = estimateTokens(systemContext + userPrompt);
-  log(`\nℹ  AI › ${stepLabel} (~${inputTokens.toLocaleString()} input tokens)`);
-  log('·'.repeat(64));
+  // ── Universal token-limit guard ──────────────────────────────────────────────
+  // EVERY task goes through callCopilot, so fitting here makes ALL tasks limit-safe:
+  // no call can exceed the model's input limit (→ no "Message exceeds token limit").
+  // `effBudget` shrinks if a limit error still slips past the estimate (self-healing).
+  const overhead = 60; // wrapper/labels below
+  let effBudget = modelInputBudget(model as any);
 
-  const messages = [
-    vscode.LanguageModelChatMessage.User(
-      `SYSTEM CONTEXT (follow strictly):\n${systemContext}\n\n---\n\nUSER REQUEST:\n${userPrompt}`
-    ),
-  ];
+  /** Fit system + user into the current budget; returns the combined message text. */
+  const buildMessage = (): { text: string; tokens: number } => {
+    let sysCtx = systemContext;
+    let usrPrompt = userPrompt;
+    if (estimateTokens(sysCtx) + estimateTokens(usrPrompt) + overhead > effBudget) {
+      const before = estimateTokens(sysCtx) + estimateTokens(usrPrompt);
+      const usrCap = Math.min(estimateTokens(usrPrompt), Math.floor(effBudget * 0.6));
+      usrPrompt = truncateToTokens(usrPrompt, usrCap, 'prompt');
+      const sysCap = Math.max(500, effBudget - estimateTokens(usrPrompt) - overhead);
+      sysCtx = truncateToTokens(sysCtx, sysCap, 'context');
+      log(`⚠  ${stepLabel}: context ~${before.toLocaleString()} tok > budget ~${effBudget.toLocaleString()} — auto-trimmed to fit.`);
+    }
+    const text = `SYSTEM CONTEXT (follow strictly):\n${sysCtx}\n\n---\n\nUSER REQUEST:\n${usrPrompt}`;
+    return { text, tokens: estimateTokens(text) };
+  };
+
+  let built = buildMessage();
+  log(`\nℹ  AI › ${stepLabel} (~${built.tokens.toLocaleString()} input tokens)`);
+  log('·'.repeat(64));
 
   let lastError: any;
 
@@ -70,6 +101,8 @@ export async function callCopilot(
     if (token.isCancellationRequested) {
       throw new Error('Cancelled by user');
     }
+
+    const messages = [vscode.LanguageModelChatMessage.User(built.text)];
 
     try {
       const response = await model.sendRequest(messages, {}, token);
@@ -88,7 +121,7 @@ export async function callCopilot(
       log('·'.repeat(64));
 
       const outputTokens = estimateTokens(result);
-      log(`ℹ  Tokens: ~${inputTokens.toLocaleString()} in / ~${outputTokens.toLocaleString()} out`);
+      log(`ℹ  Tokens: ~${built.tokens.toLocaleString()} in / ~${outputTokens.toLocaleString()} out`);
 
       return result;
     } catch (err: any) {
@@ -96,6 +129,15 @@ export async function callCopilot(
 
       if (token.isCancellationRequested) {
         throw err;
+      }
+
+      // Self-heal: if a token-limit error still slips past the estimate, shrink the
+      // budget aggressively and rebuild the message, then retry.
+      if (attempt < retryConfig.maxAttempts && isTokenLimitError(err)) {
+        effBudget = Math.max(2_000, Math.floor(effBudget * 0.5));
+        built = buildMessage();
+        log(`⚠  ${stepLabel}: token-limit hit — shrinking context to ~${effBudget.toLocaleString()} tok and retrying...`);
+        continue;
       }
 
       if (attempt < retryConfig.maxAttempts && isRetryable(err)) {
