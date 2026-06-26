@@ -29,7 +29,40 @@ describe('modelScore — Copilot model ranking', () => {
     expect(s('claude-fable-5')).toBeLessThan(s('claude-haiku-4-5'));
   });
 
-  it('falls back to a middle score for unknown models', () => {
+  it('falls back to a middle score for genuinely unknown models', () => {
     expect(s('some-future-model-x')).toBe(40);
+  });
+
+  // Regression: real Copilot ids don't literally contain the version-specific
+  // priority keys (e.g. `claude-opus-4`, not `claude-opus-4-8`). These must
+  // still rank as top-tier via family fallback, not sink to ⚠ (40).
+  describe('family fallback for real Copilot ids', () => {
+    it('ranks any Claude Opus as top-tier (⭐ ≥ 90... or at least ≥ 50)', () => {
+      for (const id of ['claude-opus-4', 'claude-opus-41', 'claude-opus-45']) {
+        expect(s(id)).toBeGreaterThanOrEqual(90);
+      }
+    });
+
+    it('ranks any Claude Sonnet as good (≥ 70, never ⚠)', () => {
+      for (const id of ['claude-sonnet-4', 'claude-sonnet-45', 'claude-3.7-sonnet', 'claude-3.5-sonnet']) {
+        expect(s(id)).toBeGreaterThanOrEqual(70);
+      }
+    });
+
+    it('ranks GPT-5 / Codex variants high without exact version keys', () => {
+      expect(s('gpt-5')).toBeGreaterThanOrEqual(90);
+      expect(s('gpt-5-codex')).toBeGreaterThanOrEqual(90);
+      expect(s('gpt-5-mini-2026')).toBeGreaterThanOrEqual(70);
+    });
+
+    it('ranks Gemini Pro above Gemini Flash', () => {
+      expect(s('gemini-4-pro')).toBeGreaterThan(s('gemini-4-flash'));
+    });
+
+    it('never tags a current Claude/GPT-5 model with the ⚠ (< 50) bucket', () => {
+      for (const id of ['claude-opus-4', 'claude-sonnet-4', 'gpt-5', 'gemini-3-pro']) {
+        expect(s(id)).toBeGreaterThanOrEqual(50);
+      }
+    });
   });
 });

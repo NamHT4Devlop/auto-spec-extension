@@ -62,14 +62,52 @@ const MODEL_PRIORITY: Record<string, number> = {
   'gpt-3.5-turbo':          10,
 };
 
+// Family-level fallback scores. Used when the precise version key in
+// MODEL_PRIORITY doesn't literally appear in the model id (which is the common
+// case — Copilot ships ids like `claude-opus-4`, `claude-opus-41`,
+// `claude-3.7-sonnet`, `gpt-5`, never `claude-opus-4-8`). Without this, every
+// Claude/GPT-5 model fell through to the flat `40`, getting a ⚠ tag and sinking
+// to the bottom of the picker even though it's the best model available.
+//
+// Order matters: more specific tokens first (e.g. `codex`, `mini` before base).
+const FAMILY_FALLBACK: { match: (s: string) => boolean; score: number }[] = [
+  // Anthropic Claude
+  { match: s => /claude.*opus|opus.*claude|claude-opus/.test(s),     score: 94 },
+  { match: s => /claude.*sonnet|sonnet.*claude|claude-sonnet/.test(s), score: 85 },
+  { match: s => /claude.*haiku|claude-haiku/.test(s),               score: 58 },
+  { match: s => /claude/.test(s),                                   score: 80 }, // any other Claude — assume capable
+  // OpenAI GPT-5 family
+  { match: s => /gpt-?5.*codex|codex/.test(s),                      score: 92 },
+  { match: s => /gpt-?5.*(mini|nano)/.test(s),                      score: 78 },
+  { match: s => /gpt-?5/.test(s),                                   score: 90 },
+  // Google Gemini
+  { match: s => /gemini.*(pro)/.test(s),                            score: 84 },
+  { match: s => /gemini.*flash/.test(s),                            score: 72 },
+  { match: s => /gemini/.test(s),                                   score: 78 },
+  // OpenAI reasoning
+  { match: s => /\bo3\b|o3-/.test(s),                               score: 45 },
+  { match: s => /\bo1\b|o1-/.test(s),                               score: 38 },
+  // OpenAI GPT-4 (legacy)
+  { match: s => /gpt-?4o/.test(s),                                  score: 40 },
+  { match: s => /gpt-?4/.test(s),                                   score: 30 },
+];
+
 export function modelScore(m: { id?: string; family?: string }): number {
-  // Check exact id match first, then family
   const id  = (m.id     ?? '').toLowerCase();
   const fam = (m.family ?? '').toLowerCase();
+
+  // 1. Try exact/version-specific match first (precise ranking between e.g. 4.7 vs 4.8)
   for (const [key, score] of Object.entries(MODEL_PRIORITY)) {
     if (id.includes(key) || fam.includes(key)) { return score; }
   }
-  return 40; // unknown — middle priority
+
+  // 2. Fall back to family-level scoring so unknown versions still rank correctly
+  const probe = `${id} ${fam}`;
+  for (const { match, score } of FAMILY_FALLBACK) {
+    if (match(probe)) { return score; }
+  }
+
+  return 40; // genuinely unknown — middle priority
 }
 
 /**
