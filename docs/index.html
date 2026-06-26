@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Auto Spec Kit v1.12.0 — Documentation</title>
+<title>Auto Spec Kit v1.14.0 — Documentation</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #1e293b; min-height: 100vh; }
@@ -88,9 +88,9 @@
   <h1>Auto Spec Kit</h1>
   <p class="subtitle">Automate the full development workflow: Requirement → Plan → Code → Review → Test → Evidence</p>
   <div style="margin-top:10px">
-    <span class="badge badge-blue">v1.12.0</span>
+    <span class="badge badge-blue">v1.14.0</span>
     <span class="badge badge-green">Multi-Agent</span>
-    <span class="badge badge-purple">Adaptive Intelligence</span>
+    <span class="badge badge-purple">Graph-Aware Impact</span>
     <span class="badge badge-orange">No API Key</span>
   </div>
 </header>
@@ -111,6 +111,32 @@
 
 <!-- ═══════════════════════════════ OVERVIEW ═══════════════════════════════ -->
 <div id="overview" class="panel active">
+
+<div class="card">
+  <h2>🔗 Graph-Aware Impact Analysis — v1.14.0</h2>
+  <p><code>/build</code> now plans against the <strong>real code dependency graph</strong>, not just guesses from source text — plus a round of security and stability fixes.</p>
+  <table>
+    <tr><th>Area</th><th>What's new</th></tr>
+    <tr><td><strong>Graph-aware impact</strong></td><td>Step 01's Impact Detector receives a <strong>structural impact graph</strong> built from real edges — <code>imports</code>, dependency injection, method calls, inheritance. For every component the change touches it lists the exact <strong>reverse dependencies ("Used by")</strong> — the callers/consumers that will be affected. Catches the blast radius that reading source alone misses. Static (no extra AI call); toggle with <code>autoSpecKit.build.useGraphImpact</code>. Saved to <code>01-plan/impact-graph.md</code>.</td></tr>
+    <tr><td><strong>Security — KB writes</strong></td><td>KB-update steps (<code>/rescan</code>, build Step 13) now route model-supplied file paths through <code>safeResolve()</code> and confine writes to the knowledge-base directory — closes a prompt-injection path-traversal that could append to files outside the workspace.</td></tr>
+    <tr><td><strong>Concurrency</strong></td><td>Fixed <code>settledBatch</code> so it <em>actually</em> limits parallelism. The KB module phase previously fired every module's AI calls at once (rate limits, multi-hour hangs); now at most <code>maxParallel</code> run concurrently.</td></tr>
+    <tr><td><strong>Model picker</strong></td><td>Real Copilot ids (<code>claude-opus-4</code>, <code>gpt-5</code>, …) now rank top-tier via family fallback instead of being tagged ⚠ and sinking below legacy models.</td></tr>
+    <tr><td><strong>Fixes</strong></td><td><code>/document</code> Mermaid diagrams now render in the webview; <code>LearningStore</code> survives a malformed cache file; <code>kb.maxModules</code> default corrected to 100 (zero-skip intent).</td></tr>
+  </table>
+  <p style="margin-top:8px;font-size:13px;color:#94a3b8">How it fits together: <code>/build</code> <strong>reads</strong> KB + source + graph for impact, then <strong>updates</strong> the KB (Step 13). The <code>/map</code> graph is rebuilt live from source on every run, so it's never stale.</p>
+</div>
+
+<div class="card">
+  <h2>🌐 Multi-Language Graph &amp; Zero-Skip KB — v1.13.0</h2>
+  <p>The dependency graph and Knowledge Base now cover <strong>every file in every language</strong> — no construct or module left behind.</p>
+  <table>
+    <tr><th>Area</th><th>What's new</th></tr>
+    <tr><td><strong>Graph — all 9 languages</strong></td><td>Node detection extended: TypeScript <code>interface</code>/<code>enum</code>, Go <code>interface</code>, C# <code>interface</code>/<code>enum</code>/<code>record</code>/<code>struct</code>, PHP <code>interface</code>/<code>trait</code>, Rust <code>enum</code>/<code>trait</code>. Interfaces &amp; traits render as their own node type.</td></tr>
+    <tr><td><strong>Graph — DI edges everywhere</strong></td><td>Field/constructor injection edges now work for Go (struct fields), Rust (<code>Arc&lt;T&gt;</code>), PHP (typed properties) and Ruby (<code>attr_accessor</code>) — on top of Java/Spring &amp; NestJS. Generic inner types (<code>List&lt;T&gt;</code> → <code>T</code>) and pointers/refs (<code>*T</code>, <code>&amp;mut T</code>) are resolved.</td></tr>
+    <tr><td><strong>Cleaner call edges</strong></td><td>30+ stdlib noise words filtered (Java, Python, Go, Ruby, C#) so the graph shows real calls, not <code>println</code>/<code>len</code>/<code>toString</code> noise.</td></tr>
+    <tr><td><strong>Zero-skip KB</strong></td><td>KB generation inventories <strong>every</strong> source file and chunks large modules so none is dropped by a byte cap. A <code>_coverage-report.md</code> shows files analyzed vs total found. Java/Kotlin domain packages (<code>com/example/orders</code>…) become individual module docs.</td></tr>
+  </table>
+</div>
 
 <div class="card">
   <h2>📊 BA Answers, Richer Map, Token Visibility — v1.12.0</h2>
@@ -288,8 +314,10 @@
     <tr><td>📋 Plan Stories</td><td><kbd>Ctrl+Shift+U</kbd></td><td><span class="role role-po">PO/BA</span></td><td>Epic → auto-discover Features → Impact → Stories → Sprint Plan</td></tr>
     <tr><td>🔍 Review File</td><td>Right-click</td><td><span class="role role-dev">DEV</span></td><td>4-agent code review (Security + Architecture + Performance + Business)</td></tr>
     <tr><td>🔭 Map Codebase</td><td>Palette</td><td><span class="role role-sm">SM/Lead</span></td><td>Universal multi-language dependency graph + AI enrichment</td></tr>
-    <tr><td>💬 Ask Codebase</td><td>Palette</td><td><span class="role role-all">ALL</span></td><td>Natural language Q&A grounded in KB</td></tr>
+    <tr><td>💬 Ask Codebase</td><td>Palette</td><td><span class="role role-all">ALL</span></td><td>Natural language Q&A grounded in KB (plain-language + Mermaid diagram)</td></tr>
+    <tr><td>📝 Write Document</td><td>Chat <code>/document</code></td><td><span class="role role-all">ALL</span></td><td>Business ↔ code field-level mapping, exported as HTML</td></tr>
     <tr><td>📚 Rescan Changes</td><td>Palette</td><td><span class="role role-dev">DEV</span></td><td>Update KB with latest code changes</td></tr>
+    <tr><td>🆘 Help / Status</td><td>Chat <code>/help</code></td><td><span class="role role-all">ALL</span></td><td>Context-aware dashboard: KB status, model, profile, config</td></tr>
     <tr><td>🤖 Select Model</td><td>Palette</td><td><span class="role role-all">ALL</span></td><td>Choose preferred Copilot model</td></tr>
   </table>
 </div>
@@ -314,7 +342,7 @@
 
   <h3>Option A — From VSIX (recommended)</h3>
   <ol class="step-list">
-    <li>Download <code>ai-dev-assistant-1.12.0.vsix</code></li>
+    <li>Download <code>ai-dev-assistant-1.14.0.vsix</code></li>
     <li>Open VS Code → Extensions panel (<kbd>Ctrl+Shift+X</kbd>)</li>
     <li>Click <strong>⋯ → Install from VSIX…</strong></li>
     <li>Select the downloaded file</li>
@@ -357,7 +385,8 @@ npx @vscode/vsce package --no-dependencies --allow-missing-repository
   "autoSpecKit.clarify.threshold": 60,
   "autoSpecKit.scan.maxTotalKB": 900,
   "autoSpecKit.kb.perModule": true,
-  "autoSpecKit.kb.maxModules": 24
+  "autoSpecKit.kb.maxModules": 100,
+  "autoSpecKit.build.useGraphImpact": true
 }</code></pre>
 </div>
 </div>
@@ -380,6 +409,7 @@ npx @vscode/vsce package --no-dependencies --allow-missing-repository
     <tr><td><code>@protector_spec /ask</code></td><td>Ask about codebase (uses KB)</td><td><code>@protector_spec /ask How does auth work?</code></td></tr>
     <tr><td><code>@protector_spec /plan</code></td><td>Plan user stories (PO/BA)</td><td><code>@protector_spec /plan User onboarding redesign...</code></td></tr>
     <tr><td><code>@protector_spec /map</code></td><td>Map the codebase — dependency graph</td><td><code>@protector_spec /map</code></td></tr>
+    <tr><td><code>@protector_spec /document</code></td><td>Investigate &amp; document a feature/entity — business ↔ code mapping, exports HTML</td><td><code>@protector_spec /document Order checkout flow</code></td></tr>
     <tr><td><code>@protector_spec /help</code></td><td>Status dashboard + command reference</td><td><code>@protector_spec /help</code></td></tr>
   </table>
 
@@ -607,6 +637,27 @@ Bot:     💬 Searching Knowledge Base...
 </div>
 
 <div class="card">
+  <h2>📥 What <code>/build</code> reads &amp; 📤 what it keeps fresh</h2>
+  <span class="role role-dev">FOR: Developers</span>
+  <p>A common question: how does <code>/build</code> know what a change impacts, and does it keep the Knowledge Base &amp; graph up to date? Here's exactly what happens.</p>
+
+  <h3>📥 Reads (to understand impact — Step 01)</h3>
+  <table>
+    <tr><th>Source</th><th>How it's used</th></tr>
+    <tr><td><strong>Knowledge Base</strong> (<code>knowledge-base/*.md</code> + <code>modules/</code>)</td><td>Smart Context picks the relevant topics (business rules, domain, architecture, modules, API) — not the whole KB — to ground the plan in your project's reality.</td></tr>
+    <tr><td><strong>Source code</strong></td><td>The actual files related to the requirement are read from disk for current implementation, patterns, and reusable components.</td></tr>
+    <tr><td><strong>Structural impact graph</strong> <span class="badge badge-blue" style="font-size:9px">v1.14</span></td><td>Static analysis builds the real dependency graph (imports / DI / calls / inheritance). The Impact Detector uses the <strong>reverse edges</strong> to list every caller/consumer affected — the true blast radius. Saved to <code>01-plan/impact-graph.md</code>.</td></tr>
+  </table>
+
+  <h3>📤 Keeps fresh (after the task)</h3>
+  <ul>
+    <li class="red"><strong>Knowledge Base — updated (Step 13).</strong> Two delta agents (Technical + Business) append what changed to the relevant KB files, so the KB stays current after every task. You confirm with a Yes/No prompt.</li>
+    <li class="purple"><strong>Dependency graph — always live.</strong> <code>/map</code> rebuilds the graph from source on every run, so it's never stale — there's no cached graph to update. Run <code>/map</code> any time to see the latest structure.</li>
+  </ul>
+  <p style="margin-top:8px;font-size:13px;color:#94a3b8">In short: KB is <em>read for context</em> and <em>written back</em> each build; the graph is <em>read for impact</em> and <em>regenerated live</em>. Toggle the graph-impact step with <code>autoSpecKit.build.useGraphImpact</code>.</p>
+</div>
+
+<div class="card">
   <h2>🔍 Code Review Flow</h2>
   <span class="role role-dev">FOR: Developers</span>
   <p>Right-click any file → <strong>Auto Spec Kit: Review Current File</strong></p>
@@ -783,7 +834,7 @@ Bot:     💬 Searching Knowledge Base...
 
   <ol class="step-list">
     <li><strong>Static Scan</strong> — Multi-language parser (TS/JS/Python/Java/Kotlin/Scala/Groovy/Go/Ruby/C#/PHP/Rust). Detects: file imports, class hierarchy, method declarations, API routes, decorators, XML config.</li>
-    <li class="green"><strong>Deep Analysis</strong> — Method-to-method call tracing across files. Class <code>extends</code>/<code>implements</code> relationships. Entity field extraction.</li>
+    <li class="green"><strong>Deep Analysis</strong> — Method-to-method call tracing across files. Class <code>extends</code>/<code>implements</code> relationships. Entity field extraction. <strong>Dependency-injection edges</strong> (<code>injects</code>) — Spring <code>@Autowired</code>, NestJS constructor injection, Go struct fields, Rust <code>Arc&lt;T&gt;</code>, PHP typed properties. <span class="badge badge-blue" style="font-size:9px">v1.13</span></li>
     <li class="purple"><strong>AI Enrichment</strong> (optional — user chooses):
       <br>🔄 Flow Tracer Agent — maps business flows through the graph
       <br>🔗 Entity Mapper Agent — finds belongs_to/has_many relationships
@@ -793,18 +844,18 @@ Bot:     💬 Searching Knowledge Base...
 
   <h3>Supported Languages</h3>
   <table>
-    <tr><th>Language</th><th>Imports</th><th>Classes</th><th>Functions</th><th>Routes</th></tr>
-    <tr><td>TypeScript/JavaScript</td><td>✅ import/require</td><td>✅ class/extends/implements</td><td>✅ function/arrow/async</td><td>✅ Express/NestJS</td></tr>
+    <tr><th>Language</th><th>Imports</th><th>Classes / Types</th><th>Functions</th><th>Routes</th></tr>
+    <tr><td>TypeScript/JavaScript</td><td>✅ import/require</td><td>✅ class/<strong>interface</strong>/<strong>enum</strong>/extends/implements</td><td>✅ function/arrow/async</td><td>✅ Express/NestJS</td></tr>
     <tr><td>Python</td><td>✅ import/from</td><td>✅ class(Base)</td><td>✅ def/async def</td><td>✅ Flask/FastAPI</td></tr>
-    <tr><td>Java/Kotlin</td><td>✅ import</td><td>✅ class/extends/implements</td><td>✅ methods</td><td>✅ Spring @Mapping</td></tr>
-    <tr><td>Go</td><td>✅ import</td><td>✅ struct</td><td>✅ func</td><td>✅ r.GET/POST</td></tr>
-    <tr><td>Kotlin</td><td>✅ import</td><td>✅ class/data class</td><td>✅ fun</td><td>✅ Spring @Mapping</td></tr>
+    <tr><td>Java/Kotlin</td><td>✅ import</td><td>✅ class/interface/enum/extends/implements</td><td>✅ methods</td><td>✅ Spring @Mapping</td></tr>
+    <tr><td>Go</td><td>✅ import</td><td>✅ struct/<strong>interface</strong></td><td>✅ func</td><td>✅ r.GET/POST</td></tr>
+    <tr><td>Kotlin</td><td>✅ import</td><td>✅ class/data class/interface</td><td>✅ fun</td><td>✅ Spring @Mapping</td></tr>
     <tr><td>Scala</td><td>✅ import</td><td>✅ class/trait/object</td><td>✅ def</td><td>—</td></tr>
     <tr><td>Groovy</td><td>✅ import</td><td>✅ class/extends</td><td>✅ def</td><td>✅ Spock spec</td></tr>
     <tr><td>Ruby</td><td>✅ require</td><td>✅ class < Base</td><td>✅ def</td><td>✅ Rails routes</td></tr>
-    <tr><td>C#</td><td>✅ using</td><td>✅ class : Base</td><td>✅ methods</td><td>—</td></tr>
-    <tr><td>PHP</td><td>✅ use/require</td><td>✅ class/extends</td><td>✅ function</td><td>—</td></tr>
-    <tr><td>Rust</td><td>✅ use/mod</td><td>✅ struct</td><td>✅ fn</td><td>—</td></tr>
+    <tr><td>C#</td><td>✅ using</td><td>✅ class/<strong>interface</strong>/<strong>record</strong>/<strong>enum</strong>/struct</td><td>✅ methods</td><td>—</td></tr>
+    <tr><td>PHP</td><td>✅ use/require</td><td>✅ class/<strong>interface</strong>/<strong>trait</strong>/extends</td><td>✅ function</td><td>—</td></tr>
+    <tr><td>Rust</td><td>✅ use/mod</td><td>✅ struct/<strong>enum</strong>/<strong>trait</strong></td><td>✅ fn</td><td>—</td></tr>
   </table>
   <p style="margin-top:8px;font-size:13px;color:#94a3b8"><strong>Also scanned for KB:</strong> <code>.xml</code> (MyBatis mappers, Spring config, Camel), <code>.properties</code>, <code>.json</code>, <code>.proto</code>, <code>.tf/.hcl</code>, <code>.ftl</code>, <code>.jsp</code>, <code>.erb</code> templates</p>
 </div>
@@ -1256,13 +1307,17 @@ autoSync:
   <table>
     <tr><th>Priority</th><th>Model</th><th>Best For</th></tr>
     <tr><td>⭐ 1</td><td>gpt-5.5</td><td>Complex tasks, large codebases</td></tr>
-    <tr><td>⭐ 2</td><td>claude-opus-4-7</td><td>Deep analysis, business logic</td></tr>
-    <tr><td>3</td><td>gpt-5.4</td><td>General purpose</td></tr>
-    <tr><td>4</td><td>claude-opus-4-6</td><td>Balanced quality/speed</td></tr>
-    <tr><td>5</td><td>gemini-3.1-pro</td><td>Large context windows</td></tr>
-    <tr><td>6</td><td>claude-sonnet-4-6</td><td>Fast iterations</td></tr>
-    <tr><td>7</td><td>o4-mini</td><td>Quick tasks, cost-effective</td></tr>
+    <tr><td>⭐ 2</td><td>claude-opus-4-8</td><td>Deep analysis, business logic (flagship Claude)</td></tr>
+    <tr><td>⭐ 3</td><td>gpt-5.3-codex</td><td>Code-specialized generation</td></tr>
+    <tr><td>4</td><td>claude-opus-4-7</td><td>Deep analysis</td></tr>
+    <tr><td>5</td><td>gpt-5.4</td><td>General purpose</td></tr>
+    <tr><td>6</td><td>claude-opus-4-6</td><td>Balanced quality/speed</td></tr>
+    <tr><td>7</td><td>gemini-3.1-pro</td><td>Large context windows</td></tr>
+    <tr><td>8</td><td>gemini-2.5-pro</td><td>1M-token context</td></tr>
+    <tr><td>9</td><td>gpt-5.4-mini</td><td>Lightweight / fast</td></tr>
+    <tr><td>10</td><td>o3</td><td>Reasoning tasks</td></tr>
   </table>
+  <p style="margin-top:8px;font-size:13px;color:#94a3b8">Auto-selection ranks by model family, so any current Opus / GPT-5 / Gemini Pro is picked as top-tier even when its exact version isn't in the table. Override with <code>autoSpecKit.model</code>.</p>
 </div>
 </div>
 
@@ -1295,7 +1350,7 @@ autoSync:
     <li class="green">Run <code>yarn install</code> to install dependencies</li>
     <li class="green">Run <code>yarn compile</code> to build</li>
     <li class="purple">Run <code>yarn package</code> to create <code>.vsix</code></li>
-    <li class="purple">Install: <code>code --install-extension ai-dev-assistant-1.12.0.vsix</code></li>
+    <li class="purple">Install: <code>code --install-extension ai-dev-assistant-1.14.0.vsix</code></li>
   </ol>
 
   <div class="sep"></div>
