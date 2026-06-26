@@ -20,6 +20,16 @@ export interface ScanOptions {
   skipTree?: boolean;
 }
 
+/** A single source file entry from the complete file inventory (no byte cap). */
+export interface FileEntry {
+  absPath: string;
+  relPath: string;
+  /** File size in bytes (actual disk size). */
+  size: number;
+  /** Business priority rank 0–4 (0 = most important). */
+  rank: number;
+}
+
 /** A detected module/domain within the project. */
 export interface ProjectModule {
   /** Display name (directory name) */
@@ -256,14 +266,61 @@ export function scanProject(root: string, options: ScanOptions = {}): string {
 }
 
 /**
+ * For Java/Kotlin Maven projects, walk past single-child package prefixes
+ * (e.g. src/main/java/ → com/ → example/) until we reach the level that
+ * splits into multiple domain packages (users/, orders/, ...).
+ * Returns those paths as source roots so discoverModules finds domain modules,
+ * not one giant "main" module.
+ */
+function resolveJavaPackageRoots(root: string): string[] {
+  const javaRoots = ['src/main/java', 'src/main/kotlin']
+    .map(p => path.join(root, p))
+    .filter(p => { try { return fs.statSync(p).isDirectory(); } catch { return false; } });
+
+  const result: string[] = [];
+  for (const javaRoot of javaRoots) {
+    let current = javaRoot;
+    for (let depth = 0; depth < 5; depth++) {
+      let entries: fs.Dirent[];
+      try { entries = fs.readdirSync(current, { withFileTypes: true }); }
+      catch { break; }
+      const dirs = entries.filter(e => e.isDirectory() && !e.name.startsWith('.'));
+      if (dirs.length >= 2) {
+        result.push(current); // domain package split point found
+        break;
+      } else if (dirs.length === 1) {
+        current = path.join(current, dirs[0].name); // single prefix — go deeper
+      } else {
+        // Leaf with no subdirs — fall back to the java root itself
+        result.push(javaRoot);
+        break;
+      }
+    }
+  }
+  return result;
+}
+
+/**
  * Discover business modules: immediate sub-directories of the primary source root(s)
  * that contain a meaningful number of source files. Used for per-module KB generation.
  */
 export function discoverModules(root: string, options: ScanOptions = {}): ProjectModule[] {
   const minFiles = 2;
-  const sourceRoots = ['src', 'app', 'lib', 'internal', 'pkg', 'cmd', 'modules', 'packages', 'apps', 'services', 'domains']
+
+  // For Java/Kotlin, walk into the package hierarchy to find domain-level modules
+  // (e.g. com/example/users, com/example/orders) instead of one giant "main" module.
+  const javaPackageRoots = resolveJavaPackageRoots(root);
+  const hasJavaPackageRoots = javaPackageRoots.length > 0;
+
+  const conventionalRoots = ['src', 'app', 'lib', 'internal', 'pkg', 'cmd', 'modules', 'packages', 'apps', 'services', 'domains']
+    // When Java package roots are available, skip 'src' — its sub-tree is already
+    // covered at finer granularity by the domain package roots.
+    .filter(d => !(hasJavaPackageRoots && d === 'src'))
     .map(d => path.join(root, d))
     .filter(d => { try { return fs.statSync(d).isDirectory(); } catch { return false; } });
+
+  const allRoots = [...javaPackageRoots, ...conventionalRoots];
+  const sourceRoots = allRoots.length > 0 ? allRoots : [];
   // Fallback: if none of the conventional roots exist, treat the project root itself.
   const roots = sourceRoots.length ? sourceRoots : [root];
 
@@ -291,6 +348,7 @@ export function discoverModules(root: string, options: ScanOptions = {}): Projec
       if (!e.isDirectory() || NON_MODULE_DIRS.has(e.name) || e.name.startsWith('.')) { continue; }
       const dir = path.join(sr, e.name);
       const fileCount = countSource(dir);
+      // Allow single-file packages — no file is left behind.
       if (fileCount < minFiles) { continue; }
       const relDir = path.relative(root, dir);
       if (seenNames.has(e.name)) { continue; }
@@ -306,4 +364,123 @@ export function discoverModules(root: string, options: ScanOptions = {}): Projec
 /** Scan a single module subtree (no tree, no priority manifests) with its own byte budget. */
 export function scanModule(root: string, relDir: string, options: ScanOptions = {}): string {
   return scanProject(root, { ...options, subDir: relDir, skipTree: true });
+}
+
+// ─── Zero-skip infrastructure ─────────────────────────────────────────────────
+
+/** Shared set of source extensions (used by inventoryAllFiles). */
+const ALL_SOURCE_EXTS = new Set([
+  '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs',
+  '.java', '.kt', '.kts', '.scala', '.groovy',
+  '.py', '.go', '.cs', '.rs', '.rb', '.php',
+  '.vue', '.svelte', '.astro',
+  '.sql', '.graphql', '.gql', '.prisma',
+  '.xml', '.json', '.yaml', '.yml', '.toml',
+  '.properties', '.cfg', '.conf', '.ini',
+  '.html', '.ftl', '.jsp', '.erb',
+  '.proto', '.tf', '.hcl',
+  '.sh', '.bash',
+  '.md', '.mdx', '.rst',
+]);
+
+/** Shared SKIP_DIRS set for inventory walks. */
+function buildSkipDirs(options: ScanOptions = {}): Set<string> {
+  const skip = new Set([
+    'node_modules', '.git', 'dist', 'build', 'out', '__pycache__',
+    '.next', '.nuxt', 'coverage', 'spec-kit-sessions', 'knowledge-base',
+    '.vscode', '.idea', 'vendor', 'target', '.gradle',
+    ...(options.excludeExtra ?? []),
+  ]);
+  if (options.excludeDocs) { for (const d of DOC_DIRS) { skip.add(d); } }
+  return skip;
+}
+
+/**
+ * Inventory EVERY source file under `root` (or `options.subDir`) — no byte cap, no truncation.
+ * Returns all files sorted by business priority (rank 0 = most important).
+ * Use this before chunked scanning to guarantee zero files are missed.
+ */
+export function inventoryAllFiles(root: string, options: ScanOptions = {}): FileEntry[] {
+  const { excludeDocs = false, subDir } = options;
+  const walkRoot = subDir ? path.join(root, subDir) : root;
+  const SKIP_DIRS = buildSkipDirs(options);
+  const SKIP_EXTS = new Set([
+    '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico',
+    '.woff', '.woff2', '.ttf', '.eot', '.otf',
+    '.lock', '.map', '.min.js', '.min.css',
+    '.zip', '.gz', '.tar', '.jar', '.class', '.pyc', '.war', '.ear',
+    ...(excludeDocs ? ['.md', '.mdx', '.rst', '.adoc'] : []),
+  ]);
+
+  const entries: FileEntry[] = [];
+  const collect = (dir: string, depth = 0) => {
+    if (depth > 15) { return; }   // deep enough for any nested package structure
+    let dirEntries: fs.Dirent[];
+    try { dirEntries = fs.readdirSync(dir, { withFileTypes: true }); }
+    catch { return; }
+    for (const e of dirEntries) {
+      if (e.name.startsWith('.') && e.name !== '.env.example') { continue; }
+      const full = path.join(dir, e.name);
+      if (e.isDirectory()) {
+        if (!SKIP_DIRS.has(e.name)) { collect(full, depth + 1); }
+        continue;
+      }
+      if (excludeDocs && DOC_FILES.has(e.name.toLowerCase())) { continue; }
+      const ext = path.extname(e.name).toLowerCase();
+      if (SKIP_EXTS.has(ext) || !ALL_SOURCE_EXTS.has(ext)) { continue; }
+      let size = 0;
+      try { size = fs.statSync(full).size; } catch { continue; }
+      const relPath = path.relative(root, full).replace(/\\/g, '/');
+      entries.push({ absPath: full, relPath, size, rank: businessRank(relPath.toLowerCase()) });
+    }
+  };
+  collect(walkRoot);
+  entries.sort((a, b) => a.rank !== b.rank ? a.rank - b.rank : a.relPath.localeCompare(b.relPath));
+  return entries;
+}
+
+/**
+ * Split a file inventory into scan chunks, each within `maxBytesPerChunk`.
+ * Individual files larger than `maxFileBytes` are capped at that limit when estimating.
+ */
+export function chunkFileInventory(
+  entries: FileEntry[],
+  maxBytesPerChunk: number,
+  maxFileBytes: number,
+): FileEntry[][] {
+  const chunks: FileEntry[][] = [];
+  let current: FileEntry[] = [];
+  let currentSize = 0;
+  for (const entry of entries) {
+    const effective = Math.min(entry.size, maxFileBytes);
+    if (current.length > 0 && currentSize + effective > maxBytesPerChunk) {
+      chunks.push(current);
+      current = [];
+      currentSize = 0;
+    }
+    current.push(entry);
+    currentSize += effective;
+  }
+  if (current.length > 0) { chunks.push(current); }
+  return chunks;
+}
+
+/**
+ * Build scan content from a specific set of FileEntry objects.
+ * Reads each file and caps it at `maxFileBytes`. Does NOT apply a total-bytes cap —
+ * the caller is responsible for keeping chunks within the model budget.
+ */
+export function scanFileEntries(entries: FileEntry[], maxFileBytes: number): string {
+  const parts: string[] = [];
+  for (const entry of entries) {
+    try {
+      let content = fs.readFileSync(entry.absPath, 'utf-8').trim();
+      if (!content) { continue; }
+      if (content.length > maxFileBytes) {
+        content = content.slice(0, maxFileBytes) + '\n... [TRUNCATED — see full file in workspace]';
+      }
+      parts.push(`## FILE: ${entry.relPath}\n\`\`\`\n${content}\n\`\`\``);
+    } catch { /* skip unreadable */ }
+  }
+  return parts.join('\n\n---\n\n');
 }

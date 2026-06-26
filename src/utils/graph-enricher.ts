@@ -282,36 +282,47 @@ function buildGraphSummary(graph: GraphData): string {
 
   if (classNodes.length > 0) {
     parts.push(`## CLASSES (${classNodes.length}):`);
-    for (const n of classNodes.slice(0, 40)) {
-      const methods = n.methods?.join(', ') ?? '';
-      const fields = n.fields?.join(', ') ?? '';
+    for (const n of classNodes.slice(0, 80)) {
       parts.push(`- **${n.label}** [${n.type}/${n.layer}] ${n.file ?? ''}`);
-      if (methods) { parts.push(`  methods: ${methods}`); }
-      if (fields) { parts.push(`  fields: ${fields}`); }
+      if (n.description && !n.description.includes(' — ')) {
+        parts.push(`  desc: ${n.description}`);
+      }
+      if (n.details) { parts.push(`  annotations: ${n.details}`); }
+      if (n.methods?.length) { parts.push(`  methods: ${n.methods.slice(0, 12).join(', ')}`); }
+      if (n.fields?.length) { parts.push(`  fields: ${n.fields.slice(0, 8).join(', ')}`); }
     }
   }
 
   if (routeNodes.length > 0) {
     parts.push(`\n## API ROUTES (${routeNodes.length}):`);
-    for (const n of routeNodes.slice(0, 20)) {
+    for (const n of routeNodes.slice(0, 30)) {
       parts.push(`- ${n.label} → ${n.description}`);
     }
   }
 
   if (fileNodes.length > 0) {
     parts.push(`\n## FILES (${fileNodes.length}):`);
-    for (const n of fileNodes.slice(0, 30)) {
+    for (const n of fileNodes.slice(0, 40)) {
       parts.push(`- ${n.id} [${n.layer}] ${n.methods?.length ? `(${n.methods.slice(0, 5).join(', ')})` : ''}`);
     }
   }
 
-  // Include key edges
+  // DI injection edges — most meaningful for Java/Spring/NestJS architecture
+  const injectionEdges = graph.edges.filter(e => e.type === 'injects');
+  if (injectionEdges.length > 0) {
+    parts.push(`\n## DEPENDENCY INJECTIONS (${injectionEdges.length}):`);
+    for (const e of injectionEdges.slice(0, 60)) {
+      parts.push(`- ${e.source} —[injects]→ ${e.target} (field: ${e.label ?? ''})`);
+    }
+  }
+
+  // Class hierarchy + calls
   const importantEdges = graph.edges.filter(e =>
     e.type === 'extends' || e.type === 'implements' || e.type === 'calls'
   );
   if (importantEdges.length > 0) {
     parts.push(`\n## KEY RELATIONSHIPS (${importantEdges.length}):`);
-    for (const e of importantEdges.slice(0, 30)) {
+    for (const e of importantEdges.slice(0, 50)) {
       parts.push(`- ${e.source} —[${e.type}]→ ${e.target}${e.label ? ' (' + e.label + ')' : ''}`);
     }
   }

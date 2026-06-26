@@ -140,11 +140,14 @@ interface ParsedFile {
 interface ParsedClass {
   name: string;
   line: number;
+  kind?: 'class' | 'interface' | 'enum' | 'trait';
   extends?: string;
   implements: string[];
   methods: ParsedFunction[];
   fields: { name: string; type?: string }[];
   decorators: string[];
+  /** Extracted Javadoc/JSDoc/docstring summary for use as node description. */
+  docComment?: string;
 }
 
 interface ParsedFunction {
@@ -204,15 +207,22 @@ const IMPORT_PATTERNS: Record<LangId, RegExp[]> = {
 // ── Class patterns per language ───────────────────────────────────────────────
 
 const CLASS_PATTERN: Record<LangId, RegExp> = {
-  typescript:  /^(?:export\s+)?(?:abstract\s+)?class\s+(\w+)(?:\s+extends\s+(\w+))?(?:\s+implements\s+([\w,\s]+))?/gm,
+  // class, interface, enum — handles export/declare/abstract modifiers.
+  // Generics on extends consumed non-captively so m[2] is always a plain name.
+  typescript:  /^(?:export\s+)?(?:declare\s+)?(?:abstract\s+)?(?:class|interface|enum)\s+(\w+)(?:\s+extends\s+([\w]+)(?:<[^>]*>)?)?(?:\s+implements\s+([\w,\s.]+?))?/gm,
   javascript:  /^(?:export\s+)?class\s+(\w+)(?:\s+extends\s+(\w+))?/gm,
   python:      /^class\s+(\w+)(?:\(([\w,\s.]+)\))?:/gm,
-  java:        /^(?:public\s+)?(?:abstract\s+)?class\s+(\w+)(?:\s+extends\s+(\w+))?(?:\s+implements\s+([\w,\s]+))?/gm,
-  go:          /^type\s+(\w+)\s+struct/gm,
+  // Matches class, interface, enum — handles public/protected/abstract/final/static modifiers.
+  java:        /^(?:(?:public|protected|private|abstract|final|static)\s+)*(?:class|interface|enum)\s+(\w+)(?:\s+extends\s+([\w.]+)(?:<[^>]*>)?)?(?:\s+implements\s+([\w.,\s]+?))?(?:\s*\{)/gm,
+  // struct and interface types
+  go:          /^type\s+(\w+)\s+(?:struct|interface)/gm,
   ruby:        /^class\s+(\w+)(?:\s*<\s*(\w+))?/gm,
-  csharp:      /^(?:public\s+)?(?:abstract\s+)?class\s+(\w+)(?:\s*:\s*([\w,\s]+))?/gm,
-  php:         /^(?:abstract\s+)?class\s+(\w+)(?:\s+extends\s+(\w+))?(?:\s+implements\s+([\w,\s]+))?/gm,
-  rust:        /^(?:pub\s+)?struct\s+(\w+)/gm,
+  // class, interface, enum, record, struct — all C# type declarations
+  csharp:      /^(?:(?:public|private|protected|internal|abstract|sealed|static|partial|readonly)\s+)*(?:class|interface|enum|record|struct)\s+(\w+)(?:\s*:\s*([\w<>,\s.]+?))?/gm,
+  // class, interface, trait — handles abstract/final/readonly modifiers
+  php:         /^(?:(?:abstract|final|readonly)\s+)?(?:class|interface|trait)\s+(\w+)(?:\s+extends\s+([\w\\]+))?(?:\s+implements\s+([\w\\,\s]+))?/gm,
+  // struct, enum, trait — all Rust named type declarations
+  rust:        /^(?:pub(?:\s*\([^)]*\))?\s+)?(?:struct|enum|trait)\s+(\w+)/gm,
   unknown:     /(?!)/g, // never matches
 };
 
@@ -318,6 +328,13 @@ function parseFile(absPath: string, rootDir: string): ParsedFile {
       const implStr = m[3] ?? '';
       const impls = implStr ? implStr.split(',').map(s => s.trim()).filter(Boolean) : [];
 
+      // Determine kind from the matched keyword
+      const kw = m[0];
+      const kind: ParsedClass['kind'] =
+        /\binterface\b/.test(kw) ? 'interface' :
+        /\benum\b/.test(kw) ? 'enum' :
+        /\btrait\b/.test(kw) ? 'trait' : 'class';
+
       // Find methods within class body (simplified — look for method-like patterns after class declaration)
       const classBody = extractBlock(content, m.index);
       const methods = parseFunctionsInBlock(classBody, language, lineNum);
@@ -327,15 +344,19 @@ function parseFile(absPath: string, rootDir: string): ParsedFile {
 
       // Find decorators above class
       const decorators = findDecoratorsAbove(lines, lineNum - 1);
+      // Extract doc comment for the node description
+      const docComment = extractDocComment(lines, lineNum);
 
       classes.push({
         name: className,
         line: lineNum,
+        kind,
         extends: extendsName || undefined,
         implements: impls,
         methods,
         fields,
         decorators,
+        docComment: docComment || undefined,
       });
     }
   }
@@ -404,9 +425,9 @@ function parseFile(absPath: string, rootDir: string): ParsedFile {
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 function extractBlock(content: string, startIdx: number): string {
-  // Extract ~100 lines after a pattern match (approximate class/function body)
+  // 800 lines to capture methods across large Java service/controller classes.
   const rest = content.slice(startIdx);
-  const lines = rest.split('\n').slice(0, 100);
+  const lines = rest.split('\n').slice(0, 800);
   return lines.join('\n');
 }
 
@@ -443,47 +464,104 @@ function parseFunctionsInBlock(block: string, lang: LangId, baseLineNum: number)
   return methods;
 }
 
+// Noise words filtered from extracted call lists — covers all 9 supported languages.
+const CALL_NOISE = new Set([
+  // JS/TS
+  'function', 'class', 'import', 'require', 'from', 'return',
+  'console', 'if', 'for', 'while', 'switch', 'catch', 'new', 'throw', 'typeof',
+  'async', 'await', 'super', 'constructor', 'Object', 'Array', 'String', 'Number',
+  'parseInt', 'parseFloat', 'setTimeout', 'setInterval', 'clearTimeout', 'clearInterval',
+  'Promise', 'Map', 'Set', 'WeakMap', 'WeakSet', 'Symbol',
+  'JSON', 'Math', 'Date', 'Error', 'RegExp', 'Boolean', 'Buffer',
+  'process', 'module', 'exports',
+  // Java
+  'System', 'Optional', 'Arrays', 'Collections', 'Objects', 'StringBuilder',
+  'ArrayList', 'HashMap', 'HashSet', 'LinkedList', 'stream', 'collect',
+  'toString', 'equals', 'hashCode', 'getClass', 'notify', 'wait',
+  // Python
+  'print', 'len', 'range', 'list', 'dict', 'tuple', 'set', 'str', 'int', 'float',
+  'bool', 'type', 'isinstance', 'hasattr', 'getattr', 'setattr', 'open',
+  'enumerate', 'zip', 'map', 'filter', 'sorted', 'reversed', 'sum', 'max', 'min',
+  'staticmethod', 'classmethod', 'property',
+  // Go
+  'make', 'append', 'cap', 'delete', 'copy', 'close', 'panic', 'recover',
+  'Println', 'Printf', 'Sprintf', 'Errorf',
+  // Ruby
+  'puts', 'raise', 'rescue', 'require', 'require_relative',
+  // C#
+  'Console', 'Task', 'List', 'Dictionary', 'IEnumerable', 'Where', 'Select',
+  // General utilities
+  'log', 'info', 'warn', 'debug', 'error', 'trace', 'fatal',
+  'get', 'set', 'add', 'put', 'has', 'len',
+  'push', 'pop', 'shift', 'splice', 'slice', 'join', 'split',
+  'trim', 'replace', 'test', 'match', 'exec',
+  'read', 'write',
+]);
+
 function extractCalls(body: string, _lang: LangId): string[] {
   const calls = new Set<string>();
-  // Match: identifier.method( or identifier(
   const re = /(?:(?:this|self|\w+)\.)?(\w+)\s*\(/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(body)) !== null) {
     const name = m[1];
-    if (name.length > 2 && !['function', 'class', 'import', 'require', 'from', 'return',
-        'console', 'if', 'for', 'while', 'switch', 'catch', 'new', 'throw', 'typeof',
-        'async', 'await', 'super', 'constructor', 'Object', 'Array', 'String', 'Number',
-        'parseInt', 'parseFloat', 'setTimeout', 'setInterval', 'Promise', 'Map', 'Set',
-        'JSON', 'Math', 'Date', 'Error', 'RegExp', 'Boolean'].includes(name)) {
-      calls.add(name);
-    }
+    if (name.length > 2 && !CALL_NOISE.has(name)) { calls.add(name); }
   }
   return Array.from(calls);
 }
 
 function parseFields(block: string, lang: LangId): { name: string; type?: string }[] {
   const fields: { name: string; type?: string }[] = [];
-  let re: RegExp | null = null;
 
   if (lang === 'typescript' || lang === 'javascript') {
-    re = /(?:readonly\s+)?(?:private\s+|public\s+|protected\s+)?(\w+)\s*[?!]?\s*:\s*([\w<>\[\]|]+)/g;
+    const re = /(?:readonly\s+)?(?:private\s+|public\s+|protected\s+)?(\w+)\s*[?!]?\s*:\s*([\w<>\[\]|.]+)/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(block)) !== null) { fields.push({ name: m[1], type: m[2] }); }
+
   } else if (lang === 'python') {
-    re = /self\.(\w+)\s*(?::\s*(\w+))?\s*=/g;
+    const re = /self\.(\w+)\s*(?::\s*([\w.\[\]]+))?\s*=/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(block)) !== null) { fields.push({ name: m[1], type: m[2] }); }
+
   } else if (lang === 'java' || lang === 'csharp') {
-    re = /(?:private|public|protected)\s+([\w<>\[\]]+)\s+(\w+)\s*[;=]/g;
+    const re = /(?:private|public|protected)\s+([\w<>\[\]]+)\s+(\w+)\s*[;=]/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(block)) !== null) { fields.push({ name: m[2], type: m[1] }); }
+
+  } else if (lang === 'php') {
+    // PHP 7.4+ typed properties: private ?UserRepository $repo;
+    const re = /(?:private|protected|public)\s+(?:\??([\w\\]+)\s+)?\$(\w+)/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(block)) !== null) { fields.push({ name: m[2], type: m[1] || undefined }); }
+
+  } else if (lang === 'go') {
+    // Tab-indented struct fields: FieldName Type or FieldName *Type
+    const re = /^\t([A-Za-z]\w*)\s+(\*?[\w.[\]]+)/gm;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(block)) !== null) {
+      const name = m[1];
+      // Skip Go keywords that appear inside method bodies captured by extractBlock
+      if (['func', 'var', 'const', 'type', 'return', 'if', 'for', 'case', 'default', 'range'].includes(name)) { continue; }
+      fields.push({ name, type: m[2] });
+    }
+
+  } else if (lang === 'rust') {
+    // Struct fields: field_name: Type  or  pub field_name: Arc<Type>
+    const re = /^\s+(?:pub\s+)?(\w+)\s*:\s*(?:(?:Arc|Box|Rc|Option|Vec|Mutex|RwLock|RefCell)<\s*)?(\w+)/gm;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(block)) !== null) {
+      const name = m[1];
+      if (['fn', 'let', 'if', 'for', 'while', 'match', 'use', 'pub', 'mod', 'impl', 'return', 'mut', 'self'].includes(name)) { continue; }
+      fields.push({ name, type: m[2] });
+    }
+
+  } else if (lang === 'ruby') {
+    // attr_accessor/reader/writer declares fields (no type info in Ruby)
+    const re = /attr_(?:accessor|reader|writer)\s+:(\w+)/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(block)) !== null) { fields.push({ name: m[1] }); }
   }
 
-  if (!re) { return fields; }
-  re.lastIndex = 0;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(block)) !== null) {
-    if (lang === 'java' || lang === 'csharp') {
-      fields.push({ name: m[2], type: m[1] });
-    } else {
-      fields.push({ name: m[1], type: m[2] });
-    }
-  }
-  return fields.slice(0, 30); // cap to avoid noise
+  return fields.slice(0, 30);
 }
 
 function findDecoratorsAbove(lines: string[], lineIdx: number): string[] {
@@ -494,6 +572,49 @@ function findDecoratorsAbove(lines: string[], lineIdx: number): string[] {
     else if (lines[i]?.trim() && !lines[i]?.trim().startsWith('//') && !lines[i]?.trim().startsWith('*')) { break; }
   }
   return decs;
+}
+
+/**
+ * Extract the Javadoc / JSDoc / Python docstring immediately above a declaration.
+ * Returns a plain-text summary ≤200 chars for use as the node description.
+ */
+function extractDocComment(lines: string[], declLineIdx: number): string {
+  // declLineIdx is 1-based (from content.split('\n').length)
+  const idx = declLineIdx - 1;
+  const collected: string[] = [];
+  let insideBlock = false;
+
+  for (let i = idx - 1; i >= Math.max(0, idx - 25); i--) {
+    const raw = lines[i] ?? '';
+    const t = raw.trim();
+    if (!t) { continue; }
+
+    // End of block comment found going upward — we're now inside it
+    if (t === '*/' || t.endsWith('*/')) { insideBlock = true; continue; }
+    if (insideBlock) {
+      if (t.startsWith('/**') || t.startsWith('/*')) { break; } // reached the start
+      // Strip leading * and @tag lines
+      const clean = t.replace(/^\*+\s?/, '');
+      if (!clean.startsWith('@') && clean.length > 0) { collected.unshift(clean); }
+      continue;
+    }
+    // Single-line comment
+    if (t.startsWith('///') || t.startsWith('//')) {
+      collected.unshift(t.replace(/^\/+\s?/, ''));
+      continue;
+    }
+    // Python triple-quote on the next line after the def
+    if (t.startsWith('"""') || t.startsWith("'''")) {
+      collected.unshift(t.replace(/^['"]{3}|['"]{3}$/g, '').trim());
+      break;
+    }
+    // Annotation / decorator — keep going upward
+    if (t.startsWith('@')) { continue; }
+    // Anything else (code, blank-ish) — stop
+    break;
+  }
+
+  return collected.join(' ').replace(/\s+/g, ' ').trim().slice(0, 200);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -512,13 +633,15 @@ function inferLayer(relPath: string, parsed: ParsedFile): NodeLayer {
   if (/config|\.env|docker|\.ya?ml$|\.toml$|\.ini$|webpack|vite\.config|jest\.config|babel/.test(lower)) { return 'config'; }
 
   // Presentation (controllers, routes, views, components, pages)
-  if (/controller|handler|route|resolver|page|view|component|screen|widget/.test(lower)) { return 'presentation'; }
-  if (allDecs.some(d => ['controller', 'get', 'post', 'put', 'delete', 'resolver', 'component'].includes(d))) { return 'presentation'; }
+  // 'resource' covers Spring REST @RestController classes often named *Resource
+  if (/controller|handler|route|resolver|page|view|component|screen|widget|resource/.test(lower)) { return 'presentation'; }
+  if (allDecs.some(d => ['controller', 'restcontroller', 'get', 'post', 'put', 'delete', 'resolver', 'component', 'requestmapping'].includes(d))) { return 'presentation'; }
   if (parsed.routes.length > 0) { return 'presentation'; }
 
   // Data layer (repositories, DAOs, migrations, schemas, ORM)
-  if (/repository|repo|dao|migration|schema|seed|fixture|prisma|sequelize|typeorm/.test(lower)) { return 'data'; }
-  if (allDecs.some(d => ['entity', 'table', 'column', 'model', 'schema'].includes(d))) { return 'data'; }
+  // 'mapper' covers MyBatis mapper interfaces and MapStruct mapper classes
+  if (/repository|repo|dao|migration|schema|seed|fixture|prisma|sequelize|typeorm|mapper/.test(lower)) { return 'data'; }
+  if (allDecs.some(d => ['entity', 'table', 'column', 'model', 'schema', 'repository', 'mapper'].includes(d))) { return 'data'; }
 
   // Domain (entities, models, DTOs, enums, value objects)
   if (/entity|model|dto|enum|interface|types?\/|domain|aggregate|value.?object/.test(lower)) { return 'domain'; }
@@ -534,18 +657,26 @@ function inferLayer(relPath: string, parsed: ParsedFile): NodeLayer {
   return 'business'; // default
 }
 
-function inferNodeType(parsed: ParsedFile, className?: string): NodeType {
+function inferNodeType(parsed: ParsedFile, cls?: ParsedClass): NodeType {
+  const className = cls?.name;
   const lower = parsed.relPath.toLowerCase();
-  const decs = className
-    ? parsed.classes.find(c => c.name === className)?.decorators.map(d => d.toLowerCase()) ?? []
-    : parsed.decorators.map(d => d.toLowerCase());
+  const decs = (className
+    ? cls?.decorators ?? []
+    : parsed.decorators
+  ).map(d => d.toLowerCase());
 
-  if (/\.test\.|\.spec\./.test(lower)) { return 'test'; }
-  if (/controller/.test(lower) || decs.includes('controller')) { return 'controller'; }
-  if (/service/.test(lower) || decs.includes('injectable')) { return 'service'; }
-  if (/repository|repo|dao/.test(lower)) { return 'repository'; }
-  if (/entity|model/.test(lower) || decs.includes('entity') || decs.includes('model')) { return 'entity'; }
-  if (/middleware|guard|pipe/.test(lower)) { return 'middleware'; }
+  if (/\.test\.|\.spec\.|Test\.java$|Tests\.java$|IT\.java$/.test(parsed.relPath)) { return 'test'; }
+
+  // Interfaces and traits are typed as 'interface'
+  if (cls?.kind === 'interface' || cls?.kind === 'trait') { return 'interface'; }
+
+  // Spring REST resource classes (*Resource.java) are controllers
+  if (/controller|resource/.test(lower) || decs.some(d => ['controller', 'restcontroller', 'requestmapping'].includes(d))) { return 'controller'; }
+  if (/service/.test(lower) || decs.some(d => ['injectable', 'service'].includes(d))) { return 'service'; }
+  // Spring Data / MyBatis / DAO interfaces and implementations
+  if (/repository|repo|dao|mapper/.test(lower) || decs.includes('repository')) { return 'repository'; }
+  if (/entity|model/.test(lower) || decs.some(d => ['entity', 'model', 'document'].includes(d))) { return 'entity'; }
+  if (/middleware|guard|pipe|interceptor|filter/.test(lower)) { return 'middleware'; }
   if (parsed.routes.length > 0) { return 'controller'; }
   if (className) { return 'class'; }
   return 'file';
@@ -613,7 +744,7 @@ function buildStaticGraph(rootDir: string): {
     nodes.push({
       id: fileId,
       label: path.basename(pf.relPath, path.extname(pf.relPath)),
-      type: inferNodeType(pf),
+      type: inferNodeType(pf, undefined),
       layer,
       description: pf.relPath,
       file: pf.relPath,
@@ -626,19 +757,21 @@ function buildStaticGraph(rootDir: string): {
     // ── Class nodes ──
     for (const cls of pf.classes) {
       const classId = `class:${pf.relPath}:${cls.name}`;
+      const decoratorStr = cls.decorators.length > 0 ? `@${cls.decorators.join(' @')}` : '';
       nodes.push({
         id: classId,
         label: cls.name,
-        type: inferNodeType(pf, cls.name),
+        type: inferNodeType(pf, cls),
         layer,
-        description: `${cls.name} in ${pf.relPath}`,
+        // Prefer Javadoc/JSDoc description; fall back to path
+        description: cls.docComment || `${cls.name} — ${pf.relPath}`,
         file: pf.relPath,
         line: cls.line,
         language: pf.language,
         size: cls.methods.length > 5 ? 5 : cls.methods.length > 2 ? 4 : 3,
         methods: cls.methods.map(m => m.name),
         fields: cls.fields.map(f => `${f.name}${f.type ? ': ' + f.type : ''}`),
-        details: cls.decorators.length > 0 ? `@${cls.decorators.join(', @')}` : undefined,
+        details: decoratorStr || undefined,
       });
       nodeIds.add(classId);
 
@@ -658,6 +791,32 @@ function buildStaticGraph(rootDir: string): {
         const ifaceId = findClassId(parsedFiles, iface);
         if (ifaceId) {
           edges.push({ source: classId, target: ifaceId, type: 'implements', weight: 2 });
+        }
+      }
+
+      // ── Spring / NestJS / Angular / Go / Rust DI: field injection edges ──
+      // If a field's type matches a known class in the project, add an `injects` edge.
+      for (const field of cls.fields) {
+        if (!field.type) { continue; }
+        // If generic, prefer the inner type: List<UserService> → UserService
+        const innerMatch = field.type.match(/<\s*(\w+)/);
+        const baseType = (innerMatch ? innerMatch[1] : field.type)
+          .replace(/\[\]$/, '')      // Java/TS arrays
+          .replace(/^\*+/, '')       // Go pointer *Type
+          .replace(/^&(?:mut\s+)?/, '') // Rust reference &Type / &mut Type
+          .trim();
+        if (baseType.length < 2) { continue; }
+        const targetClassId =
+          classNameToFileId.get(baseType) ||
+          classNameToFileId.get(baseType.toLowerCase());
+        if (targetClassId && targetClassId !== fileId) {
+          edges.push({
+            source: classId,
+            target: targetClassId,
+            type: 'injects',
+            label: field.name,
+            weight: 3,
+          });
         }
       }
     }
@@ -700,19 +859,44 @@ function buildStaticGraph(rootDir: string): {
       }
     }
 
-    // ── Method call edges (cross-file) ──
-    const allCalls = [
-      ...pf.functions.flatMap(f => f.calls),
-      ...pf.classes.flatMap(c => c.methods.flatMap(m => m.calls)),
-    ];
-    for (const call of allCalls) {
-      const targetClassId = findClassByMethod(parsedFiles, call, pf.relPath);
-      if (targetClassId) {
-        const sourceClassId = pf.classes.length > 0
-          ? `class:${pf.relPath}:${pf.classes[0].name}`
-          : fileId;
-        if (sourceClassId !== targetClassId) {
-          edges.push({ source: sourceClassId, target: targetClassId, type: 'calls', label: call });
+    // ── Method call edges (cross-file, DI-guided) ──
+    // For each class, build a set of "known dependency class IDs" from its injected fields.
+    // This lets us prefer a matching DI target over a random class with the same method name.
+    for (const cls of pf.classes) {
+      const classId = `class:${pf.relPath}:${cls.name}`;
+      // Collect types of injected dependencies for this class
+      const injectedTargetIds = new Set<string>(
+        cls.fields
+          .map(f => {
+            const raw = f.type ?? '';
+            const innerM = raw.match(/<\s*(\w+)/);
+            const base = (innerM ? innerM[1] : raw)
+              .replace(/\[\]$/, '').replace(/^\*+/, '').replace(/^&(?:mut\s+)?/, '').trim();
+            return classNameToFileId.get(base) || classNameToFileId.get(base.toLowerCase());
+          })
+          .filter((id): id is string => !!id && id !== fileId),
+      );
+
+      const allCalls = new Set(cls.methods.flatMap(m => m.calls));
+      for (const call of allCalls) {
+        // Prefer a target that is a known injected dependency of this class
+        let targetClassId = findClassByMethodAmong(parsedFiles, call, injectedTargetIds);
+        // Fall back to any class in the project with that method
+        if (!targetClassId) {
+          targetClassId = findClassByMethod(parsedFiles, call, pf.relPath);
+        }
+        if (targetClassId && targetClassId !== classId) {
+          edges.push({ source: classId, target: targetClassId, type: 'calls', label: call });
+        }
+      }
+    }
+    // Top-level functions (non-class files)
+    if (pf.classes.length === 0) {
+      const allCalls = new Set(pf.functions.flatMap(f => f.calls));
+      for (const call of allCalls) {
+        const targetClassId = findClassByMethod(parsedFiles, call, pf.relPath);
+        if (targetClassId) {
+          edges.push({ source: fileId, target: targetClassId, type: 'calls', label: call });
         }
       }
     }
@@ -735,6 +919,24 @@ function findClassByMethod(parsedFiles: ParsedFile[], methodName: string, exclud
     for (const cls of pf.classes) {
       if (cls.methods.some(m => m.name === methodName)) {
         return `class:${pf.relPath}:${cls.name}`;
+      }
+    }
+  }
+  return undefined;
+}
+
+/** Like findClassByMethod but restricts the search to a known set of class IDs (injected deps). */
+function findClassByMethodAmong(
+  parsedFiles: ParsedFile[],
+  methodName: string,
+  candidateIds: Set<string>,
+): string | undefined {
+  if (candidateIds.size === 0) { return undefined; }
+  for (const pf of parsedFiles) {
+    for (const cls of pf.classes) {
+      const id = `class:${pf.relPath}:${cls.name}`;
+      if (candidateIds.has(id) && cls.methods.some(m => m.name === methodName)) {
+        return id;
       }
     }
   }
@@ -909,13 +1111,26 @@ export function buildGraphData(
     const pkg = JSON.parse(readSafe(path.join(rootDir, 'package.json')));
     projectName = pkg.displayName || pkg.name || projectName;
   } catch { /* ignore */ }
-  // Try Cargo.toml, pyproject.toml, go.mod for non-JS projects
+  // pom.xml — Java/Maven projects
   if (projectName === path.basename(rootDir)) {
-    try {
-      const cargo = readSafe(path.join(rootDir, 'Cargo.toml'));
-      const nameMatch = cargo.match(/^name\s*=\s*"([^"]+)"/m);
-      if (nameMatch) { projectName = nameMatch[1]; }
-    } catch { /* ignore */ }
+    const pom = readSafe(path.join(rootDir, 'pom.xml'));
+    if (pom) {
+      const nameEl = pom.match(/<name>([^<]+)<\/name>/);
+      const artId  = pom.match(/<artifactId>([^<]+)<\/artifactId>/);
+      projectName = nameEl?.[1]?.trim() || artId?.[1]?.trim() || projectName;
+    }
+  }
+  // Cargo.toml — Rust
+  if (projectName === path.basename(rootDir)) {
+    const cargo = readSafe(path.join(rootDir, 'Cargo.toml'));
+    const nameMatch = cargo.match(/^name\s*=\s*"([^"]+)"/m);
+    if (nameMatch) { projectName = nameMatch[1]; }
+  }
+  // pyproject.toml — Python
+  if (projectName === path.basename(rootDir)) {
+    const pyproject = readSafe(path.join(rootDir, 'pyproject.toml'));
+    const nameMatch = pyproject.match(/^name\s*=\s*"([^"]+)"/m);
+    if (nameMatch) { projectName = nameMatch[1]; }
   }
 
   return {

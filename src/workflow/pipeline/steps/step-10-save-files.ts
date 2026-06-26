@@ -58,19 +58,33 @@ export class Step10SaveFiles implements PipelineStep {
     }
 
     if (applyToProject) {
-      let appliedCount = 0;
+      // Validate ALL destination paths before writing anything — prevents partial
+      // application when a path-traversal rejection fires mid-loop.
+      const validWrites: { dest: string; code: string; filePath: string }[] = [];
       for (const file of allFiles) {
-        let destPath: string;
         try {
-          destPath = safeResolve(ctx.workspaceRoot, file.filePath); // path traversal guard
+          const dest = safeResolve(ctx.workspaceRoot, file.filePath);
+          validWrites.push({ dest, code: file.code, filePath: file.filePath });
         } catch (err: any) {
           log(`   ⛔ Skipped unsafe path (not applied): ${file.filePath} (${err?.message ?? err})`);
-          continue;
         }
-        fs.mkdirSync(path.dirname(destPath), { recursive: true });
-        fs.writeFileSync(destPath, file.code, 'utf-8');
-        appliedCount++;
-        log(`   📂 Applied: ${file.filePath}`);
+      }
+
+      // Write atomically: write to .tmp then rename so a crash mid-write
+      // never leaves a half-written source file in the workspace.
+      let appliedCount = 0;
+      for (const { dest, code, filePath } of validWrites) {
+        const tmp = dest + '.~tmp';
+        try {
+          fs.mkdirSync(path.dirname(dest), { recursive: true });
+          fs.writeFileSync(tmp, code, 'utf-8');
+          fs.renameSync(tmp, dest);
+          appliedCount++;
+          log(`   📂 Applied: ${filePath}`);
+        } catch (err: any) {
+          log(`   ⛔ Failed to write ${filePath}: ${err?.message ?? err}`);
+          try { fs.unlinkSync(tmp); } catch { /* already cleaned up or never created */ }
+        }
       }
       log(`✅ ${appliedCount} file(s) applied to project`);
     } else {

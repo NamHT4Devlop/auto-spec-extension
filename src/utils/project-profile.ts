@@ -57,6 +57,8 @@ export interface ProjectProfile {
 
 export class ProjectProfileDetector {
   private root: string;
+  /** Directory used for stack detection — root, or the primary app sub-dir in a monorepo. */
+  private base = '';
 
   constructor(workspaceRoot: string) {
     this.root = workspaceRoot;
@@ -116,9 +118,17 @@ export class ProjectProfileDetector {
   // ── Detection logic ────────────────────────────────────────────────
 
   private scan(): ProjectProfile {
-    const has = (f: string) => fs.existsSync(path.join(this.root, f));
+    // For monorepos / repos with code in sub-dirs, detect the primary app dir
+    // so we don't report "unknown / unknown" when the root has no manifest.
+    this.base = this.resolvePrimaryBase();
+    if (this.base !== this.root) {
+      log(`📋 ProjectProfile: no root manifest — detecting stack in ./${path.relative(this.root, this.base)}`);
+    }
+    const has = (f: string) => fs.existsSync(path.join(this.base, f));
+    // Root-level check: monorepo configs, Docker, CI files live at repo root, not app subdir.
+    const hasRoot = (f: string) => fs.existsSync(path.join(this.root, f));
     const readJson = (f: string) => {
-      try { return JSON.parse(fs.readFileSync(path.join(this.root, f), 'utf-8')); }
+      try { return JSON.parse(fs.readFileSync(path.join(this.base, f), 'utf-8')); }
       catch { return null; }
     };
 
@@ -131,7 +141,7 @@ export class ProjectProfileDetector {
 
     // Java / JVM (Maven)
     if (has('pom.xml')) {
-      const pom = fs.readFileSync(path.join(this.root, 'pom.xml'), 'utf-8');
+      const pom = fs.readFileSync(path.join(this.base, 'pom.xml'), 'utf-8');
       // Detect JVM language variant
       if (pom.includes('kotlin') || has('src/main/kotlin')) { language = 'kotlin'; }
       else if (pom.includes('scala') || has('src/main/scala')) { language = 'scala'; }
@@ -163,7 +173,7 @@ export class ProjectProfileDetector {
     // Java / JVM (Gradle)
     else if (has('build.gradle') || has('build.gradle.kts')) {
       const gradleFile = has('build.gradle.kts') ? 'build.gradle.kts' : 'build.gradle';
-      const gradle = fs.readFileSync(path.join(this.root, gradleFile), 'utf-8');
+      const gradle = fs.readFileSync(path.join(this.base, gradleFile), 'utf-8');
 
       if (has('build.gradle.kts') || gradle.includes('kotlin') || has('src/main/kotlin')) { language = 'kotlin'; }
       else if (gradle.includes('scala') || has('src/main/scala')) { language = 'scala'; }
@@ -254,12 +264,12 @@ export class ProjectProfileDetector {
       testFramework = 'xUnit';
     }
 
-    // ── Monorepo ──
+    // ── Monorepo — configs always live at repo root, not app subdir ──
     let monorepoTool: string | undefined;
-    if (has('nx.json')) { monorepoTool = 'Nx'; }
-    else if (has('turbo.json')) { monorepoTool = 'Turborepo'; }
-    else if (has('lerna.json')) { monorepoTool = 'Lerna'; }
-    else if (has('pnpm-workspace.yaml')) { monorepoTool = 'pnpm workspaces'; }
+    if (hasRoot('nx.json')) { monorepoTool = 'Nx'; }
+    else if (hasRoot('turbo.json')) { monorepoTool = 'Turborepo'; }
+    else if (hasRoot('lerna.json')) { monorepoTool = 'Lerna'; }
+    else if (hasRoot('pnpm-workspace.yaml')) { monorepoTool = 'pnpm workspaces'; }
 
     // ── Linter / Formatter ──
     let linter: string | undefined;
@@ -302,14 +312,14 @@ export class ProjectProfileDetector {
     // ── Polyglot / monorepo stacks (manifests anywhere within depth 2) ──
     const additionalStacks = this.detectStacks();
 
-    // ── Docker & CI/CD ──
-    const hasDocker = has('Dockerfile') || has('docker-compose.yml') || has('docker-compose.yaml');
+    // ── Docker & CI/CD — these always live at repo root ──
+    const hasDocker = hasRoot('Dockerfile') || hasRoot('docker-compose.yml') || hasRoot('docker-compose.yaml');
     let cicd: string | undefined;
-    if (has('.github/workflows')) { cicd = 'GitHub Actions'; }
-    else if (has('.gitlab-ci.yml')) { cicd = 'GitLab CI'; }
-    else if (has('Jenkinsfile')) { cicd = 'Jenkins'; }
-    else if (has('.circleci/config.yml')) { cicd = 'CircleCI'; }
-    else if (has('bitbucket-pipelines.yml')) { cicd = 'Bitbucket Pipelines'; }
+    if (hasRoot('.github/workflows')) { cicd = 'GitHub Actions'; }
+    else if (hasRoot('.gitlab-ci.yml')) { cicd = 'GitLab CI'; }
+    else if (hasRoot('Jenkinsfile')) { cicd = 'Jenkins'; }
+    else if (hasRoot('.circleci/config.yml')) { cicd = 'CircleCI'; }
+    else if (hasRoot('bitbucket-pipelines.yml')) { cicd = 'Bitbucket Pipelines'; }
 
     // ── Folder patterns ──
     const folderPatterns = this.detectFolderPatterns();
@@ -336,11 +346,14 @@ export class ProjectProfileDetector {
 
   /** Read the first existing file from a list of candidate relative paths. */
   private readFirst(relPaths: string[]): string {
-    for (const rel of relPaths) {
-      try {
-        const full = path.join(this.root, rel);
-        if (fs.existsSync(full)) { return fs.readFileSync(full, 'utf-8'); }
-      } catch { /* next */ }
+    const roots = this.base && this.base !== this.root ? [this.base, this.root] : [this.root];
+    for (const r of roots) {
+      for (const rel of relPaths) {
+        try {
+          const full = path.join(r, rel);
+          if (fs.existsSync(full)) { return fs.readFileSync(full, 'utf-8'); }
+        } catch { /* next */ }
+      }
     }
     return '';
   }
@@ -382,23 +395,79 @@ export class ProjectProfileDetector {
 
   private grepFile(relPath: string, needle: string): boolean {
     try {
-      const content = fs.readFileSync(path.join(this.root, relPath), 'utf-8');
+      const content = fs.readFileSync(path.join(this.base || this.root, relPath), 'utf-8');
       return content.toLowerCase().includes(needle.toLowerCase());
     } catch { return false; }
+  }
+
+  /**
+   * Resolve the primary directory for stack detection: the root if it has a
+   * build manifest, otherwise the best sub-directory (depth ≤ 2) that does —
+   * preferring app/backend/server/api/service folders over automation/scripts.
+   */
+  private resolvePrimaryBase(): string {
+    const manifests = [
+      'pom.xml', 'build.gradle', 'build.gradle.kts', 'package.json', 'Gemfile',
+      'go.mod', 'requirements.txt', 'pyproject.toml', 'setup.py', 'composer.json', 'Cargo.toml',
+    ];
+    const hasManifest = (dir: string): boolean => {
+      try {
+        if (manifests.some(mf => fs.existsSync(path.join(dir, mf)))) { return true; }
+        return fs.readdirSync(dir).some(f => f.endsWith('.csproj') || f.endsWith('.sln'));
+      } catch { return false; }
+    };
+    if (hasManifest(this.root)) { return this.root; }
+
+    const skip = new Set([
+      'node_modules', '.git', 'dist', 'build', 'out', 'target', 'vendor', 'coverage',
+      '.gradle', '.idea', '.vscode', 'spec-kit-sessions', 'knowledge-base', 'bin', 'obj',
+    ]);
+    const score = (name: string): number => {
+      const n = name.toLowerCase();
+      if (/(backend|server|^api$|^app$|service|core|^src$|web-?app|main)/.test(n)) { return 4; }
+      if (/(web|frontend|ui|client|mobile)/.test(n)) { return 3; }
+      if (/(automation|qa|e2e|integration|scripts?|tools?|infra|deploy|docs?)/.test(n)) { return 1; }
+      return 2;
+    };
+    const candidates: { dir: string; score: number }[] = [];
+    const walk = (dir: string, depth: number) => {
+      if (depth > 2) { return; }
+      let entries: fs.Dirent[];
+      try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
+      for (const e of entries) {
+        if (!e.isDirectory() || e.name.startsWith('.') || skip.has(e.name)) { continue; }
+        const full = path.join(dir, e.name);
+        if (hasManifest(full)) { candidates.push({ dir: full, score: score(e.name) }); }
+        walk(full, depth + 1);
+      }
+    };
+    walk(this.root, 1);
+    if (!candidates.length) { return this.root; }
+    candidates.sort((a, b) => {
+      if (b.score !== a.score) { return b.score - a.score; }
+      // Tiebreaker 1: prefer shallower paths (closer to repo root)
+      const da = path.relative(this.root, a.dir).split(path.sep).length;
+      const db = path.relative(this.root, b.dir).split(path.sep).length;
+      if (da !== db) { return da - db; }
+      // Tiebreaker 2: alphabetical for stability across OS/filesystem orderings
+      return a.dir.localeCompare(b.dir);
+    });
+    return candidates[0].dir;
   }
 
   private findFile(pattern: string): boolean {
     try {
       const ext = pattern.replace('*', '');
-      const entries = fs.readdirSync(this.root);
+      const entries = fs.readdirSync(this.base || this.root);
       return entries.some(e => e.endsWith(ext));
     } catch { return false; }
   }
 
   private detectFolderPatterns(): string[] {
     const patterns: string[] = [];
+    const b = this.base || this.root;
     const check = (dir: string, label: string) => {
-      if (fs.existsSync(path.join(this.root, dir))) { patterns.push(label); }
+      if (fs.existsSync(path.join(b, dir)) || fs.existsSync(path.join(this.root, dir))) { patterns.push(label); }
     };
 
     check('src/controllers', 'MVC (controllers)');
@@ -426,9 +495,10 @@ export class ProjectProfileDetector {
 
   private detectFileNaming(): string {
     try {
-      const srcDir = fs.existsSync(path.join(this.root, 'src'))
-        ? path.join(this.root, 'src')
-        : this.root;
+      const b = this.base || this.root;
+      const srcDir = fs.existsSync(path.join(b, 'src'))
+        ? path.join(b, 'src')
+        : b;
       const files = fs.readdirSync(srcDir).filter(f => !f.startsWith('.'));
       const sample = files.slice(0, 20).map(f => path.parse(f).name);
 
@@ -451,8 +521,9 @@ export class ProjectProfileDetector {
 
   private detectEntryPoints(language: string, framework: string): string[] {
     const entries: string[] = [];
+    const b = this.base || this.root;
     const check = (f: string) => {
-      if (fs.existsSync(path.join(this.root, f))) { entries.push(f); }
+      if (fs.existsSync(path.join(b, f)) || fs.existsSync(path.join(this.root, f))) { entries.push(f); }
     };
 
     check('src/index.ts');

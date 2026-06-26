@@ -26,7 +26,10 @@ import * as fs from 'fs';
 
 import { log, kbHeader, banner } from '../logger';
 import { callCopilot, resetTokenMeter, formatTokenUsage } from '../utils/copilot';
-import { scanProject, scanModule, discoverModules, ScanOptions, ProjectModule } from '../utils/project-scanner';
+import {
+  scanProject, scanModule, discoverModules, ScanOptions, ProjectModule,
+  inventoryAllFiles, chunkFileInventory, scanFileEntries, FileEntry,
+} from '../utils/project-scanner';
 import { AgentOrchestrator, SubAgent } from '../utils/agent-orchestrator';
 import { estimateTokens, truncateToTokens, modelInputBudget } from '../utils/token-budget';
 import { ProjectProfileDetector } from '../utils/project-profile';
@@ -228,6 +231,63 @@ Be EXHAUSTIVE — preserve every enumerated flow and rule from the agents (do no
   return merged;
 }
 
+// ─── Chunk-level analysis (used when a module is too large for one AI call) ───
+
+async function analyzeModuleChunk(
+  module: ProjectModule,
+  chunkScan: string,
+  kbSystemBase: string,
+  model: vscode.LanguageModelChat,
+  token: vscode.CancellationToken,
+  chunkIndex: number,
+  totalChunks: number,
+): Promise<string> {
+  const system = `${kbSystemBase}\n\n=== MODULE: ${module.name} — CHUNK ${chunkIndex}/${totalChunks} ===\n${chunkScan}`;
+  const prompt = `Analyze CHUNK ${chunkIndex} of ${totalChunks} for module "${module.name}".
+
+For every file in this chunk, document:
+### Business Flows
+List every business operation or workflow found (entry point → steps → outcome). Cite function names and file paths.
+
+### Business Rules & Validations
+List every validation, guard, or constraint. File + function reference mandatory.
+
+### Entities & Data
+Key entities/DTOs/models with fields, state machines, relationships.
+
+### API / Entry Points
+Endpoints, consumers, scheduled jobs, CLI commands exposed in this chunk.
+
+This is chunk ${chunkIndex} of ${totalChunks} — be exhaustive for these files only. Another pass will cover the remaining files.`;
+
+  return callCopilot(model, system, prompt, token, `${module.name} chunk ${chunkIndex}/${totalChunks}`);
+}
+
+async function mergeChunkDocs(
+  module: ProjectModule,
+  chunkDocs: string[],
+  kbSystemBase: string,
+  model: vscode.LanguageModelChat,
+  token: vscode.CancellationToken,
+): Promise<string> {
+  const combined = chunkDocs
+    .map((doc, i) => `=== CHUNK ${i + 1} ANALYSIS ===\n${doc}`)
+    .join('\n\n');
+  const system = `${kbSystemBase}\n\n=== CHUNK ANALYSES TO MERGE ===\n${combined.slice(0, 100_000)}`;
+  const prompt = `Produce the FINAL unified Knowledge Base document for module "${module.name}" by merging ${chunkDocs.length} chunk analyses.
+
+Structure: **Overview** | **Business Flows** | **Business Rules** | **Entities & Data Model** | **API / Entry Points** | **Dependencies**
+
+MERGE RULES:
+1. DEDUPLICATE — merge flows/rules that appear in multiple chunks into one entry.
+2. PRESERVE ALL — do NOT drop any flow, rule, or entity found across chunks.
+3. EVIDENCE — every claim must cite file path + function/class name.
+4. CROSS-REFERENCE — connect related flows and entities across chunks.
+5. NO GENERIC STATEMENTS — if not evidenced in the code, omit it.`;
+
+  return callCopilot(model, system, prompt, token, `${module.name} merge`);
+}
+
 // ─── Main exported function ───────────────────────────────────────────────────
 
 export async function generateKnowledgeBase(
@@ -250,7 +310,8 @@ export async function generateKnowledgeBase(
   const scanMaxTotalBytes = cfg.get<number>('scan.maxTotalKB', 900) * 1024;
   // Per-module KB generation (deep docs per business module).
   const perModuleEnabled  = cfg.get<boolean>('kb.perModule', true);
-  const maxModules        = cfg.get<number>('kb.maxModules', 24);
+  // Default 100 — no artificial cap; safety valve for extremely large monorepos only.
+  const maxModules        = cfg.get<number>('kb.maxModules', 100);
   const moduleScanBytes   = cfg.get<number>('kb.moduleMaxKB', 220) * 1024;
 
   // ── Determine scan mode ───────────────────────────────────────
@@ -587,27 +648,69 @@ ${profileSummary}
   }
 
   // ══════════════════════════════════════════════════════════════
-  // MODULE PHASE — per-module deep KB docs (map-reduce for large projects)
+  // COVERAGE REPORT — inventory every source file before module phase
+  // so the user can see what exists vs what was analyzed.
+  // ══════════════════════════════════════════════════════════════
+  const allFileEntries = inventoryAllFiles(workspaceRoot, effectiveScanOptions);
+  const totalFilesFound = allFileEntries.length;
+  log(`\n📋 Full file inventory: ${totalFilesFound} source file(s) discovered (zero-skip mode)`);
+
+  // ══════════════════════════════════════════════════════════════
+  // MODULE PHASE — zero-skip: every module, every file, every chunk
   // ══════════════════════════════════════════════════════════════
   let moduleCount = 0;
+  const analyzedRelPaths = new Set<string>();
+
   if (perModuleEnabled && !token.isCancellationRequested) {
+    // No hard cap: process all modules the project has.
+    // maxModules config (default 100) is a safety valve for very large repos.
     const modules = discoverModules(workspaceRoot, effectiveScanOptions).slice(0, maxModules);
     if (modules.length > 0) {
       const modulesDir = path.join(kbPath, 'modules');
       fs.mkdirSync(modulesDir, { recursive: true });
 
       log(`\n${'═'.repeat(66)}`);
-      log(`  🧩 MODULE PHASE — ${modules.length} module(s): ${modules.map(m => m.name).join(', ')}`);
+      log(`  🧩 MODULE PHASE (zero-skip) — ${modules.length} module(s): ${modules.map(m => m.name).join(', ')}`);
       log(`${'═'.repeat(66)}\n`);
-      progress.report({ message: `Deep-analyzing ${modules.length} modules...`, increment: 5 });
+      progress.report({ message: `Deep-analyzing ${modules.length} modules (zero-skip)...`, increment: 5 });
 
       const moduleResults = await settledBatch(
         modules.map(async (mod) => {
-          log(`   ├─ 🔬 ${mod.name} (${mod.fileCount} files)`);
-          const modScan = scanModule(workspaceRoot, mod.relDir, {
-            ...effectiveScanOptions, maxTotalBytes: moduleScanBytes,
+          // ── Get complete file inventory for this module ──
+          const modFileEntries = inventoryAllFiles(workspaceRoot, {
+            ...effectiveScanOptions, subDir: mod.relDir,
           });
-          const doc = await analyzeModule(mod, modScan, KB_SYSTEM_BASE, model, token);
+          const chunks = chunkFileInventory(modFileEntries, moduleScanBytes, scanMaxFileBytes);
+          log(`   ├─ 🔬 ${mod.name} (${modFileEntries.length} files → ${chunks.length} chunk(s))`);
+
+          let doc: string;
+          if (chunks.length === 0) {
+            // Module discovered but no readable files (e.g., all binary) — skip silently.
+            return { mod, doc: '' };
+          } else if (chunks.length === 1) {
+            // Small module: single-pass analysis using existing analyzeModule function.
+            const modScan = scanFileEntries(modFileEntries, scanMaxFileBytes);
+            doc = await analyzeModule(mod, modScan, KB_SYSTEM_BASE, model, token);
+          } else {
+            // Large module: analyze each chunk separately, then merge results.
+            log(`      ↳ large module — ${chunks.length} chunks to process sequentially`);
+            const chunkDocs: string[] = [];
+            for (let ci = 0; ci < chunks.length; ci++) {
+              if (token.isCancellationRequested) { break; }
+              const chunkScan = scanFileEntries(chunks[ci], scanMaxFileBytes);
+              const chunkDoc = await analyzeModuleChunk(
+                mod, chunkScan, KB_SYSTEM_BASE, model, token, ci + 1, chunks.length,
+              );
+              chunkDocs.push(chunkDoc);
+              log(`      ↳ chunk ${ci + 1}/${chunks.length} done (${(chunkDoc.length / 1024).toFixed(1)}KB)`);
+            }
+            doc = chunkDocs.length === 1
+              ? chunkDocs[0]
+              : await mergeChunkDocs(mod, chunkDocs, KB_SYSTEM_BASE, model, token);
+          }
+
+          // Track which files were analyzed for coverage report.
+          for (const e of modFileEntries) { analyzedRelPaths.add(e.relPath); }
           return { mod, doc };
         }),
         maxParallel,
@@ -615,21 +718,23 @@ ${profileSummary}
 
       const indexLines: string[] = [
         `# Modules Index`,
-        `_Auto-generated by Auto Spec Kit — per-module deep analysis_\n`,
-        `| Module | Files | Path |`,
-        `|--------|-------|------|`,
+        `_Auto-generated by Auto Spec Kit — zero-skip per-module deep analysis_\n`,
+        `| Module | Files | Chunks | Path |`,
+        `|--------|-------|--------|------|`,
       ];
       for (const r of moduleResults) {
         if (r.status === 'fulfilled' && r.value.doc.trim()) {
           const { mod, doc } = r.value;
+          const modFiles = inventoryAllFiles(workspaceRoot, { ...effectiveScanOptions, subDir: mod.relDir });
+          const numChunks = chunkFileInventory(modFiles, moduleScanBytes, scanMaxFileBytes).length;
           const safe = mod.name.replace(/[^a-zA-Z0-9._-]/g, '-');
           const rel = `modules/${safe}.md`;
           fs.writeFileSync(
             path.join(kbPath, rel),
-            `# Module: ${mod.name}\n_Path: \`${mod.relDir}\` · ${mod.fileCount} source files_\n\n${doc}`,
+            `# Module: ${mod.name}\n_Path: \`${mod.relDir}\` · ${mod.fileCount} source file(s) · ${numChunks} chunk(s)_\n\n${doc}`,
             'utf-8',
           );
-          indexLines.push(`| [${mod.name}](./${safe}.md) | ${mod.fileCount} | \`${mod.relDir}\` |`);
+          indexLines.push(`| [${mod.name}](./${safe}.md) | ${mod.fileCount} | ${numChunks} | \`${mod.relDir}\` |`);
           moduleCount++;
           log(`   └─ ✅ ${rel} (${(doc.length / 1024).toFixed(1)}KB)`);
         } else if (r.status === 'rejected') {
@@ -643,6 +748,41 @@ ${profileSummary}
       log('ℹ  No distinct modules detected — skipping module phase.');
     }
   }
+
+  // ══════════════════════════════════════════════════════════════
+  // COVERAGE REPORT — write _coverage-report.md
+  // ══════════════════════════════════════════════════════════════
+  const notAnalyzed = allFileEntries.filter(e => !analyzedRelPaths.has(e.relPath));
+  const coveragePct = totalFilesFound > 0
+    ? Math.round((analyzedRelPaths.size / totalFilesFound) * 100)
+    : 100;
+
+  const coverageLines = [
+    `# Coverage Report`,
+    `_Auto-generated by Auto Spec Kit — zero-skip KB generation_\n`,
+    `**Total files discovered:** ${totalFilesFound}`,
+    `**Files analyzed via modules:** ${analyzedRelPaths.size}`,
+    `**Module coverage:** ${coveragePct}%`,
+    `**Note:** All files are also covered by the global KB steps (01–16) via _project-scan.md.\n`,
+  ];
+
+  if (notAnalyzed.length > 0) {
+    coverageLines.push(`## Files covered by global KB only (not in a module)`);
+    coverageLines.push('These files were included in the global project scan and analyzed by all 16 KB steps,');
+    coverageLines.push('but do not belong to a discovered module (e.g., root-level configs, shared utilities).\n');
+    for (const e of notAnalyzed) {
+      coverageLines.push(`- \`${e.relPath}\` (${(e.size / 1024).toFixed(1)}KB)`);
+    }
+  } else {
+    coverageLines.push(`## ✅ Full module coverage — every file belongs to an analyzed module.`);
+  }
+
+  fs.writeFileSync(
+    path.join(kbPath, '_coverage-report.md'),
+    coverageLines.join('\n') + '\n',
+    'utf-8',
+  );
+  log(`📊 Coverage report: ${coveragePct}% module coverage (${analyzedRelPaths.size}/${totalFilesFound} files)`);
 
   // ── Summary ────────────────────────────────────────────────────
   const kbTokenUsage = formatTokenUsage();
