@@ -10,11 +10,13 @@
  * Falls back to single-agent mode if multi-agent is disabled or all agents fail.
  */
 
+import * as vscode from 'vscode';
 import { log } from '../../../logger';
 import { callCopilot } from '../../../utils/copilot';
 import { saveFile } from '../../../utils/file-utils';
 import { AgentOrchestrator, SubAgent, orchestratorConfigFor } from '../../../utils/agent-orchestrator';
 import { SmartContextLoader } from '../../../utils/smart-context';
+import { buildImpactReport } from '../../../utils/graph-builder';
 import { PipelineContext, PipelineStep, StepResult } from '../types';
 
 export class Step01Planning implements PipelineStep {
@@ -56,6 +58,26 @@ export class Step01Planning implements PipelineStep {
       smartCtx.chunks, ['kb', 'source'], ['architecture', 'modules', 'api'], 25_000,
     );
 
+    // ── Structural impact graph — gives the Impact Detector real dependency
+    // edges (imports / DI / calls / inheritance) so it sees the full blast
+    // radius of a change instead of inferring it from source text. Static,
+    // no AI; best-effort — never let graph analysis break planning.
+    let impactGraph = '';
+    const useGraphImpact = vscode.workspace
+      .getConfiguration('autoSpecKit')
+      .get<boolean>('build.useGraphImpact', true);
+    if (useGraphImpact && files.length > 0) {
+      try {
+        impactGraph = buildImpactReport(ctx.workspaceRoot, files);
+        if (impactGraph) {
+          log(`🔗 Structural impact graph attached (${(impactGraph.length / 1024).toFixed(1)}KB) for ${files.length} seed file(s)`);
+        }
+      } catch (err: any) {
+        log(`ℹ  Structural impact graph skipped: ${err?.message ?? err}`);
+      }
+    }
+    const impactBlock = impactGraph ? `\n\n${impactGraph}` : '';
+
     const agents: SubAgent[] = [
       {
         id: 'codebase-analyzer',
@@ -81,20 +103,21 @@ Be specific — cite actual file paths and function names.`,
         id: 'impact-detector',
         role: 'Impact Detector',
         priority: 3,
-        systemContext: `You are a QA architect identifying impact and risks for a code change.\n\n${architectureContext}`,
+        systemContext: `You are a QA architect identifying impact and risks for a code change.\n\n${architectureContext}${impactBlock}`,
         prompt: `\
 ## REQUIREMENT
 ${ctx.requirement}
 
 ## TASK
-Perform an impact analysis:
+Perform an impact analysis. ${impactGraph ? 'Ground it in the STRUCTURAL IMPACT GRAPH provided in your context — it lists the real callers/consumers (reverse dependencies) of each component. Trace the blast radius through those edges; do not omit a dependent the graph lists.' : ''}
 
 1. **Files That Must Change** — List every file that needs modification (not just new files).
-2. **API Contract Changes** — Will any existing API endpoint's request/response shape change?
-3. **Database Impact** — Any schema changes needed? Migration required?
-4. **Breaking Changes** — Will this change break any existing consumer (frontend, mobile, other service)?
-5. **Side Effects** — What existing flows will behave differently after this change?
-6. **Risk Matrix**:
+2. **Downstream Consumers** — For each component you change, list everything that depends on it (use the structural graph's "Used by" edges) and what must be re-verified.
+3. **API Contract Changes** — Will any existing API endpoint's request/response shape change?
+4. **Database Impact** — Any schema changes needed? Migration required?
+5. **Breaking Changes** — Will this change break any existing consumer (frontend, mobile, other service)?
+6. **Side Effects** — What existing flows will behave differently after this change?
+7. **Risk Matrix**:
    | Risk | Likelihood | Impact | Mitigation |
    |------|-----------|--------|------------|
 
@@ -196,6 +219,11 @@ Include: requirement analysis, technical design, implementation steps, risks.
         saveFile(ctx.sessionDir, `01-plan/agent-${result.agentId}.md`,
           `# Agent: ${result.role}\n_Duration: ${(result.durationMs / 1000).toFixed(1)}s_\n\n${result.output}`);
       }
+    }
+
+    // Save the structural impact graph that fed the Impact Detector.
+    if (impactGraph) {
+      saveFile(ctx.sessionDir, '01-plan/impact-graph.md', impactGraph);
     }
 
     log(`✅ Plan saved to 01-plan/ (${agentResults.filter(r => r.success).length}/${agentResults.length} agents succeeded)`);

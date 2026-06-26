@@ -1,4 +1,4 @@
-# 🚀 Auto Spec Kit — v1.13.0
+# 🚀 Auto Spec Kit — v1.14.0
 
 > **Automate the full development workflow: Requirement → Plan → Code → Review → Test → Evidence**  
 > Powered by **GitHub Copilot** (`vscode.lm` API) — no external API keys required.
@@ -218,10 +218,12 @@ Your requirement triggers 3 sub-agents that run simultaneously:
 | Agent | Role | What it does |
 |---|---|---|
 | Codebase Analyzer | Scans project via SmartContextLoader | Discovers which files, classes, and modules are relevant to the task |
-| Impact Detector | Traces dependencies | Identifies all files that will be affected by the change (direct + transitive) |
+| Impact Detector | Traces dependencies via **structural impact graph** | Identifies all files affected (direct + transitive), grounded in real code edges |
 | Business Flow Tracer | Reads Knowledge Base | Maps existing business flows that interact with the change area |
 
 A **merge agent** then combines the 3 outputs into a unified implementation plan.
+
+> **Graph-aware impact (v1.14.0):** the Impact Detector now receives a *structural impact graph* built by static analysis of the relevant files — the real `imports` / dependency-injection / method-call / inheritance edges. For every component the change touches, it lists the exact **reverse dependencies** ("Used by") — the callers and consumers that will be impacted. This catches the blast radius that reading source text alone tends to miss. It's static (no extra AI call); toggle with `autoSpecKit.build.useGraphImpact`. The graph fed to the planner is saved to `01-plan/impact-graph.md`.
 
 **Example for "Add reset password feature":**
 - Codebase Analyzer → finds `auth.service.ts`, `user.repository.ts`, `email.service.ts`, existing password change flow
@@ -881,7 +883,19 @@ Apache Camel, MyBatis (XML mappers), Flyway / Liquibase migrations, Spring XML c
 
 ## 📝 Changelog
 
-### v1.13.0 (current)
+### v1.14.0 (current)
+
+**Graph-aware impact analysis + security & concurrency fixes**
+- ✅ `/build` Step 01 now feeds a **structural impact graph** (real imports / DI / call / inheritance edges) to the Impact Detector — surfaces reverse dependencies ("Used by") for the true blast radius. Static, no extra AI call. Config: `autoSpecKit.build.useGraphImpact`. Saved to `01-plan/impact-graph.md`.
+- ✅ `buildImpactReport()` added to the graph builder (seed files → dependents + dependencies report)
+- 🔒 **Security:** KB-update steps (`/rescan`, Step 13) now route model-supplied paths through `safeResolve()` and confine writes to the knowledge-base directory — closes a prompt-injection path-traversal that could append to files outside the workspace
+- 🐞 **Concurrency:** `settledBatch` rewritten to take task factories — it now *actually* limits parallelism (the module phase previously fired every module's AI calls at once, causing rate limits and multi-hour hangs)
+- 🐞 `/document` Mermaid diagrams now render in the webview (CSP-nonce + strict Mermaid; scripts safely enabled)
+- 🐞 `LearningStore.load()` validates file shape — a malformed `.autospec/learnings.json` no longer crashes
+- 🐞 Model picker: real Copilot ids (`claude-opus-4`, `gpt-5`, …) now rank top-tier via family fallback instead of being tagged ⚠ and sinking below legacy models
+- 🔧 `kb.maxModules` default corrected to 100 (matches zero-skip intent)
+
+### v1.13.0
 
 **Multi-language graph completeness & zero-skip KB**
 - ✅ `CLASS_PATTERN` expanded for all 9 languages — TypeScript `interface`/`enum`, Go `interface`, C# `interface`/`enum`/`record`/`struct`, PHP `interface`/`trait`, Rust `enum`/`trait`

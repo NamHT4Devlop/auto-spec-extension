@@ -1151,3 +1151,144 @@ export function buildGraphData(
     },
   };
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// STRUCTURAL IMPACT ANALYSIS (graph-aware — feeds /build Step 01)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** Edge types that carry real code-level coupling (vs. KB/flow annotations). */
+const IMPACT_EDGE_TYPES = new Set<EdgeType>(['injects', 'calls', 'extends', 'implements', 'imports']);
+
+export interface ImpactReportOptions {
+  /** Max seed nodes to report on (keeps the prompt bounded). */
+  maxSeeds?: number;
+  /** Max dependents/dependencies listed per seed. */
+  maxPerList?: number;
+}
+
+/**
+ * Build a STRUCTURAL impact report from the static code graph.
+ *
+ * Given the files a change is likely to touch (`seedRelPaths`), this walks the
+ * real dependency edges (imports / DI injection / method calls / inheritance)
+ * and reports, for each affected class/file:
+ *   - "Used by" — nodes that depend on it (the blast radius of a change)
+ *   - "Depends on" — nodes it relies on
+ *
+ * This is what regex/text reading misses: the reverse edges. If you modify
+ * `UserService`, every class that injects or calls it is impacted — the graph
+ * knows this precisely, the AI would have to guess.
+ *
+ * Returns '' when there's nothing useful to say (no seeds, empty graph), so the
+ * caller can omit the section entirely.
+ */
+export function buildImpactReport(
+  rootDir: string,
+  seedRelPaths: string[],
+  opts: ImpactReportOptions = {},
+): string {
+  const maxSeeds = opts.maxSeeds ?? 14;
+  const maxPerList = opts.maxPerList ?? 10;
+  if (!seedRelPaths || seedRelPaths.length === 0) { return ''; }
+
+  const graph = buildGraphData(rootDir, 'all');
+  if (graph.nodes.length === 0) { return ''; }
+
+  const norm = (p: string) => p.replace(/\\/g, '/');
+  const seedSet = new Set(seedRelPaths.map(norm));
+  const nodeById = new Map(graph.nodes.map(n => [n.id, n]));
+
+  // Adjacency over impact edges only.
+  const incoming = new Map<string, GraphEdge[]>(); // target ← who depends on it
+  const outgoing = new Map<string, GraphEdge[]>(); // source → what it depends on
+  for (const e of graph.edges) {
+    if (!IMPACT_EDGE_TYPES.has(e.type)) { continue; }
+    (incoming.get(e.target) ?? incoming.set(e.target, []).get(e.target)!).push(e);
+    (outgoing.get(e.source) ?? outgoing.set(e.source, []).get(e.source)!).push(e);
+  }
+
+  // Seed nodes: class-like nodes in the seed files (preferred). Fall back to the
+  // file node for seed files that declare no classes (e.g. functional modules).
+  const seedFilesWithClass = new Set<string>();
+  const seedNodes: GraphNode[] = [];
+  for (const n of graph.nodes) {
+    if (!n.file || !seedSet.has(norm(n.file))) { continue; }
+    if (n.type === 'route' || n.type === 'kb-topic' || n.type === 'kb-section' || n.type === 'module') { continue; }
+    if (n.id.startsWith('class:')) {
+      seedNodes.push(n);
+      seedFilesWithClass.add(norm(n.file));
+    }
+  }
+  for (const n of graph.nodes) {
+    if (n.id.startsWith('file:') && n.file && seedSet.has(norm(n.file)) && !seedFilesWithClass.has(norm(n.file))) {
+      // only include file node if it actually has impact edges (else it's noise)
+      if ((incoming.get(n.id)?.length ?? 0) + (outgoing.get(n.id)?.length ?? 0) > 0) {
+        seedNodes.push(n);
+      }
+    }
+  }
+  if (seedNodes.length === 0) { return ''; }
+
+  // Rank seeds by how connected they are — the most-used nodes matter most.
+  seedNodes.sort((a, b) => {
+    const da = (incoming.get(a.id)?.length ?? 0);
+    const db = (incoming.get(b.id)?.length ?? 0);
+    return db - da;
+  });
+
+  const fmtNode = (id: string): string => {
+    const n = nodeById.get(id);
+    if (!n) { return id; }
+    return n.file ? `${n.label} (${n.file})` : n.label;
+  };
+  const fmtList = (edges: GraphEdge[] | undefined, dir: 'in' | 'out'): string[] => {
+    if (!edges || edges.length === 0) { return []; }
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const e of edges) {
+      const otherId = dir === 'in' ? e.source : e.target;
+      const key = `${otherId}:${e.type}`;
+      if (seen.has(key)) { continue; }
+      seen.add(key);
+      const verb = e.label ? `${e.type} ${e.label}` : e.type;
+      out.push(`${fmtNode(otherId)} — [${verb}]`);
+      if (out.length >= maxPerList) { break; }
+    }
+    return out;
+  };
+
+  const lines: string[] = [
+    '## STRUCTURAL IMPACT GRAPH (from static code analysis — authoritative)',
+    'Real dependency edges extracted from the code: imports, dependency injection,',
+    'method calls, and inheritance. Use this to find EVERY caller/consumer affected',
+    'by a change — these reverse dependencies are easy to miss by reading code alone.',
+    '',
+  ];
+
+  let shown = 0;
+  for (const seed of seedNodes) {
+    if (shown >= maxSeeds) {
+      lines.push(`_…and ${seedNodes.length - shown} more affected component(s) not shown._`);
+      break;
+    }
+    const dependents = fmtList(incoming.get(seed.id), 'in');
+    const dependencies = fmtList(outgoing.get(seed.id), 'out');
+    if (dependents.length === 0 && dependencies.length === 0) { continue; }
+
+    lines.push(`### ${fmtNode(seed.id)}${seed.type !== 'class' && seed.type !== 'file' ? ` [${seed.type}]` : ''}`);
+    if (dependents.length > 0) {
+      lines.push(`- **Used by (impacted if you change this) — ${dependents.length}${(incoming.get(seed.id)?.length ?? 0) > dependents.length ? '+' : ''}:**`);
+      for (const d of dependents) { lines.push(`  - ${d}`); }
+    } else {
+      lines.push('- **Used by:** (no internal callers found — likely an entry point or leaf)');
+    }
+    if (dependencies.length > 0) {
+      lines.push(`- **Depends on:** ${dependencies.join('; ')}`);
+    }
+    lines.push('');
+    shown++;
+  }
+
+  if (shown === 0) { return ''; } // seeds existed but none had impact edges
+  return lines.join('\n');
+}

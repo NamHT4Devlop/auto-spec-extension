@@ -2,7 +2,7 @@
   "name": "ai-dev-assistant",
   "displayName": "AI Dev Assistant",
   "description": "Automate the full development workflow: Requirement → Plan → Code → Review → Test → Evidence, powered by GitHub Copilot",
-  "version": "1.12.0",
+  "version": "1.14.0",
   "publisher": "internal-tools",
   "author": {
     "name": "Internal Tools"
@@ -76,11 +76,12 @@
         "autoSpecKit.scan.maxFileKB": { "type": "number", "default": 48, "description": "Max KB read per source file during project scan (Knowledge Base generation)." },
         "autoSpecKit.scan.maxTotalKB": { "type": "number", "default": 900, "description": "Max total KB of source captured in the project-level scan. Business-relevant files (services, controllers, domain, validators) are prioritized when this budget is hit. Per-module docs give full coverage beyond this." },
         "autoSpecKit.kb.perModule": { "type": "boolean", "default": true, "description": "Generate a deep per-module Knowledge Base doc (knowledge-base/modules/<module>.md) for each business module, plus an index. Recommended for large projects with many flows/rules." },
-        "autoSpecKit.kb.maxModules": { "type": "number", "default": 24, "description": "Maximum number of modules to deep-analyze in the per-module KB phase (largest modules first)." },
+        "autoSpecKit.kb.maxModules": { "type": "number", "default": 100, "description": "Maximum number of modules to deep-analyze in the per-module KB phase (largest modules first). High by default for zero-skip coverage; lower it only as a safety valve on very large monorepos." },
         "autoSpecKit.kb.moduleMaxKB": { "type": "number", "default": 220, "description": "Max KB of source fed into each module's deep analysis." },
         "autoSpecKit.kb.systemScanTokens": { "type": "number", "default": 70000, "description": "Max tokens of project source embedded in the KB-generation system prompt. Auto-capped to the selected model's input limit (so it never exceeds — e.g. Opus 4.8 allows more). Raise for deeper project-level steps on large-context models." },
         "autoSpecKit.autoSync": { "type": "boolean", "default": true, "description": "Auto-fetch and pull latest code before every command (read-only — never pushes or commits)" },
-        "autoSpecKit.autoSyncKBUpdate": { "type": "boolean", "default": true, "description": "Auto-update Knowledge Base when pulled code contains source changes" }
+        "autoSpecKit.autoSyncKBUpdate": { "type": "boolean", "default": true, "description": "Auto-update Knowledge Base when pulled code contains source changes" },
+        "autoSpecKit.build.useGraphImpact": { "type": "boolean", "default": true, "description": "During /build planning (Step 01), attach a structural impact graph (real imports / dependency injection / method-call / inheritance edges) so the Impact Detector sees the full blast radius of a change. Static analysis, no extra AI call. Disable to save a few seconds on very large repos." }
       }
     },
     "keybindings": [
