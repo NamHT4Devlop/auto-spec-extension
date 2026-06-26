@@ -13,7 +13,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { log } from '../../../logger';
 import { callCopilot } from '../../../utils/copilot';
-import { saveFile } from '../../../utils/file-utils';
+import { saveFile, safeResolve } from '../../../utils/file-utils';
 import { AgentOrchestrator, SubAgent, orchestratorConfigFor } from '../../../utils/agent-orchestrator';
 import { PipelineContext, PipelineStep, StepResult } from '../types';
 
@@ -153,16 +153,31 @@ Merge technical and business KB deltas into a single set of KB update patches.
     let kbMatch: RegExpExecArray | null;
     const updatedFiles: string[] = [];
 
+    const kbRoot = path.resolve(ctx.workspaceRoot, ctx.kbRelPath);
     while ((kbMatch = kbUpdatePattern.exec(kbDelta)) !== null) {
       const kbFilePath = kbMatch[1].trim();
       const kbContent = kbMatch[2].trim();
-      const fullPath = path.join(ctx.workspaceRoot, kbFilePath);
 
-      if (fs.existsSync(fullPath) && kbContent && kbContent !== '(no update needed)') {
+      if (!kbContent || kbContent === '(no update needed)') { continue; }
+
+      // SECURITY: path comes from model output (prompt-injection risk). Reject
+      // traversal/absolute paths and confine appends to the KB directory.
+      let fullPath: string;
+      try {
+        fullPath = safeResolve(ctx.workspaceRoot, kbFilePath);
+      } catch (err: any) {
+        log(`⛔ Refusing unsafe KB update path: ${kbFilePath} (${err?.message ?? err})`);
+        continue;
+      }
+      if (fullPath !== kbRoot && !fullPath.startsWith(kbRoot + path.sep)) {
+        log(`⛔ KB update path outside the knowledge-base directory, skipping: ${kbFilePath}`);
+        continue;
+      }
+      if (fs.existsSync(fullPath)) {
         fs.appendFileSync(fullPath, `\n\n${kbContent}\n`, 'utf-8');
         updatedFiles.push(kbFilePath);
         log(`✅ KB updated → ${kbFilePath}`);
-      } else if (!fs.existsSync(fullPath)) {
+      } else {
         log(`⚠  KB file not found, skipping: ${kbFilePath}`);
       }
     }

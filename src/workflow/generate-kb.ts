@@ -527,8 +527,9 @@ ${profileSummary}
       increment: Math.floor(85 / BATCHES.length),
     });
 
-    // Run all steps in this batch in parallel
-    const batchPromises = batchSteps.map(async (step) => {
+    // Run all steps in this batch with a real concurrency limit.
+    // Pass factories (not invoked promises) so settledBatch actually throttles.
+    const batchTasks = batchSteps.map((step) => async () => {
       const isDeep = DEEP_ANALYSIS_STEPS.has(step.file);
 
       log(`   ├─ ${isDeep ? '🔬' : '📝'} ${step.label} ${isDeep ? '(multi-agent deep)' : '(single agent)'}`);
@@ -551,8 +552,8 @@ ${profileSummary}
       return { step, content };
     });
 
-    // Limit concurrent promises within batch
-    const results = await settledBatch(batchPromises, maxParallel);
+    // Limit concurrent steps within batch
+    const results = await settledBatch(batchTasks, maxParallel);
 
     // Save results
     for (const result of results) {
@@ -675,7 +676,7 @@ ${profileSummary}
       progress.report({ message: `Deep-analyzing ${modules.length} modules (zero-skip)...`, increment: 5 });
 
       const moduleResults = await settledBatch(
-        modules.map(async (mod) => {
+        modules.map((mod) => async () => {
           // ── Get complete file inventory for this module ──
           const modFileEntries = inventoryAllFiles(workspaceRoot, {
             ...effectiveScanOptions, subDir: mod.relDir,
@@ -820,20 +821,27 @@ ${profileSummary}
   }
 }
 
-// ─── Utility: run promises with concurrency limit ─────────────────────────────
-
-async function settledBatch<T>(
-  promises: Promise<T>[],
+// ─── Utility: run tasks with a real concurrency limit ─────────────────────────
+//
+// Takes task FACTORIES (() => Promise<T>), not already-started promises. This is
+// the whole point: if you pass an array produced by `items.map(async () => ...)`,
+// every async function has ALREADY been invoked and is running, so no concurrency
+// limit can apply. By deferring invocation until a worker slot is free, at most
+// `concurrency` tasks run at once — critical for the module phase, where a repo
+// with many modules would otherwise fire every module's AI calls simultaneously
+// (rate limits, token spikes, hangs).
+export async function settledBatch<T>(
+  tasks: (() => Promise<T>)[],
   concurrency: number,
 ): Promise<PromiseSettledResult<T>[]> {
-  const results: PromiseSettledResult<T>[] = new Array(promises.length);
+  const results: PromiseSettledResult<T>[] = new Array(tasks.length);
   let nextIndex = 0;
 
   async function runNext(): Promise<void> {
-    while (nextIndex < promises.length) {
+    while (nextIndex < tasks.length) {
       const idx = nextIndex++;
       try {
-        const value = await promises[idx];
+        const value = await tasks[idx]();
         results[idx] = { status: 'fulfilled', value };
       } catch (reason: any) {
         results[idx] = { status: 'rejected', reason };
@@ -842,7 +850,7 @@ async function settledBatch<T>(
   }
 
   const workers = Array.from(
-    { length: Math.min(concurrency, promises.length) },
+    { length: Math.max(1, Math.min(concurrency, tasks.length)) },
     () => runNext(),
   );
   await Promise.all(workers);

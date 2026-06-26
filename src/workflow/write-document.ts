@@ -116,12 +116,17 @@ ${sourceCtx ? `\n=== RELEVANT SOURCE CODE ===\n${sourceCtx}` : ''}`;
   fs.writeFileSync(htmlFile, html, 'utf-8');
   log(`✅ Document saved: ${path.relative(workspaceRoot, htmlFile)}`);
 
-  // ── 4. Open as a (static, no-script) webview + offer browser ──
+  // ── 4. Open in a webview + offer browser ──
+  // Scripts are enabled so embedded Mermaid diagrams render. This is safe: the
+  // HTML carries a strict Content-Security-Policy with a per-render nonce (only
+  // our own inline script + cdnjs Mermaid run) and Mermaid uses securityLevel
+  // 'strict'. When the doc has no diagram, the CSP has no script-src at all, so
+  // nothing executes regardless. localResourceRoots stays empty (no disk access).
   const panel = vscode.window.createWebviewPanel(
     'autoSpecKitDoc',
     `📝 ${topic.slice(0, 40)}`,
     vscode.ViewColumn.One,
-    { enableScripts: false, retainContextWhenHidden: true, localResourceRoots: [] },
+    { enableScripts: true, retainContextWhenHidden: true, localResourceRoots: [] },
   );
   panel.webview.html = html;
 

@@ -191,7 +191,17 @@ export class LearningStore {
   private load(): LearningStoreData {
     if (fs.existsSync(this.filePath)) {
       try {
-        return JSON.parse(fs.readFileSync(this.filePath, 'utf-8'));
+        const parsed = JSON.parse(fs.readFileSync(this.filePath, 'utf-8'));
+        // Validate shape — a syntactically valid JSON with a missing/!array
+        // `learnings` would otherwise crash every add()/query with a TypeError.
+        if (parsed && Array.isArray(parsed.learnings)) {
+          return {
+            version: typeof parsed.version === 'number' ? parsed.version : STORE_VERSION,
+            updatedAt: typeof parsed.updatedAt === 'string' ? parsed.updatedAt : new Date().toISOString(),
+            learnings: parsed.learnings,
+          };
+        }
+        log('⚠️ LearningStore: unexpected file shape, starting fresh');
       } catch {
         log('⚠️ LearningStore: corrupted file, starting fresh');
       }

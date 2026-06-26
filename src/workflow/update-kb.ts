@@ -6,7 +6,7 @@ import { promisify } from 'util';
 
 import { log, kbHeader, getChannel } from '../logger';
 import { callCopilot } from '../utils/copilot';
-import { loadKnowledgeBase } from '../utils/file-utils';
+import { loadKnowledgeBase, safeResolve } from '../utils/file-utils';
 import { estimateTokens, truncateToTokens, modelInputBudget } from '../utils/token-budget';
 
 const execAsync = promisify(exec);
@@ -117,20 +117,34 @@ Files that may need updating: 04-business-overview.md, 05-domain-model.md, 06-mo
   const updatedFiles: string[] = [];
   let firstUpdatedPath: string | undefined;
 
+  const kbRoot = path.resolve(kbPath);
   while ((match = updatePattern.exec(deltaResult)) !== null) {
     const kbFilePath = match[1].trim();
     const kbContent  = match[2].trim();
-    const fullPath   = path.join(workspaceRoot, kbFilePath);
 
-    if (kbContent && kbContent !== '(no update needed)') {
-      if (fs.existsSync(fullPath)) {
-        fs.appendFileSync(fullPath, `\n\n${kbContent}\n`, 'utf-8');
-        updatedFiles.push(kbFilePath);
-        if (!firstUpdatedPath) { firstUpdatedPath = fullPath; }
-        log(`✅ KB updated → ${kbFilePath}`);
-      } else {
-        log(`⚠  KB file does not exist, skipping: ${kbFilePath}`);
-      }
+    if (!kbContent || kbContent === '(no update needed)') { continue; }
+
+    // SECURITY: the path comes from model output (susceptible to prompt
+    // injection). Reject traversal/absolute paths, and confine writes to the
+    // KB directory so an update can never append to files elsewhere on disk.
+    let fullPath: string;
+    try {
+      fullPath = safeResolve(workspaceRoot, kbFilePath);
+    } catch (err: any) {
+      log(`⛔ Refusing unsafe KB update path: ${kbFilePath} (${err?.message ?? err})`);
+      continue;
+    }
+    if (fullPath !== kbRoot && !fullPath.startsWith(kbRoot + path.sep)) {
+      log(`⛔ KB update path outside the knowledge-base directory, skipping: ${kbFilePath}`);
+      continue;
+    }
+    if (fs.existsSync(fullPath)) {
+      fs.appendFileSync(fullPath, `\n\n${kbContent}\n`, 'utf-8');
+      updatedFiles.push(kbFilePath);
+      if (!firstUpdatedPath) { firstUpdatedPath = fullPath; }
+      log(`✅ KB updated → ${kbFilePath}`);
+    } else {
+      log(`⚠  KB file does not exist, skipping: ${kbFilePath}`);
     }
   }
 
