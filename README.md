@@ -1,4 +1,4 @@
-# 🚀 Auto Spec Kit — v1.8.0
+# 🚀 Auto Spec Kit — v1.13.0
 
 > **Automate the full development workflow: Requirement → Plan → Code → Review → Test → Evidence**  
 > Powered by **GitHub Copilot** (`vscode.lm` API) — no external API keys required.
@@ -23,9 +23,12 @@ Auto Spec Kit is a VS Code extension that turns a one-line task description into
   - [Ask About Codebase](#4-ask-about-codebase)
   - [Plan User Stories (PO/BA)](#5-plan-user-stories-poba)
   - [Map Codebase (Dependency Graph)](#6-map-codebase-dependency-graph)
-  - [Select Model](#7-select-model)
+  - [Select Model](#8-select-model)
 - [Multi-Agent Architecture (v1.7.0)](#-multi-agent-architecture-v170)
 - [Adaptive Intelligence (v1.8.0)](#-adaptive-intelligence-v180)
+- [Deep KB & Module Awareness (v1.9.0)](#-deep-kb--module-awareness-v190)
+- [Architecture Protection (v1.10.0)](#-architecture-protection-v100)
+- [Token Safety & Idle Guard (v1.11.x)](#-token-safety--idle-guard-v111x)
 - [Keyboard Shortcuts](#-keyboard-shortcuts)
 - [Configuration Reference](#-configuration-reference)
 - [Knowledge Base](#-knowledge-base)
@@ -70,7 +73,7 @@ Traditional AI coding assistants answer one question at a time. Auto Spec Kit ru
 
 ### From VSIX (recommended)
 
-1. Download `auto-spec-kit-1.8.0.vsix`
+1. Download `auto-spec-kit-1.13.0.vsix`
 2. Open VS Code → Extensions panel (`Ctrl+Shift+X`)
 3. Click **⋯ → Install from VSIX…**
 4. Select the downloaded file
@@ -85,7 +88,7 @@ yarn install
 yarn compile
 yarn package
 # Install the generated .vsix:
-code --install-extension auto-spec-kit-1.8.0.vsix
+code --install-extension auto-spec-kit-1.13.0.vsix
 ```
 
 ---
@@ -112,9 +115,10 @@ Or use keyboard shortcuts: `Cmd+Shift+B` (Scan), `Cmd+Shift+K` (Build).
 | `@protector_spec /scan` | Scan the project — generate Knowledge Base |
 | `@protector_spec /rescan` | Rescan latest changes — update Knowledge Base |
 | `@protector_spec /review` | Review current file — security, architecture, performance |
-| `@protector_spec /ask How does auth work?` | Ask about codebase — Q&A powered by KB |
+| `@protector_spec /ask How does auth work?` | Ask about codebase — Q&A + Mermaid diagram (BA-friendly) |
 | `@protector_spec /plan User onboarding redesign...` | Plan user stories — Epic → Sprint Plan (PO/BA) |
 | `@protector_spec /map` | Map the codebase — interactive dependency graph |
+| `@protector_spec /document Order checkout flow` | Investigate & document — business ↔ code mapping, exports HTML |
 
 ### Free text (no slash command)
 
@@ -171,9 +175,10 @@ All commands are also available via **Command Palette** (`Ctrl+Shift+P` → type
 | 📚 **Scan Project** | `Ctrl+Shift+B` | Analyze codebase → generate KB |
 | 🔍 **Review Current File** | *(right-click menu)* | Multi-agent code review |
 | 📚 **Rescan Latest Changes** | *(command palette)* | Update KB with new code |
-| 💬 **Ask About Codebase** | *(command palette / explorer right-click)* | Natural language Q&A |
+| 💬 **Ask About Codebase** | *(command palette / explorer right-click)* | Natural language Q&A + Mermaid diagram |
 | 📋 **Plan User Stories** | `Ctrl+Shift+U` | PO/BA: Epic → Stories → Sprint Plan |
 | 🔭 **Map Codebase** | *(command palette)* | D3.js interactive dependency graph |
+| 📄 **Document Feature/Entity** | *(Copilot Chat `/document`)* | Business ↔ code mapping, exports HTML |
 | 🤖 **Select Model** | *(command palette)* | Choose GitHub Copilot model |
 
 ---
@@ -384,7 +389,12 @@ Merges learnings from manual work back into the KB. Useful when you complete tas
 
 **Chat:** `@protector_spec /ask <question>` or just `@protector_spec <question>`
 
-Natural language Q&A grounded in the Knowledge Base. Examples:
+Natural language Q&A grounded in the Knowledge Base. Each answer includes:
+- **Technical explanation** — code-level detail
+- **Business explanation** — BA/product-friendly summary (no jargon)
+- **Mermaid diagram** — flowchart, sequence diagram, or ER diagram auto-selected by question type (v1.12.0)
+
+Examples:
 - `@protector_spec /ask How does order cancellation work?`
 - `@protector_spec Which services call the payment gateway?`
 - `@protector_spec What environment variables are required?`
@@ -422,14 +432,49 @@ A 7-step AI pipeline for PO/BA that requires only 2 inputs (Epic title + descrip
 Generates an interactive D3.js force-directed graph of your project. Supports **9 programming languages** (TypeScript, JavaScript, Python, Java, Go, Ruby, C#, PHP, Rust).
 
 Two phases:
-1. **Static scan** — file imports, class hierarchy, method calls, API routes, decorators
+1. **Static scan** — file imports, class hierarchy, method calls, API routes, decorators, DI wiring
 2. **AI enrichment** (optional) — 3 agents: Flow Tracer, Entity Mapper, Architecture Validator
+
+**What the graph shows (v1.13.0):**
+
+| Node type | Languages |
+|---|---|
+| `class` | All 9 languages |
+| `interface` | TypeScript, Java, Go, C#, PHP + Rust traits |
+| `enum` | TypeScript, Java, C#, PHP, Rust |
+| `controller / service / repository` | Spring, NestJS, Laravel, etc. |
+| `route` | Express, FastAPI, Rails, Spring MVC |
+
+**Edges:**
+- `imports` — file-level dependencies
+- `extends / implements` — class hierarchy
+- `injects` — DI field injection (Spring `@Autowired`, NestJS constructor injection, Go struct fields, Rust `Arc<T>`, PHP typed properties)
+- `calls` — method call cross-references (DI-guided — prefers known injected deps)
 
 Click any node in the graph → opens the source file in VS Code.
 
 ---
 
-### 7. Select Model
+### 7. Document Feature / Entity (new in v1.11.0)
+
+**Chat:** `@protector_spec /document <topic>`
+
+Produces a precise technical document that maps **business concepts ↔ code** at the field level, grounded in the Knowledge Base and real source code.
+
+```
+@protector_spec /document Order checkout flow
+@protector_spec /document User entity (field-level mapping)
+@protector_spec /document Payment gateway integration
+```
+
+**Output:**
+- A structured Markdown document (field-by-field, method-by-method)
+- A self-contained **HTML file** opened in a webview (and saved to `spec-kit-sessions/`)
+- Non-technical section (BA-friendly summary) + technical section (code references, data contracts)
+
+---
+
+### 8. Select Model
 
 **Chat:** N/A | **Access:** Command Palette → `Auto Spec Kit: Select Model`
 
@@ -574,6 +619,53 @@ Config priority: `.autospec.yml` > VS Code settings > defaults.
 
 ---
 
+## 📦 Deep KB & Module Awareness (v1.9.0)
+
+v1.9.0 rewrites Knowledge Base generation for large, multi-module projects.
+
+### Zero-skip file scanning
+
+Every file in every module is analyzed — no byte cap, no silent truncation.
+
+| Component | What it does |
+|---|---|
+| `inventoryAllFiles()` | Walks the full project tree (depth 15) — no size cap |
+| `chunkFileInventory()` | Splits large modules into token-budget chunks |
+| `analyzeModuleChunk()` | Runs one AI analysis pass per chunk |
+| `mergeChunkDocs()` | AI merges chunk analyses into a single module doc |
+| `_coverage-report.md` | Generated after scan — shows files analyzed vs total found |
+
+### Java / Kotlin module granularity
+
+Instead of treating `src/main/java` as one module, `resolveJavaPackageRoots()` walks into the package prefix (`com/example/`) and splits at the domain boundary (e.g., `order`, `user`, `payment`), giving each domain package its own KB module doc.
+
+---
+
+## 🛡️ Architecture Protection (v1.10.0)
+
+v1.10.0 adds a **design pattern capture and enforcement** layer.
+
+Before the code generation step, the pipeline reads your project's established patterns from the Knowledge Base (`01-project-overview.md`, `03-project-structure.md`) and injects them as hard constraints into every code generator agent. This ensures:
+
+- Generated code follows the same layering (controller → service → repository)
+- Naming conventions match the project (e.g., `*Service`, `*Repository`, `I*` interfaces)
+- Framework idioms are preserved (Spring DI, NestJS decorators, Laravel service providers)
+- No new patterns are introduced unless explicitly requested
+
+---
+
+## ⚡ Token Safety & Idle Guard (v1.11.x)
+
+Three fixes that prevent hangs and token budget overflows on large projects:
+
+| Version | Fix |
+|---|---|
+| v1.11.2 | KB generate/update auto-fits each prompt to the model's input limit — no more truncation errors |
+| v1.11.3 | Universal token-safe guard on **all** tasks — every AI call is budget-checked before dispatch |
+| v1.11.4 | Idle timeout on every AI request — requests that stall for > N seconds are cancelled and retried, eliminating multi-hour hangs |
+
+---
+
 ## ⌨️ Keyboard Shortcuts
 
 | Action | Windows / Linux | macOS |
@@ -687,18 +779,20 @@ Two-layer review system:
 
 ## 🤖 Model Selection & Priority
 
-Built-in priority ranking (2026):
+Built-in priority ranking (2026, updated v1.9.1):
 
-| Priority | Model ID |
-|---|---|
-| 1 (best) | `gpt-5.5` |
-| 2 | `gpt-5.4` |
-| 3 | `claude-opus-4-7` |
-| 4 | `o3` |
-| 5 | `claude-sonnet-4-6` |
-| 6 | `gemini-2.5-pro` |
-| 7 | `gpt-5` |
-| 8 | `o4-mini` |
+| Priority | Model ID | Notes |
+|---|---|---|
+| 1 (best) | `gpt-5.5` | Flagship GPT |
+| 2 | `claude-opus-4-8` | Flagship Claude |
+| 3 | `gpt-5.3-codex` | Code-specialized GPT |
+| 4 | `claude-opus-4-7` | — |
+| 5 | `gpt-5.4` | — |
+| 6 | `claude-opus-4-6` | — |
+| 7 | `gemini-3.1-pro` | — |
+| 8 | `gemini-2.5-pro` | — |
+| 9 | `gpt-5.4-mini` | Lightweight |
+| 10 | `o3` | Reasoning |
 
 Override: `"autoSpecKit.model": "gpt-5.5"` in settings.
 
@@ -787,7 +881,90 @@ Apache Camel, MyBatis (XML mappers), Flyway / Liquibase migrations, Spring XML c
 
 ## 📝 Changelog
 
-### v1.8.0 (current)
+### v1.13.0 (current)
+
+**Multi-language graph completeness & zero-skip KB**
+- ✅ `CLASS_PATTERN` expanded for all 9 languages — TypeScript `interface`/`enum`, Go `interface`, C# `interface`/`enum`/`record`/`struct`, PHP `interface`/`trait`, Rust `enum`/`trait`
+- ✅ `kind` field on parsed nodes — `interface`, `enum`, `trait` render as the correct `interface` node type in the graph
+- ✅ `parseFields` added for Go (struct fields), Rust (struct fields + `Arc<T>` unwrap), PHP (typed properties), Ruby (`attr_accessor`)
+- ✅ DI edge type resolution — generic inner type extraction (`List<T>` → `T`, `Arc<T>` → `T`), Go `*T` pointer stripped, Rust `&mut T` stripped
+- ✅ `CALL_NOISE` constant — 30+ stdlib noise words filtered (Java, Python, Go, Ruby, C#) — cleaner call edges
+- ✅ Zero-skip KB: `inventoryAllFiles` + `chunkFileInventory` + `analyzeModuleChunk` + `mergeChunkDocs` — no file is ever skipped
+- ✅ `resolveJavaPackageRoots()` — Java/Kotlin domain package discovery for per-domain module analysis
+- ✅ `_coverage-report.md` — post-scan coverage report (files analyzed vs total found)
+- ✅ Step 10 atomic writes (`.~tmp` → rename) + pre-validation of all destination paths
+- ✅ `ProjectProfile` monorepo/Docker/CI detection fix (`hasRoot()` helper); stable sort tiebreaker in `resolvePrimaryBase()`
+- ✅ `graph-enricher` AI summary: 80 class nodes, 60 DI injection edges, 12 methods/node
+
+### v1.12.0
+
+**BA answers with diagrams, richer map, token visibility**
+- ✅ `/ask` now returns a Mermaid diagram (flowchart / sequence / ER) auto-selected per question type
+- ✅ Business-friendly explanation section in every `/ask` answer (non-technical language for PO/BA)
+- ✅ Token usage visible in VS Code Output panel per AI call
+- ✅ Richer `/map` graph summary injected into AI enrichment context
+
+### v1.11.4
+
+**Idle hang fix**
+- ✅ Idle timeout on every AI request — requests stalling past threshold are cancelled and retried; eliminates multi-hour hangs
+
+### v1.11.3
+
+**Universal token guard**
+- ✅ Token-safe guard on ALL tasks — every AI call budget-checked before dispatch; no more `context_length_exceeded` errors
+
+### v1.11.2
+
+**KB token auto-fit**
+- ✅ KB generate/update auto-fits each prompt to the model's input limit
+
+### v1.11.1
+
+- ✅ Added Protector Spec avatar icon to chat participant
+
+### v1.11.0
+
+**`/document` command**
+- ✅ New slash command: `@protector_spec /document <topic>` — investigates a feature/entity/flow and produces a business ↔ code mapping document
+- ✅ Exports a self-contained HTML file (opened in webview) + Markdown copy in session folder
+- ✅ Two sections per document: business summary (BA-friendly) + technical details (field-level, code references)
+- ✅ Chat participant renamed to `@protector_spec`
+
+### v1.10.0
+
+**Architecture protection**
+- ✅ Design pattern capture from KB injected into code generator constraints
+- ✅ Layer, naming, and framework idioms enforced across all generated code
+- ✅ Prevents pattern drift in long-running projects
+
+### v1.9.1
+
+- ✅ Refreshed GitHub Copilot model list (GPT-5.3-Codex, Claude Opus 4.7/4.8, Gemini 3.x)
+- ✅ Improved mixed-stack / polyglot project support in KB generation
+
+### v1.9.0
+
+**Deep KB & module awareness**
+- ✅ `inventoryAllFiles()` — full file discovery, no byte cap (depth 15)
+- ✅ `chunkFileInventory()` + `analyzeModuleChunk()` + `mergeChunkDocs()` — chunked analysis for large modules
+- ✅ `resolveJavaPackageRoots()` — Java domain package split for per-domain module docs
+- ✅ `maxModules` raised 24 → 100
+- ✅ `_coverage-report.md` generated after every scan
+
+### v1.8.4
+
+- ✅ `RequirementClarifier` — scores vague prompts (4 dimensions) and asks targeted clarifying questions before `/build` and `/ask`
+
+### v1.8.3
+
+- ✅ Token context optimization for `/ask` and `/build` — reduces unnecessary prompt padding
+
+### v1.8.1
+
+- ✅ Security hardening: safe file writes, webview CSP, git exec sanitization, untrusted workspace guard
+
+### v1.8.0
 
 **Adaptive Intelligence**
 - ✅ `/help` — context-aware status dashboard (KB, model, profile, learnings, workspace, config)
